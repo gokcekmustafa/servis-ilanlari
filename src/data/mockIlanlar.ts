@@ -1,0 +1,268 @@
+import { Ilan } from '../types';
+
+export const mockIlanlar: Ilan[] = [
+  {
+    id: '1',
+    kategori: 'isim_var_arac',
+    servis_turu: ['Personel'],
+    aciklama:
+      'Kirazlitepe - Ikbal - Icerenkoy guzergahinda personel servisi icin arac aranmaktadir.',
+    ilan_veren: 'Ege Trans',
+    guzergahlar: [
+      {
+        giris_saati: '07:30',
+        kalkis_il: 'ISTANBUL',
+        kalkis_ilce: 'USKUDAR',
+        kalkis_mah: 'CENGELKOY MAH',
+        varis_il: 'ISTANBUL',
+        varis_ilce: 'ATASEHIR',
+        varis_mah: 'ICERENKOY MAH',
+        cikis_saati: '17:00',
+      },
+    ],
+    created_at: '16.02.2026',
+    durum: 'aktif',
+  },
+  {
+    id: '2',
+    kategori: 'isim_var_arac',
+    servis_turu: ['Personel'],
+    aciklama:
+      'Esatpasa - Gayrettepe 07:00 giris 16:30 cikis 16+1 arac aranmakta.',
+    ilan_veren: 'Transay Turizm',
+    guzergahlar: [
+      {
+        giris_saati: '07:00',
+        kalkis_il: 'ISTANBUL',
+        kalkis_ilce: 'ATASEHIR',
+        kalkis_mah: 'ESATPASA MAH',
+        varis_il: 'ISTANBUL',
+        varis_ilce: 'BESIKTAS',
+        varis_mah: 'GAYRETTEPE MAH',
+        cikis_saati: '16:30',
+      },
+    ],
+    created_at: '16.03.2026',
+    durum: 'aktif',
+  },
+  {
+    id: '3',
+    kategori: 'sofor_ariyorum',
+    servis_turu: ['Okul'],
+    aciklama:
+      'Sirketimiz buynesinde calisacak evreklari tam suruculer aranmaktadir. 2 tek okul servisi.',
+    ilan_veren: 'Bireysel Tasimaci',
+    guzergahlar: [
+      {
+        giris_saati: '06:00',
+        kalkis_il: 'ISTANBUL',
+        kalkis_ilce: 'BAYRAMPASA',
+        kalkis_mah: 'ALTINTEPSI MAH',
+        varis_il: 'ISTANBUL',
+        varis_ilce: 'FATIH',
+        varis_mah: 'TAYA HATUN MAH',
+        cikis_saati: '07:45',
+      },
+    ],
+    created_at: '18.02.2026',
+    durum: 'aktif',
+  },
+  {
+    id: '4',
+    kategori: 'isim_var_arac',
+    servis_turu: ['Personel'],
+    aciklama:
+      'Esenler - Halic - Akom - Kagithane Vadi guzergahinda 30 gun calisiyor. 16+1 arac aranmaktadir.',
+    ilan_veren: 'Altur Turizm',
+    guzergahlar: [
+      {
+        giris_saati: '08:30',
+        kalkis_il: 'ISTANBUL',
+        kalkis_ilce: 'ESENLER',
+        kalkis_mah: 'ORCUREIS MAH',
+        varis_il: 'ISTANBUL',
+        varis_ilce: 'SARIYER',
+        varis_mah: 'AYAZAGA MAH',
+        cikis_saati: '18:00',
+      },
+    ],
+    created_at: '16.03.2026',
+    durum: 'aktif',
+  },
+  {
+    id: '5',
+    kategori: 'aracim_var_is',
+    servis_turu: ['Personel', 'Okul'],
+    aciklama:
+      'Aracim tamamen bostur. 2024 model okul ve personel paket 4-6-8 tek isler ariyorum.',
+    ilan_veren: 'Bireysel Tasimaci',
+    guzergahlar: [
+      {
+        giris_saati: '00:00',
+        kalkis_il: 'ISTANBUL',
+        kalkis_ilce: 'ARNAVUTKOY',
+        kalkis_mah: 'ANADOLU MAH',
+        varis_il: 'ISTANBUL',
+        varis_ilce: 'ARNAVUTKOY',
+        varis_mah: 'ANADOLU MAH',
+        cikis_saati: '00:00',
+      },
+    ],
+    created_at: '16.03.2026',
+    durum: 'aktif',
+  },
+  {
+    id: '6',
+    kategori: 'isim_var_arac',
+    servis_turu: ['Personel'],
+    aciklama:
+      'Bulgurlu - Fistik Agaci - Uskudar - Taksim guzergahinda personel servisi.',
+    ilan_veren: 'Ege Trans',
+    guzergahlar: [
+      {
+        giris_saati: '08:30',
+        kalkis_il: 'ISTANBUL',
+        kalkis_ilce: 'USKUDAR',
+        kalkis_mah: 'BULGURLU MAH',
+        varis_il: 'ISTANBUL',
+        varis_ilce: 'BEYOGLU',
+        varis_mah: 'GUMUSSUYU MAH',
+        cikis_saati: '17:00',
+      },
+    ],
+    created_at: '13.02.2026',
+    durum: 'aktif',
+  },
+  {
+    id: '7',
+    kategori: 'soforum_is',
+    servis_turu: ['Personel'],
+    aciklama:
+      'SRC2 belgeli tecrubeli sofor is ariyor. Personel ve okul servisi deneyimi mevcut.',
+    ilan_veren: 'Bireysel Sofor',
+    guzergahlar: [
+      {
+        giris_saati: '07:00',
+        kalkis_il: 'ISTANBUL',
+        kalkis_ilce: 'PENDIK',
+        kalkis_mah: 'YENISEHIR MAH',
+        varis_il: 'ISTANBUL',
+        varis_ilce: 'KADIKOY',
+        varis_mah: 'MODA MAH',
+        cikis_saati: '17:00',
+      },
+    ],
+    created_at: '10.03.2026',
+    durum: 'aktif',
+  },
+  {
+    id: '8',
+    kategori: 'hostes_ariyorum',
+    servis_turu: ['Personel'],
+    aciklama:
+      'Personel servisimizde calisacak prezentabl iletisim becerileri kuvvetli hostes aranmaktadir.',
+    ilan_veren: 'City Turizm',
+    guzergahlar: [
+      {
+        giris_saati: '07:30',
+        kalkis_il: 'ISTANBUL',
+        kalkis_ilce: 'KADIKOY',
+        kalkis_mah: 'BOSTANCI MAH',
+        varis_il: 'ISTANBUL',
+        varis_ilce: 'SARIYER',
+        varis_mah: 'MASLAK MAH',
+        cikis_saati: '17:00',
+      },
+    ],
+    created_at: '12.03.2026',
+    durum: 'aktif',
+  },
+  {
+    id: '9',
+    kategori: 'isim_var_arac',
+    servis_turu: ['Okul'],
+    aciklama:
+      'Devlet okulu lise servisidir. Cekmekoy baslar Soganlik koprusu okula indirir.',
+    ilan_veren: 'Can Orcul Turizm',
+    guzergahlar: [
+      {
+        giris_saati: '07:30',
+        kalkis_il: 'ISTANBUL',
+        kalkis_ilce: 'CEKMEKOY',
+        kalkis_mah: 'MIMAR SINAN MAH',
+        varis_il: 'ISTANBUL',
+        varis_ilce: 'KARTAL',
+        varis_mah: 'ESENTEPE MAH',
+        cikis_saati: '15:10',
+      },
+    ],
+    created_at: '16.03.2026',
+    durum: 'aktif',
+  },
+  {
+    id: '10',
+    kategori: 'aracim_var_is',
+    servis_turu: ['Personel'],
+    aciklama:
+      '2022 model 16+1 Mercedes Sprinter aracimla personel servisi isi ariyorum. Tum evraklar tam.',
+    ilan_veren: 'Bireysel Tasimaci',
+    guzergahlar: [
+      {
+        giris_saati: '07:00',
+        kalkis_il: 'ISTANBUL',
+        kalkis_ilce: 'MALTEPE',
+        kalkis_mah: 'BAGLARBASI MAH',
+        varis_il: 'ISTANBUL',
+        varis_ilce: 'BESIKTAS',
+        varis_mah: 'LEVENT MAH',
+        cikis_saati: '18:00',
+      },
+    ],
+    created_at: '14.03.2026',
+    durum: 'aktif',
+  },
+  {
+    id: '11',
+    kategori: 'hostesim_is',
+    servis_turu: ['Personel'],
+    aciklama:
+      'Deneyimli hostes is ariyor. 3 yil personel servisi deneyimi var. Sabah aksam vardiya uygundur.',
+    ilan_veren: 'Bireysel Hostes',
+    guzergahlar: [
+      {
+        giris_saati: '07:00',
+        kalkis_il: 'ISTANBUL',
+        kalkis_ilce: 'USKUDAR',
+        kalkis_mah: 'ALTUNIZADE MAH',
+        varis_il: 'ISTANBUL',
+        varis_ilce: 'SARIYER',
+        varis_mah: 'MASLAK MAH',
+        cikis_saati: '17:00',
+      },
+    ],
+    created_at: '11.03.2026',
+    durum: 'aktif',
+  },
+  {
+    id: '12',
+    kategori: 'isim_var_arac',
+    servis_turu: ['Personel'],
+    aciklama:
+      'Pendik koprusu 07:45 baslar 08:50 giris. Aksam 18:00 cikis. 22 gun.',
+    ilan_veren: 'City Turizm',
+    guzergahlar: [
+      {
+        giris_saati: '09:00',
+        kalkis_il: 'ISTANBUL',
+        kalkis_ilce: 'PENDIK',
+        kalkis_mah: 'CINARDERE MAH',
+        varis_il: 'ISTANBUL',
+        varis_ilce: 'UMRANIYE',
+        varis_mah: 'YAMANEVLER MAH',
+        cikis_saati: '18:00',
+      },
+    ],
+    created_at: '16.03.2026',
+    durum: 'aktif',
+  },
+];
