@@ -1,5 +1,6 @@
-import React from 'react';
-import { Truck, LogOut, User, LayoutDashboard } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Truck, LogOut, LayoutDashboard } from 'lucide-react';
+import { kullaniciSayisi } from '../../lib/auth';
 
 interface HeaderProps {
   isLoggedIn: boolean;
@@ -16,20 +17,28 @@ export default function Header({
   onIlanEkle,
   onGoPanel,
 }: HeaderProps) {
+  const [sayi, setSayi] = useState<number | null>(null);
+
+  useEffect(() => {
+    kullaniciSayisi().then(({ count }) => {
+      if (count !== null) setSayi(count);
+    });
+  }, []);
+
   return (
     <header>
       <div className="bg-[#1a3c6e] text-white text-center py-2 text-sm font-medium">
         Sistemde Kayitli Kisi Sayisi:{' '}
-        <span className="font-bold text-lg ml-1">65.264</span>
+        <span className="font-bold text-lg ml-1">
+          {sayi !== null ? sayi.toLocaleString('tr-TR') : '...'}
+        </span>
       </div>
 
       <div className="bg-white shadow-md px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Truck className="text-[#1a3c6e]" size={32} />
-            <span className="text-[#1a3c6e] font-bold text-xl">
-              Servis İlanlari
-            </span>
+            <span className="text-[#1a3c6e] font-bold text-xl">Servis İlanları</span>
           </div>
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
@@ -77,36 +86,11 @@ export default function Header({
 
       <nav className="bg-[#1a3c6e] px-4">
         <div className="max-w-7xl mx-auto flex items-center gap-8">
-          <a
-            href="#"
-            className="text-white text-sm py-3 hover:underline transition"
-          >
-            Anasayfa
-          </a>
-          <a
-            href="#"
-            className="text-white text-sm py-3 hover:underline transition"
-          >
-            Hakkimizda
-          </a>
-          <a
-            href="#"
-            className="text-white text-sm py-3 hover:underline transition"
-          >
-            Nasil Isliyor
-          </a>
-          <a
-            href="#"
-            className="text-white text-sm py-3 hover:underline transition"
-          >
-            S.S.S
-          </a>
-          <a
-            href="#"
-            className="text-white text-sm py-3 hover:underline transition"
-          >
-            Iletisim
-          </a>
+          <a href="#" className="text-white text-sm py-3 hover:underline transition">Anasayfa</a>
+          <a href="#" className="text-white text-sm py-3 hover:underline transition">Hakkimizda</a>
+          <a href="#" className="text-white text-sm py-3 hover:underline transition">Nasil Isliyor</a>
+          <a href="#" className="text-white text-sm py-3 hover:underline transition">S.S.S</a>
+          <a href="#" className="text-white text-sm py-3 hover:underline transition">Iletisim</a>
         </div>
       </nav>
     </header>
