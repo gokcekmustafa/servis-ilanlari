@@ -1,17 +1,13 @@
 import { supabase } from './supabase';
 
-function telefonToEmail(telefon: string): string {
-  const temiz = telefon.replace(/\s/g, '').replace(/[^0-9]/g, '');
-  return `user${temiz}@salonum.site`;
-}
-
-export async function girisYap(telefon: string, sifre: string) {
-  const email = telefonToEmail(telefon);
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password: sifre,
-  });
-  return { data, error };
+// Basit hash fonksiyonu
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + 'servis-ilanlari-salt');
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 export async function kayitOl(
@@ -23,40 +19,67 @@ export async function kayitOl(
 ) {
   const temiz = telefon.replace(/\s/g, '').replace(/[^0-9]/g, '');
 
-  const { data: mevcutKullanici } = await supabase
+  // Aynı telefon var mı kontrol et
+  const { data: mevcut } = await supabase
     .from('profiles')
     .select('id')
-    .eq('phone', temiz)
+    .eq('phone_number', temiz)
     .single();
 
-  if (mevcutKullanici) {
+  if (mevcut) {
     return { data: null, error: { message: 'Bu telefon numarasi ile zaten kayit olunmus.' } };
   }
 
-  const email = telefonToEmail(telefon);
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password: sifre,
-    options: {
-      data: {
-        full_name: fullName,
-        phone: temiz,
-        type,
-        il,
-      },
-    },
-  });
+  const hash = await hashPassword(sifre);
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .insert([{
+      id: crypto.randomUUID(),
+      phone_number: temiz,
+      full_name: fullName,
+      type,
+      il,
+      password_hash: hash,
+    }])
+    .select()
+    .single();
+
+  if (!error && data) {
+    localStorage.setItem('user', JSON.stringify(data));
+  }
+
   return { data, error };
 }
 
+export async function girisYap(telefon: string, sifre: string) {
+  const temiz = telefon.replace(/\s/g, '').replace(/[^0-9]/g, '');
+  const hash = await hashPassword(sifre);
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('phone_number', temiz)
+    .eq('password_hash', hash)
+    .single();
+
+  if (error || !data) {
+    return { data: null, error: { message: 'Telefon numarasi veya sifre hatali.' } };
+  }
+
+  localStorage.setItem('user', JSON.stringify(data));
+  return { data, error: null };
+}
+
 export async function cikisYap() {
-  const { error } = await supabase.auth.signOut();
-  return { error };
+  localStorage.removeItem('user');
+  return { error: null };
 }
 
 export async function mevcutKullanici() {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  const user = localStorage.getItem('user');
+  if (!user) return null;
+  return JSON.parse(user);
 }
 
 export async function kullaniciSayisi() {
