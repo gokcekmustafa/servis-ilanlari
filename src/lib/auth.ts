@@ -1,9 +1,8 @@
 import { supabase } from './supabase';
 
-// Telefonu email formatına çevir
 function telefonToEmail(telefon: string): string {
   const temiz = telefon.replace(/\s/g, '').replace(/[^0-9]/g, '');
-  return `${temiz}@servis-ilanlari.com`;
+  return `user${temiz}@salonum.site`;
 }
 
 export async function girisYap(telefon: string, sifre: string) {
@@ -22,26 +21,26 @@ export async function kayitOl(
   type: string,
   il: string
 ) {
-  const email = telefonToEmail(telefon);
+  const temiz = telefon.replace(/\s/g, '').replace(/[^0-9]/g, '');
 
-  // Aynı telefon ile daha önce kayıt olunmuş mu kontrol et
   const { data: mevcutKullanici } = await supabase
     .from('profiles')
     .select('id')
-    .eq('phone', telefon)
+    .eq('phone', temiz)
     .single();
 
   if (mevcutKullanici) {
     return { data: null, error: { message: 'Bu telefon numarasi ile zaten kayit olunmus.' } };
   }
 
+  const email = telefonToEmail(telefon);
   const { data, error } = await supabase.auth.signUp({
     email,
     password: sifre,
     options: {
       data: {
         full_name: fullName,
-        phone: telefon,
+        phone: temiz,
         type,
         il,
       },
