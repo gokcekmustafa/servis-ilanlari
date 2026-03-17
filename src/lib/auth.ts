@@ -76,7 +76,7 @@ export async function cikisYap() {
   return { error: null };
 }
 
-export async function mevcutKullanici() {
+export function mevcutKullanici() {
   const user = localStorage.getItem('user');
   if (!user) return null;
   return JSON.parse(user);
