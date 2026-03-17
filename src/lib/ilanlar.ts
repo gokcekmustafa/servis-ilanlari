@@ -31,7 +31,10 @@ export async function ilanEkle(ilan: {
 }
 
 export async function ilanSil(id: string) {
-  const { error } = await supabase.from('ilanlar').delete().eq('id', id);
+  const { error } = await supabase
+    .from('ilanlar')
+    .delete()
+    .eq('id', id);
   return { error };
 }
 
