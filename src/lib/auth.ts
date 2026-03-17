@@ -40,3 +40,9 @@ export async function mevcutKullanici() {
   } = await supabase.auth.getUser();
   return user;
 }
+export async function kullaniciSayisi() {
+  const { count, error } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true });
+  return { count, error };
+}
