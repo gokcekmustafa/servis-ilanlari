@@ -8,7 +8,7 @@ import IlanDetayPage from './pages/IlanDetayPage';
 import IlanEklePage from './pages/IlanEklePage';
 import PanelPage from './pages/PanelPage';
 import { Ilan } from './types';
-import { supabase } from './lib/supabase';
+import { mevcutKullanici, cikisYap } from './lib/auth';
 
 type Page = 'home' | 'login' | 'register' | 'detay' | 'ilan-ekle' | 'panel';
 
@@ -21,28 +21,25 @@ export default function App() {
   const [yukleniyor, setYukleniyor] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
-      setUserId(session?.user?.id || null);
-      setYukleniyor(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session);
-      setUserId(session?.user?.id || null);
-    });
-
-    return () => subscription.unsubscribe();
+    const user = mevcutKullanici();
+    if (user) {
+      setIsLoggedIn(true);
+      setUserId(user.id);
+    }
+    setYukleniyor(false);
   }, []);
 
   const handleLogin = () => {
+    const user = mevcutKullanici();
+    if (user) {
+      setIsLoggedIn(true);
+      setUserId(user.id);
+    }
     setCurrentPage('home');
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await cikisYap();
     setIsLoggedIn(false);
     setUserId(null);
     setCurrentPage('home');
