@@ -61,7 +61,7 @@ export default function HomePage({
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="flex flex-col lg:flex-row gap-6">
-        <div className="w-64 flex-shrink-0">
+        <div className="w-full lg:w-64 flex-shrink-0">
           <Sidebar
             selectedKategoriler={selectedKategoriler}
             onKategoriChange={setSelectedKategoriler}
