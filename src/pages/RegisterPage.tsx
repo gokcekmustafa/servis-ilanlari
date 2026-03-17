@@ -16,7 +16,7 @@ export default function RegisterPage({
     ad: '',
     firma: '',
     vergiNo: '',
-    email: '',
+    telefon: '',
     sifre: '',
     sifre2: '',
     il: '',
@@ -25,17 +25,19 @@ export default function RegisterPage({
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target as HTMLInputElement;
     const value = target.type === 'checkbox' ? target.checked : target.value;
     setForm({ ...form, [target.name]: value });
   };
 
   const handleRegister = async () => {
-    if (!form.email || !form.sifre || !form.sifre2) {
+    if (!form.telefon || !form.sifre || !form.sifre2) {
       setHata('Lutfen tum alanlari doldurun.');
+      return;
+    }
+    if (form.telefon.length < 10) {
+      setHata('Gecerli bir telefon numarasi girin.');
       return;
     }
     if (form.sifre !== form.sifre2) {
@@ -54,7 +56,7 @@ export default function RegisterPage({
     setHata('');
     const fullName = tab === 'bireysel' ? form.ad : form.firma;
     const { error } = await kayitOl(
-      form.email,
+      form.telefon,
       form.sifre,
       fullName,
       tab,
@@ -69,16 +71,22 @@ export default function RegisterPage({
   };
 
   const iller = [
-    'Istanbul',
-    'Ankara',
-    'Izmir',
-    'Bursa',
-    'Antalya',
-    'Adana',
-    'Konya',
-    'Kocaeli',
-    'Mersin',
-    'Gaziantep',
+    'Adana', 'Adiyaman', 'Afyonkarahisar', 'Agri', 'Aksaray',
+    'Amasya', 'Ankara', 'Antalya', 'Ardahan', 'Artvin',
+    'Aydin', 'Balikesir', 'Bartin', 'Batman', 'Bayburt',
+    'Bilecik', 'Bingol', 'Bitlis', 'Bolu', 'Burdur',
+    'Bursa', 'Canakkale', 'Cankiri', 'Corum', 'Denizli',
+    'Diyarbakir', 'Duzce', 'Edirne', 'Elazig', 'Erzincan',
+    'Erzurum', 'Eskisehir', 'Gaziantep', 'Giresun', 'Gumushane',
+    'Hakkari', 'Hatay', 'Igdir', 'Isparta', 'Istanbul',
+    'Izmir', 'Kahramanmaras', 'Karabuk', 'Karaman', 'Kars',
+    'Kastamonu', 'Kayseri', 'Kilis', 'Kirikkale', 'Kirklareli',
+    'Kirsehir', 'Kocaeli', 'Konya', 'Kutahya', 'Malatya',
+    'Manisa', 'Mardin', 'Mersin', 'Mugla', 'Mus',
+    'Nevsehir', 'Nigde', 'Ordu', 'Osmaniye', 'Rize',
+    'Sakarya', 'Samsun', 'Sanliurfa', 'Siirt', 'Sinop',
+    'Sirnak', 'Sivas', 'Tekirdag', 'Tokat', 'Trabzon',
+    'Tunceli', 'Usak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak',
   ];
 
   return (
@@ -87,9 +95,7 @@ export default function RegisterPage({
         <div className="flex flex-col items-center mb-6">
           <div className="flex items-center gap-2 mb-2">
             <Truck className="text-[#1a3c6e]" size={32} />
-            <span className="text-[#1a3c6e] font-bold text-xl">
-              Servis İlanları
-            </span>
+            <span className="text-[#1a3c6e] font-bold text-xl">Servis İlanları</span>
           </div>
           <p className="text-gray-500 text-sm">Yeni hesap olusturun</p>
         </div>
@@ -126,9 +132,7 @@ export default function RegisterPage({
         <div className="flex flex-col gap-4">
           {tab === 'bireysel' ? (
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
-                Ad Soyad
-              </label>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Ad Soyad</label>
               <input
                 name="ad"
                 value={form.ad}
@@ -140,9 +144,7 @@ export default function RegisterPage({
           ) : (
             <>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  Firma Adi
-                </label>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Firma Adi</label>
                 <input
                   name="firma"
                   value={form.firma}
@@ -152,9 +154,7 @@ export default function RegisterPage({
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  Vergi No
-                </label>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Vergi No</label>
                 <input
                   name="vergiNo"
                   value={form.vergiNo}
@@ -168,22 +168,20 @@ export default function RegisterPage({
 
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">
-              E-posta
+              Telefon Numarasi <span className="text-red-500">*</span>
             </label>
             <input
-              name="email"
-              type="email"
-              value={form.email}
+              name="telefon"
+              type="tel"
+              value={form.telefon}
               onChange={handleChange}
-              placeholder="ornek@email.com"
+              placeholder="05XX XXX XX XX"
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
             />
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">
-              Il
-            </label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Il</label>
             <select
               name="il"
               value={form.il}
@@ -192,16 +190,14 @@ export default function RegisterPage({
             >
               <option value="">Il Seciniz</option>
               {iller.map((il) => (
-                <option key={il} value={il}>
-                  {il}
-                </option>
+                <option key={il} value={il}>{il}</option>
               ))}
             </select>
           </div>
 
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">
-              Sifre
+              Sifre <span className="text-red-500">*</span>
             </label>
             <input
               name="sifre"
@@ -215,7 +211,7 @@ export default function RegisterPage({
 
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">
-              Sifre Tekrar
+              Sifre Tekrar <span className="text-red-500">*</span>
             </label>
             <input
               name="sifre2"
