@@ -11,7 +11,7 @@ export default function LoginPage({
   onGoRegister: () => void;
   onGoHome: () => void;
 }) {
-  const [email, setEmail] = useState('');
+  const [telefon, setTelefon] = useState('');
   const [sifre, setSifre] = useState('');
   const [beniHatirla, setBeniHatirla] = useState(false);
   const [goster, setGoster] = useState(false);
@@ -19,16 +19,16 @@ export default function LoginPage({
   const [yukleniyor, setYukleniyor] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !sifre) {
-      setHata('Email ve sifre alanlari bos birakilamaz.');
+    if (!telefon || !sifre) {
+      setHata('Telefon ve sifre alanlari bos birakilamaz.');
       return;
     }
     setYukleniyor(true);
     setHata('');
-    const { error } = await girisYap(email, sifre);
+    const { error } = await girisYap(telefon, sifre);
     setYukleniyor(false);
     if (error) {
-      setHata('Email veya sifre hatali. Lutfen tekrar deneyin.');
+      setHata('Telefon numarasi veya sifre hatali.');
       return;
     }
     onLogin();
@@ -40,9 +40,7 @@ export default function LoginPage({
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-2 mb-2">
             <Truck className="text-[#1a3c6e]" size={36} />
-            <span className="text-[#1a3c6e] font-bold text-2xl">
-              Servis İlanları
-            </span>
+            <span className="text-[#1a3c6e] font-bold text-2xl">Servis İlanları</span>
           </div>
           <p className="text-gray-500 text-sm">Hesabiniza giris yapin</p>
         </div>
@@ -56,13 +54,13 @@ export default function LoginPage({
         <div className="flex flex-col gap-4">
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">
-              E-posta
+              Telefon Numarasi
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="ornek@email.com"
+              type="tel"
+              value={telefon}
+              onChange={(e) => setTelefon(e.target.value)}
+              placeholder="05XX XXX XX XX"
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
             />
           </div>
