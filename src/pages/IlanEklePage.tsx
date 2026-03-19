@@ -4,6 +4,7 @@ import { KategoriType } from '../types';
 import { ilanEkle } from '../lib/ilanlar';
 import { mevcutKullanici } from '../lib/auth';
 import { ilceler } from '../data/ilceler';
+import { mahalleler } from '../data/mahalleler';
 
 const kategoriler = [
   { id: 'isim_var_arac' as KategoriType, label: 'Isim Var Arac Ariyorum', color: 'border-blue-400 bg-blue-50 text-blue-700' },
@@ -103,6 +104,8 @@ export default function IlanEklePage({
 
   const kalkisIlceleri = form.kalkis_il ? (ilceler[form.kalkis_il] || []) : [];
   const varisIlceleri = form.varis_il ? (ilceler[form.varis_il] || []) : [];
+  const kalkasMahalleleri = form.kalkis_il === 'Istanbul' && form.kalkis_ilce ? (mahalleler[form.kalkis_ilce] || []) : [];
+  const varisMahalleleri = form.varis_il === 'Istanbul' && form.varis_ilce ? (mahalleler[form.varis_ilce] || []) : [];
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
@@ -245,7 +248,7 @@ export default function IlanEklePage({
                   <label className="text-xs text-gray-500 mb-1 block">Il</label>
                   <select
                     value={form.kalkis_il}
-                    onChange={(e) => setForm({ ...form, kalkis_il: e.target.value, kalkis_ilce: '' })}
+                    onChange={(e) => setForm({ ...form, kalkis_il: e.target.value, kalkis_ilce: '', kalkis_mah: '' })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
                   >
                     <option value="">Secin</option>
@@ -258,7 +261,7 @@ export default function IlanEklePage({
                   <label className="text-xs text-gray-500 mb-1 block">Ilce</label>
                   <select
                     value={form.kalkis_ilce}
-                    onChange={(e) => setForm({ ...form, kalkis_ilce: e.target.value })}
+                    onChange={(e) => setForm({ ...form, kalkis_ilce: e.target.value, kalkis_mah: '' })}
                     disabled={!form.kalkis_il || kalkisIlceleri.length === 0}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e] disabled:bg-gray-100"
                   >
@@ -270,12 +273,26 @@ export default function IlanEklePage({
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">Mahalle</label>
-                  <input
-                    value={form.kalkis_mah}
-                    onChange={(e) => setForm({ ...form, kalkis_mah: e.target.value })}
-                    placeholder="Mahalle"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
-                  />
+                  {form.kalkis_il === 'Istanbul' ? (
+                    <select
+                      value={form.kalkis_mah}
+                      onChange={(e) => setForm({ ...form, kalkis_mah: e.target.value })}
+                      disabled={!form.kalkis_ilce || kalkasMahalleleri.length === 0}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e] disabled:bg-gray-100"
+                    >
+                      <option value="">Secin</option>
+                      {kalkasMahalleleri.map((mah) => (
+                        <option key={mah} value={mah}>{mah}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={form.kalkis_mah}
+                      onChange={(e) => setForm({ ...form, kalkis_mah: e.target.value })}
+                      placeholder="Mahalle"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -289,7 +306,7 @@ export default function IlanEklePage({
                   <label className="text-xs text-gray-500 mb-1 block">Il</label>
                   <select
                     value={form.varis_il}
-                    onChange={(e) => setForm({ ...form, varis_il: e.target.value, varis_ilce: '' })}
+                    onChange={(e) => setForm({ ...form, varis_il: e.target.value, varis_ilce: '', varis_mah: '' })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
                   >
                     <option value="">Secin</option>
@@ -302,7 +319,7 @@ export default function IlanEklePage({
                   <label className="text-xs text-gray-500 mb-1 block">Ilce</label>
                   <select
                     value={form.varis_ilce}
-                    onChange={(e) => setForm({ ...form, varis_ilce: e.target.value })}
+                    onChange={(e) => setForm({ ...form, varis_ilce: e.target.value, varis_mah: '' })}
                     disabled={!form.varis_il || varisIlceleri.length === 0}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e] disabled:bg-gray-100"
                   >
@@ -314,12 +331,26 @@ export default function IlanEklePage({
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">Mahalle</label>
-                  <input
-                    value={form.varis_mah}
-                    onChange={(e) => setForm({ ...form, varis_mah: e.target.value })}
-                    placeholder="Mahalle"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
-                  />
+                  {form.varis_il === 'Istanbul' ? (
+                    <select
+                      value={form.varis_mah}
+                      onChange={(e) => setForm({ ...form, varis_mah: e.target.value })}
+                      disabled={!form.varis_ilce || varisMahalleleri.length === 0}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e] disabled:bg-gray-100"
+                    >
+                      <option value="">Secin</option>
+                      {varisMahalleleri.map((mah) => (
+                        <option key={mah} value={mah}>{mah}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={form.varis_mah}
+                      onChange={(e) => setForm({ ...form, varis_mah: e.target.value })}
+                      placeholder="Mahalle"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
+                    />
+                  )}
                 </div>
               </div>
             </div>
