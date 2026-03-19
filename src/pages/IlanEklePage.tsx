@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { KategoriType } from '../types';
+import { ilceler } from '../data/ilceler';
 import { ilanEkle } from '../lib/ilanlar';
 import { mevcutKullanici } from '../lib/auth';
 
