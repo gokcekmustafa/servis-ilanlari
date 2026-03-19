@@ -8,10 +8,21 @@ import IlanDetayPage from './pages/IlanDetayPage';
 import IlanEklePage from './pages/IlanEklePage';
 import PanelPage from './pages/PanelPage';
 import AdminPage from './pages/AdminPage';
+import HakkimizdaPage from './pages/HakkimizdaPage';
+import NasilIsliyorPage from './pages/NasilIsliyorPage';
+import SSSPage from './pages/SSSPage';
+import IletisimPage from './pages/IletisimPage';
+import KullanimKosullariPage from './pages/KullanimKosullariPage';
+import KisiselVerilerPage from './pages/KisiselVerilerPage';
+import KunyePage from './pages/KunyePage';
 import { Ilan } from './types';
 import { mevcutKullanici, cikisYap } from './lib/auth';
 
-type Page = 'home' | 'login' | 'register' | 'detay' | 'ilan-ekle' | 'panel' | 'admin';
+type Page =
+  | 'home' | 'login' | 'register' | 'detay' | 'ilan-ekle'
+  | 'panel' | 'admin' | 'hakkimizda' | 'nasil-isliyor'
+  | 'sss' | 'iletisim' | 'kullanim-kosullari'
+  | 'kisisel-veriler' | 'kunye';
 
 const ADMIN_TELEFON = '05369500280';
 
@@ -31,9 +42,7 @@ export default function App() {
       setUserId(user.id);
       const temiz = user.phone_number?.replace(/\s/g, '').replace(/[^0-9]/g, '');
       const adminTemiz = ADMIN_TELEFON.replace(/\s/g, '').replace(/[^0-9]/g, '');
-      if (temiz === adminTemiz) {
-        setIsAdmin(true);
-      }
+      if (temiz === adminTemiz) setIsAdmin(true);
     }
     setYukleniyor(false);
   }, []);
@@ -88,6 +97,11 @@ export default function App() {
     onLogout: handleLogout,
     onIlanEkle: handleIlanEkle,
     onGoPanel: () => isAdmin ? setCurrentPage('admin') : setCurrentPage('panel'),
+    onNavigate: (page: Page) => setCurrentPage(page),
+  };
+
+  const footerProps = {
+    onNavigate: (page: Page) => setCurrentPage(page),
   };
 
   if (yukleniyor) {
@@ -121,66 +135,85 @@ export default function App() {
     );
   }
 
+  const withLayout = (content: React.ReactNode) => (
+    <div className="min-h-screen bg-[#f8fafc]">
+      <Header {...headerProps} />
+      {content}
+      <Footer {...footerProps} />
+    </div>
+  );
+
   if (currentPage === 'detay' && selectedIlan) {
-    return (
-      <div className="min-h-screen bg-[#f8fafc]">
-        <Header {...headerProps} />
-        <IlanDetayPage
-          ilan={selectedIlan}
-          onGoBack={() => setCurrentPage(isAdmin ? 'admin' : 'home')}
-          onGoLogin={() => setCurrentPage('login')}
-          isLoggedIn={isLoggedIn}
-        />
-        <Footer />
-      </div>
+    return withLayout(
+      <IlanDetayPage
+        ilan={selectedIlan}
+        onGoBack={() => setCurrentPage(isAdmin ? 'admin' : 'home')}
+        onGoLogin={() => setCurrentPage('login')}
+        isLoggedIn={isLoggedIn}
+      />
     );
   }
 
   if (currentPage === 'ilan-ekle') {
-    return (
-      <div className="min-h-screen bg-[#f8fafc]">
-        <Header {...headerProps} />
-        <IlanEklePage
-          onGoBack={() => setCurrentPage('home')}
-          onSuccess={handleIlanSuccess}
-          userId={userId || ''}
-        />
-        <Footer />
-      </div>
+    return withLayout(
+      <IlanEklePage
+        onGoBack={() => setCurrentPage('home')}
+        onSuccess={handleIlanSuccess}
+        userId={userId || ''}
+      />
     );
   }
 
   if (currentPage === 'panel') {
-    return (
-      <div className="min-h-screen bg-[#f8fafc]">
-        <Header {...headerProps} />
-        <PanelPage
-          onLogout={handleLogout}
-          onIlanEkle={handleIlanEkle}
-          onIlanDetay={handleIlanDetay}
-          userId={userId || ''}
-        />
-        <Footer />
-      </div>
+    return withLayout(
+      <PanelPage
+        onLogout={handleLogout}
+        onIlanEkle={handleIlanEkle}
+        onIlanDetay={handleIlanDetay}
+        userId={userId || ''}
+      />
     );
   }
 
   if (currentPage === 'admin') {
-    return (
-      <div className="min-h-screen bg-[#f8fafc]">
-        <Header {...headerProps} />
-        <AdminPage
-          onLogout={handleLogout}
-          onIlanDetay={handleIlanDetay}
-        />
-        <Footer />
-      </div>
+    return withLayout(
+      <AdminPage
+        onLogout={handleLogout}
+        onIlanDetay={handleIlanDetay}
+      />
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      <Header {...headerProps} />
+  if (currentPage === 'hakkimizda') {
+    return withLayout(<HakkimizdaPage onGoBack={() => setCurrentPage('home')} />);
+  }
+
+  if (currentPage === 'nasil-isliyor') {
+    return withLayout(<NasilIsliyorPage onGoBack={() => setCurrentPage('home')} />);
+  }
+
+  if (currentPage === 'sss') {
+    return withLayout(<SSSPage onGoBack={() => setCurrentPage('home')} />);
+  }
+
+  if (currentPage === 'iletisim') {
+    return withLayout(<IletisimPage onGoBack={() => setCurrentPage('home')} />);
+  }
+
+  if (currentPage === 'kullanim-kosullari') {
+    return withLayout(<KullanimKosullariPage onGoBack={() => setCurrentPage('home')} />);
+  }
+
+  if (currentPage === 'kisisel-veriler') {
+    return withLayout(<KisiselVerilerPage onGoBack={() => setCurrentPage('home')} />);
+  }
+
+  if (currentPage === 'kunye') {
+    return withLayout(<KunyePage onGoBack={() => setCurrentPage('home')} />);
+  }
+
+  return withLayout(
+    <>
       {successMsg && (
         <div className="bg-green-500 text-white text-center py-3 text-sm font-medium">
           {successMsg}
@@ -190,7 +223,6 @@ export default function App() {
         onGoLogin={() => setCurrentPage('login')}
         onIlanDetay={handleIlanDetay}
       />
-      <Footer />
-    </div>
+    </>
   );
 }
