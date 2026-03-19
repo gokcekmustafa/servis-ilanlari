@@ -44,16 +44,7 @@ const kategoriler = [
 ];
 
 const servisTurleri = ['Personel', 'Okul', 'Turizm'];
-const iller = [
-  'Istanbul',
-  'Ankara',
-  'Izmir',
-  'Bursa',
-  'Antalya',
-  'Adana',
-  'Konya',
-  'Kocaeli',
-];
+const iller = Object.keys(ilceler);
 
 export default function IlanEklePage({
   onGoBack,
@@ -326,9 +317,8 @@ export default function IlanEklePage({
                     Il <span className="text-red-500">*</span>
                   </label>
                   <select
-                    value={form.kalkis_il}
-                    onChange={(e) =>
-                      setForm({ ...form, kalkis_il: e.target.value })
+  value={form.kalkis_il}
+  onChange={(e) => setForm({ ...form, kalkis_il: e.target.value, kalkis_ilce: '' })}
                     }
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
                   >
@@ -344,13 +334,17 @@ export default function IlanEklePage({
                   <label className="text-xs text-gray-500 mb-1 block">
                     Ilce
                   </label>
-                  <input
-                    value={form.kalkis_ilce}
-                    onChange={(e) =>
-                      setForm({ ...form, kalkis_ilce: e.target.value })
-                    }
-                    placeholder="Ilce"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
+                  <select
+  value={form.kalkis_ilce}
+  onChange={(e) => setForm({ ...form, kalkis_ilce: e.target.value })}
+  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
+  disabled={!form.kalkis_il}
+>
+  <option value="">Secin</option>
+  {form.kalkis_il && (ilceler[form.kalkis_il] || []).map((ilce) => (
+    <option key={ilce} value={ilce}>{ilce}</option>
+  ))}
+</select>
                   />
                 </div>
                 <div>
@@ -379,9 +373,8 @@ export default function IlanEklePage({
                     Il <span className="text-red-500">*</span>
                   </label>
                   <select
-                    value={form.varis_il}
-                    onChange={(e) =>
-                      setForm({ ...form, varis_il: e.target.value })
+  value={form.varis_il}
+  onChange={(e) => setForm({ ...form, varis_il: e.target.value, varis_ilce: '' })}
                     }
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
                   >
@@ -397,13 +390,17 @@ export default function IlanEklePage({
                   <label className="text-xs text-gray-500 mb-1 block">
                     Ilce
                   </label>
-                  <input
-                    value={form.varis_ilce}
-                    onChange={(e) =>
-                      setForm({ ...form, varis_ilce: e.target.value })
-                    }
-                    placeholder="Ilce"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
+                  <select
+  value={form.varis_ilce}
+  onChange={(e) => setForm({ ...form, varis_ilce: e.target.value })}
+  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
+  disabled={!form.varis_il}
+>
+  <option value="">Secin</option>
+  {form.varis_il && (ilceler[form.varis_il] || []).map((ilce) => (
+    <option key={ilce} value={ilce}>{ilce}</option>
+  ))}
+</select>
                   />
                 </div>
                 <div>
