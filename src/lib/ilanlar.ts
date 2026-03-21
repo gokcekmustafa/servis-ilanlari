@@ -47,7 +47,6 @@ export async function kullaniciIlanlari(userId: string) {
   return { data, error };
 }
 
-// ARAÇLAR
 export async function araclarGetir(userId: string) {
   const { data, error } = await supabase
     .from('araclar')
@@ -81,7 +80,6 @@ export async function aracSil(id: string) {
   return { error };
 }
 
-// FAVORİLER
 export async function favorileriGetir(userId: string) {
   const { data, error } = await supabase
     .from('favoriler')
@@ -118,7 +116,6 @@ export async function favoriKontrol(userId: string, ilanId: string) {
   return { isFavori: !!data, error };
 }
 
-// MESAJLAR
 export async function mesajGonder(mesaj: {
   gonderen_id: string;
   alan_id: string;
@@ -158,7 +155,6 @@ export async function mesajOkunduIsaretle(mesajId: string) {
   return { error };
 }
 
-// DESTEK
 export async function destekGonder(talep: {
   user_id: string;
   konu: string;
@@ -179,10 +175,18 @@ export async function destekTalepleriniGetir() {
   return { data, error };
 }
 
-export async function destekDurumGuncelle(id: string, durum: string) {
+export async function destekDurumGuncelle(id: string, durum: string, cevap?: string) {
+  const updates: any = { durum };
+  if (cevap !== undefined) {
+    updates.cevap = cevap;
+    updates.cevap_tarihi = new Date().toISOString();
+  }
+  if (durum === 'islemde' && !cevap) {
+    updates.cevap_tarihi = new Date().toISOString();
+  }
   const { error } = await supabase
     .from('destek')
-    .update({ durum })
+    .update(updates)
     .eq('id', id);
   return { error };
 }
