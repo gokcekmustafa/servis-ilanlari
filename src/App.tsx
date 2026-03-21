@@ -27,7 +27,8 @@ type Page =
 const ADMIN_TELEFON = '05369500280';
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('home');
+  const [currentPage, setCurrentPageState] = useState<Page>('home');
+  const [prevPage, setPrevPage] = useState<Page>('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -35,7 +36,19 @@ export default function App() {
   const [successMsg, setSuccessMsg] = useState('');
   const [yukleniyor, setYukleniyor] = useState(true);
 
+  const setCurrentPage = (page: Page) => {
+    setPrevPage(currentPage);
+    setCurrentPageState(page);
+    window.location.hash = page === 'home' ? '' : page;
+    window.scrollTo(0, 0);
+  };
+
   useEffect(() => {
+    const hash = window.location.hash.replace('#', '') as Page;
+    if (hash && hash !== '') {
+      setCurrentPageState(hash);
+    }
+
     const user = mevcutKullanici();
     if (user) {
       setIsLoggedIn(true);
@@ -45,6 +58,19 @@ export default function App() {
       if (temiz === adminTemiz) setIsAdmin(true);
     }
     setYukleniyor(false);
+  }, []);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '') as Page;
+      if (hash === '' || hash === 'home') {
+        setCurrentPageState('home');
+      } else {
+        setCurrentPageState(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   const handleLogin = () => {
@@ -90,6 +116,14 @@ export default function App() {
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
+  const goBack = () => {
+    if (prevPage) {
+      setCurrentPage(prevPage);
+    } else {
+      setCurrentPage('home');
+    }
+  };
+
   const headerProps = {
     isLoggedIn,
     isAdmin,
@@ -97,11 +131,11 @@ export default function App() {
     onLogout: handleLogout,
     onIlanEkle: handleIlanEkle,
     onGoPanel: () => isAdmin ? setCurrentPage('admin') : setCurrentPage('panel'),
-    onNavigate: (page: Page) => setCurrentPage(page),
+    onNavigate: (page: any) => setCurrentPage(page),
   };
 
   const footerProps = {
-    onNavigate: (page: Page) => setCurrentPage(page),
+    onNavigate: (page: any) => setCurrentPage(page),
   };
 
   if (yukleniyor) {
@@ -147,7 +181,7 @@ export default function App() {
     return withLayout(
       <IlanDetayPage
         ilan={selectedIlan}
-        onGoBack={() => setCurrentPage(isAdmin ? 'admin' : 'home')}
+        onGoBack={goBack}
         onGoLogin={() => setCurrentPage('login')}
         isLoggedIn={isLoggedIn}
       />
@@ -157,7 +191,7 @@ export default function App() {
   if (currentPage === 'ilan-ekle') {
     return withLayout(
       <IlanEklePage
-        onGoBack={() => setCurrentPage('home')}
+        onGoBack={goBack}
         onSuccess={handleIlanSuccess}
         userId={userId || ''}
       />
@@ -184,33 +218,13 @@ export default function App() {
     );
   }
 
-  if (currentPage === 'hakkimizda') {
-    return withLayout(<HakkimizdaPage onGoBack={() => setCurrentPage('home')} />);
-  }
-
-  if (currentPage === 'nasil-isliyor') {
-    return withLayout(<NasilIsliyorPage onGoBack={() => setCurrentPage('home')} />);
-  }
-
-  if (currentPage === 'sss') {
-    return withLayout(<SSSPage onGoBack={() => setCurrentPage('home')} />);
-  }
-
-  if (currentPage === 'iletisim') {
-    return withLayout(<IletisimPage onGoBack={() => setCurrentPage('home')} />);
-  }
-
-  if (currentPage === 'kullanim-kosullari') {
-    return withLayout(<KullanimKosullariPage onGoBack={() => setCurrentPage('home')} />);
-  }
-
-  if (currentPage === 'kisisel-veriler') {
-    return withLayout(<KisiselVerilerPage onGoBack={() => setCurrentPage('home')} />);
-  }
-
-  if (currentPage === 'kunye') {
-    return withLayout(<KunyePage onGoBack={() => setCurrentPage('home')} />);
-  }
+  if (currentPage === 'hakkimizda') return withLayout(<HakkimizdaPage onGoBack={goBack} />);
+  if (currentPage === 'nasil-isliyor') return withLayout(<NasilIsliyorPage onGoBack={goBack} />);
+  if (currentPage === 'sss') return withLayout(<SSSPage onGoBack={goBack} />);
+  if (currentPage === 'iletisim') return withLayout(<IletisimPage onGoBack={goBack} />);
+  if (currentPage === 'kullanim-kosullari') return withLayout(<KullanimKosullariPage onGoBack={goBack} />);
+  if (currentPage === 'kisisel-veriler') return withLayout(<KisiselVerilerPage onGoBack={goBack} />);
+  if (currentPage === 'kunye') return withLayout(<KunyePage onGoBack={goBack} />);
 
   return withLayout(
     <>
