@@ -58,23 +58,17 @@ function IlIlceMahalle({ il, ilce, mah, onIlChange, onIlceChange, onMahChange }:
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       <div>
         <label className="text-xs text-gray-500 mb-1 block">Sehir</label>
-        <select
-          value={il}
-          onChange={(e) => { onIlChange(e.target.value); onIlceChange(''); onMahChange(''); }}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-        >
+        <select value={il} onChange={(e) => onIlChange(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
           <option value="">Il Sec</option>
           {tumIller.map((i) => <option key={i} value={i}>{i}</option>)}
         </select>
       </div>
       <div>
         <label className="text-xs text-gray-500 mb-1 block">Ilce</label>
-        <select
-          value={ilce}
-          onChange={(e) => { onIlceChange(e.target.value); onMahChange(''); }}
+        <select value={ilce} onChange={(e) => onIlceChange(e.target.value)}
           disabled={!il}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
-        >
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100">
           <option value="">Ilce Sec</option>
           {ilceleri.map((i) => <option key={i} value={i}>{i}</option>)}
         </select>
@@ -82,31 +76,25 @@ function IlIlceMahalle({ il, ilce, mah, onIlChange, onIlceChange, onMahChange }:
       <div>
         <label className="text-xs text-gray-500 mb-1 block">Mahalle</label>
         {il === 'Istanbul' ? (
-          <select
-            value={mah}
-            onChange={(e) => onMahChange(e.target.value)}
+          <select value={mah} onChange={(e) => onMahChange(e.target.value)}
             disabled={!ilce}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
-          >
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100">
             <option value="">Mahalle Sec</option>
             {mahalleleri.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
         ) : (
-          <input
-            value={mah}
-            onChange={(e) => onMahChange(e.target.value)}
+          <input value={mah} onChange={(e) => onMahChange(e.target.value)}
             placeholder="Mahalle"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-          />
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
         )}
       </div>
     </div>
   );
 }
 
-function GuzergahSatiri({ guzergah, index, onChange, onRemove, showRemove }: {
+function GuzergahSatiri({ guzergah, index, onGuncelle, onRemove, showRemove }: {
   guzergah: Guzergah; index: number;
-  onChange: (index: number, field: string, value: string) => void;
+  onGuncelle: (index: number, yeniGuzergah: Guzergah) => void;
   onRemove: (index: number) => void;
   showRemove: boolean;
 }) {
@@ -124,13 +112,13 @@ function GuzergahSatiri({ guzergah, index, onChange, onRemove, showRemove }: {
         <div>
           <label className="text-xs text-gray-500 mb-1 block">Giris Saati</label>
           <input type="time" value={guzergah.giris_saati}
-            onChange={(e) => onChange(index, 'giris_saati', e.target.value)}
+            onChange={(e) => onGuncelle(index, { ...guzergah, giris_saati: e.target.value })}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
         </div>
         <div>
           <label className="text-xs text-gray-500 mb-1 block">Cikis Saati</label>
           <input type="time" value={guzergah.cikis_saati}
-            onChange={(e) => onChange(index, 'cikis_saati', e.target.value)}
+            onChange={(e) => onGuncelle(index, { ...guzergah, cikis_saati: e.target.value })}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
         </div>
       </div>
@@ -138,18 +126,18 @@ function GuzergahSatiri({ guzergah, index, onChange, onRemove, showRemove }: {
         <p className="text-xs font-semibold text-gray-500 mb-2">Kalkis</p>
         <IlIlceMahalle
           il={guzergah.kalkis_il} ilce={guzergah.kalkis_ilce} mah={guzergah.kalkis_mah}
-          onIlChange={(v) => { onChange(index, 'kalkis_il', v); onChange(index, 'kalkis_ilce', ''); onChange(index, 'kalkis_mah', ''); }}
-          onIlceChange={(v) => { onChange(index, 'kalkis_ilce', v); onChange(index, 'kalkis_mah', ''); }}
-          onMahChange={(v) => onChange(index, 'kalkis_mah', v)}
+          onIlChange={(v) => onGuncelle(index, { ...guzergah, kalkis_il: v, kalkis_ilce: '', kalkis_mah: '' })}
+          onIlceChange={(v) => onGuncelle(index, { ...guzergah, kalkis_ilce: v, kalkis_mah: '' })}
+          onMahChange={(v) => onGuncelle(index, { ...guzergah, kalkis_mah: v })}
         />
       </div>
       <div>
         <p className="text-xs font-semibold text-gray-500 mb-2">Varis</p>
         <IlIlceMahalle
           il={guzergah.varis_il} ilce={guzergah.varis_ilce} mah={guzergah.varis_mah}
-          onIlChange={(v) => { onChange(index, 'varis_il', v); onChange(index, 'varis_ilce', ''); onChange(index, 'varis_mah', ''); }}
-          onIlceChange={(v) => { onChange(index, 'varis_ilce', v); onChange(index, 'varis_mah', ''); }}
-          onMahChange={(v) => onChange(index, 'varis_mah', v)}
+          onIlChange={(v) => onGuncelle(index, { ...guzergah, varis_il: v, varis_ilce: '', varis_mah: '' })}
+          onIlceChange={(v) => onGuncelle(index, { ...guzergah, varis_ilce: v, varis_mah: '' })}
+          onMahChange={(v) => onGuncelle(index, { ...guzergah, varis_mah: v })}
         />
       </div>
     </div>
@@ -186,25 +174,17 @@ function KonumBilgisi({ il, ilce, mah, giris, cikis, onIlChange, onIlceChange, o
   );
 }
 
-export default function IlanEklePage({
-  onGoBack,
-  onSuccess,
-  userId,
-}: {
-  onGoBack: () => void;
-  onSuccess: () => void;
-  userId: string;
+export default function IlanEklePage({ onGoBack, onSuccess, userId }: {
+  onGoBack: () => void; onSuccess: () => void; userId: string;
 }) {
   const [adim, setAdim] = useState<number>(() => {
     const saved = sessionStorage.getItem('ilan-ekle-adim');
     return saved ? parseInt(saved) : 1;
   });
-
   const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(() => {
     const saved = sessionStorage.getItem('ilan-ekle-kategori');
     return saved as KategoriType | null;
   });
-
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
   const [guzergahlar, setGuzergahlar] = useState<Guzergah[]>([bosGuzergah()]);
@@ -222,43 +202,32 @@ export default function IlanEklePage({
     ucret: '', km: '', calisılacak_gun: '', servis_suresi: '',
     aracki_yolcu_sayisi: '', servis_turu: [] as string[],
   });
-
   const [aracimVarIs, setAracimVarIs] = useState({ secilen_arac: '', calisma_yerleri: '' });
   const [kullaniciaraclari, setKullaniciaraclari] = useState<any[]>([]);
-
   const [soforAriyorum, setSoforAriyorum] = useState({
     odeme_sekli: '', ucret: '', aranan_tecrube: '',
     ortalama_servis_suresi: '', yolcu_sayisi: '', km: '',
     calisılacak_gun: '', yabanci_diller: [] as string[],
     arac_secimi: 'araclarimdan',
   });
-
   const [hostesAriyorum, setHostesAriyorum] = useState({
     ucret: '', calisılacak_okul: '', aranan_tecrube: '',
     okul_turu: 'Anaokulu Kres', yabanci_diller: [] as string[],
   });
-
   const [hostesimIs, setHostesimIs] = useState({
     dogum_tarihi: '', dogum_yeri: '', egitim_durumu: '',
-    yabanci_diller: [] as string[],
-    servis_tasimacilik_deneyimi: 'var',
+    yabanci_diller: [] as string[], servis_tasimacilik_deneyimi: 'var',
   });
-
   const [soforumIs, setSoforumIs] = useState({
     surucubelgesi: '', ehliyet_alinma_tarihi: '', sinav_belgeleri: '',
     dogum_tarihi: '', dogum_yeri: '',
-    arac_turu: [] as string[],
-    belgeler: [] as string[],
-    yabanci_diller: [] as string[],
-    emekli: 'hayir', mesleki_yeterlilik: 'var',
-    sabika_kaydi: 'var', tam_zamanlimi: 'hayir',
-    servis_tasimacilik_deneyimi: 'var', baska_ise_gider_misiniz: 'hayir',
+    arac_turu: [] as string[], belgeler: [] as string[], yabanci_diller: [] as string[],
+    emekli: 'hayir', mesleki_yeterlilik: 'var', sabika_kaydi: 'var',
+    tam_zamanlimi: 'hayir', servis_tasimacilik_deneyimi: 'var', baska_ise_gider_misiniz: 'hayir',
   });
-
   const [plakaSatiyorum, setPlakaSatiyorum] = useState({
     plaka_il: '', plaka_harf: '', plaka_no: '', ucret: '',
-    aracla_birlikte: false, yol_belgesi_var: false,
-    noter_satisi: false, hisseli: false,
+    aracla_birlikte: false, yol_belgesi_var: false, noter_satisi: false, hisseli: false,
   });
 
   React.useEffect(() => {
@@ -269,9 +238,9 @@ export default function IlanEklePage({
     }
   }, [selectedKategori]);
 
-  const handleGuzergahChange = (index: number, field: string, value: string) => {
+  const handleGuzergahGuncelle = (index: number, yeniGuzergah: Guzergah) => {
     const yeni = [...guzergahlar];
-    yeni[index] = { ...yeni[index], [field]: value };
+    yeni[index] = yeniGuzergah;
     setGuzergahlar(yeni);
   };
 
@@ -319,9 +288,7 @@ export default function IlanEklePage({
 
     let resimUrl = '';
     if (profilResim) {
-      const { data } = await supabase.storage
-        .from('profil-resimleri')
-        .upload(`ilan-${Date.now()}`, profilResim);
+      const { data } = await supabase.storage.from('profil-resimleri').upload(`ilan-${Date.now()}`, profilResim);
       if (data) {
         const { data: urlData } = supabase.storage.from('profil-resimleri').getPublicUrl(data.path);
         resimUrl = urlData.publicUrl;
@@ -329,14 +296,8 @@ export default function IlanEklePage({
     }
 
     const ilanGuzergahlar = ['hostesim_is', 'soforum_is'].includes(selectedKategori!) ? [{
-      giris_saati: konumGiris,
-      kalkis_il: konumIl,
-      kalkis_ilce: konumIlce,
-      kalkis_mah: konumMah,
-      varis_il: '',
-      varis_ilce: '',
-      varis_mah: '',
-      cikis_saati: konumCikis,
+      giris_saati: konumGiris, kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah,
+      varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: konumCikis,
     }] : guzergahlar;
 
     let ekAlanlar: any = {};
@@ -360,7 +321,6 @@ export default function IlanEklePage({
 
     setYukleniyor(false);
     if (error) { setHata('Hata: ' + error.message); return; }
-
     sessionStorage.removeItem('ilan-ekle-adim');
     sessionStorage.removeItem('ilan-ekle-kategori');
     onSuccess();
@@ -407,12 +367,8 @@ export default function IlanEklePage({
             <h3 className="font-semibold text-gray-700 mb-4">Ilan kategorisini secin</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
               {kategoriler.map((kat) => (
-                <button
-                  key={kat.id}
-                  onClick={() => {
-                    setSelectedKategori(kat.id);
-                    sessionStorage.setItem('ilan-ekle-kategori', kat.id);
-                  }}
+                <button key={kat.id}
+                  onClick={() => { setSelectedKategori(kat.id); sessionStorage.setItem('ilan-ekle-kategori', kat.id); }}
                   className={`border-2 rounded-xl p-4 text-sm font-medium text-left transition ${selectedKategori === kat.id ? kat.color : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}>
                   {kat.label}
                 </button>
@@ -510,11 +466,8 @@ export default function IlanEklePage({
             {selectedKategori === 'aracim_var_is' && (
               <div className="border border-gray-200 rounded-xl p-4 md:p-5">
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                  <h3 className="font-bold text-gray-700">
-                    Secilen Arac: {aracimVarIs.secilen_arac || 'Secilmedi'}
-                  </h3>
-                  <button
-                    onClick={() => window.location.hash = 'panel'}
+                  <h3 className="font-bold text-gray-700">Secilen Arac: {aracimVarIs.secilen_arac || 'Secilmedi'}</h3>
+                  <button onClick={() => window.location.hash = 'panel'}
                     className="flex items-center gap-2 bg-[#f97316] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-600 transition">
                     <Plus size={12} /> Yeni Arac Ekle
                   </button>
@@ -895,7 +848,7 @@ export default function IlanEklePage({
                 </div>
                 {guzergahlar.map((g, i) => (
                   <GuzergahSatiri key={i} guzergah={g} index={i}
-                    onChange={handleGuzergahChange}
+                    onGuncelle={handleGuzergahGuncelle}
                     onRemove={(idx) => setGuzergahlar(guzergahlar.filter((_, ii) => ii !== idx))}
                     showRemove={guzergahlar.length > 1} />
                 ))}
@@ -906,7 +859,9 @@ export default function IlanEklePage({
               <KonumBilgisi
                 il={konumIl} ilce={konumIlce} mah={konumMah}
                 giris={konumGiris} cikis={konumCikis}
-                onIlChange={setKonumIl} onIlceChange={setKonumIlce} onMahChange={setKonumMah}
+                onIlChange={(v) => { setKonumIl(v); setKonumIlce(''); setKonumMah(''); }}
+                onIlceChange={(v) => { setKonumIlce(v); setKonumMah(''); }}
+                onMahChange={setKonumMah}
                 onGirisChange={setKonumGiris} onCikisChange={setKonumCikis}
               />
             )}
@@ -914,24 +869,22 @@ export default function IlanEklePage({
             {(selectedKategori === 'hostesim_is' || selectedKategori === 'soforum_is') && (
               <div className="border border-gray-200 rounded-xl p-4 md:p-5">
                 <h3 className="font-bold text-gray-700 mb-4">Kisisel Bilgiler</h3>
-                <div className="flex flex-col md:flex-row items-start gap-6">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center overflow-hidden">
-                      {profilResimUrl ? (
-                        <img src={profilResimUrl} alt="Profil" className="w-full h-full object-cover" />
-                      ) : (
-                        <svg className="w-10 h-10 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
-                        </svg>
-                      )}
-                    </div>
-                    <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-medium transition">
-                      Dosya Sec
-                      <input type="file" accept="image/jpeg,image/png,image/gif" onChange={handleProfilResimSec} className="hidden" />
-                    </label>
-                    {profilResim && <p className="text-xs text-green-600 text-center">{profilResim.name}</p>}
-                    <p className="text-xs text-gray-400 text-center">Maks 20MB, JPEG/PNG/GIF</p>
+                <div className="flex flex-col items-start gap-3">
+                  <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center overflow-hidden">
+                    {profilResimUrl ? (
+                      <img src={profilResimUrl} alt="Profil" className="w-full h-full object-cover" />
+                    ) : (
+                      <svg className="w-10 h-10 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+                      </svg>
+                    )}
                   </div>
+                  <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                    Dosya Sec
+                    <input type="file" accept="image/jpeg,image/png,image/gif" onChange={handleProfilResimSec} className="hidden" />
+                  </label>
+                  {profilResim && <p className="text-xs text-green-600">{profilResim.name}</p>}
+                  <p className="text-xs text-gray-400">Maks 20MB, JPEG/PNG/GIF</p>
                 </div>
               </div>
             )}
@@ -948,8 +901,7 @@ export default function IlanEklePage({
               <button onClick={() => setAdimVeKaydet(1)} className="flex-1 border-2 border-gray-300 text-gray-600 py-3 rounded-lg font-medium hover:border-gray-400 transition flex items-center justify-center gap-2">
                 <ArrowLeft size={16} /> Geri
               </button>
-              <button
-                onClick={handleAdim2}
+              <button onClick={handleAdim2}
                 className="flex-1 bg-[#1a3c6e] text-white py-3 rounded-lg font-medium hover:bg-blue-900 transition flex items-center justify-center gap-2">
                 Onizleme <ArrowRight size={16} />
               </button>
