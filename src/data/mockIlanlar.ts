@@ -1,6 +1,6 @@
 import { Ilan } from '../types';
 
-export const mockIlanlar: Ilan[] = [
+export const mockIlanlar: any[] = [
   {
     id: '1',
     kategori: 'isim_var_arac',
