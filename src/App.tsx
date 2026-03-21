@@ -26,6 +26,13 @@ type Page =
 
 const ADMIN_TELEFON = '05369500280';
 
+const validPages: Page[] = [
+  'home', 'login', 'register', 'detay', 'ilan-ekle',
+  'panel', 'admin', 'hakkimizda', 'nasil-isliyor',
+  'sss', 'iletisim', 'kullanim-kosullari',
+  'kisisel-veriler', 'kunye',
+];
+
 export default function App() {
   const [currentPage, setCurrentPageState] = useState<Page>('home');
   const [prevPage, setPrevPage] = useState<Page>('home');
@@ -44,9 +51,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    const hash = window.location.hash.replace('#', '') as Page;
-    if (hash && hash !== '') {
-      setCurrentPageState(hash);
+    const hash = window.location.hash.replace('#', '');
+    if (hash && validPages.includes(hash as Page)) {
+      setCurrentPageState(hash as Page);
     }
 
     const user = mevcutKullanici();
@@ -62,11 +69,11 @@ export default function App() {
 
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '') as Page;
-      if (hash === '' || hash === 'home') {
+      const hash = window.location.hash.replace('#', '');
+      if (!hash || hash === 'home') {
         setCurrentPageState('home');
-      } else {
-        setCurrentPageState(hash);
+      } else if (validPages.includes(hash as Page)) {
+        setCurrentPageState(hash as Page);
       }
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -117,11 +124,7 @@ export default function App() {
   };
 
   const goBack = () => {
-    if (prevPage) {
-      setCurrentPage(prevPage);
-    } else {
-      setCurrentPage('home');
-    }
+    setCurrentPage(prevPage || 'home');
   };
 
   const headerProps = {
