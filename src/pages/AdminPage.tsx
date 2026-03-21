@@ -3,14 +3,13 @@ import {
   Users, FileText, Trash2, Eye, CheckCircle, XCircle, 
   LogOut, HelpCircle, Edit, Save, X, Menu, Shield, 
   Search, Lock, Unlock, Phone, MapPin, Calendar, 
-  LayoutDashboard, UserPlus, ShieldCheck, EyeOff, Settings
+  LayoutDashboard, UserPlus, ShieldCheck, EyeOff, Settings, Megaphone, Image as ImageIcon
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { destekTalepleriniGetir, destekDurumGuncelle } from '../lib/ilanlar';
 import { Ilan } from '../types';
 
-// Superadmin Sabiti
-const SUPER_ADMIN_PHONE = "05369500280";
+const SUPER_ADMIN_TELEFON = "05369500280";
 
 interface Profile {
   id: string;
@@ -28,111 +27,17 @@ interface Profile {
     ilan_verebilir: boolean;
     mesaj_gonderebilir: boolean;
     favori_ekleyebilir: boolean;
-    view_dashboard: boolean;
-    manage_ads: boolean;
-    manage_users: boolean;
-    view_passwords: boolean;
-    manage_support: boolean;
-    manage_staff: boolean;
-    delete_data: boolean;
-    profil_duzenleyebilir: boolean;
-    destek_acabilir: boolean;
+    paneli_gorebilir: boolean;
+    ilanlari_yonet: boolean;
+    kullanicilari_yonet: boolean;
+    sifreleri_gor: boolean;
+    destek_yonet: boolean;
+    personel_yonet: boolean;
+    veri_sil: boolean;
   };
 }
 
-const durumRenk: Record<string, string> = {
-  beklemede: 'bg-orange-100 text-orange-700',
-  islemde: 'bg-blue-100 text-blue-700',
-  cozuldu: 'bg-green-100 text-green-700',
-};
-
-// --- BİLEŞEN: DESTEK KARTI ---
-function DestekKart({ destek, onGuncelle }: { destek: any; onGuncelle: () => void }) {
-  const [cevapMetni, setCevapMetni] = useState(destek.cevap || '');
-  const [cevapAcik, setCevapAcik] = useState(false);
-  const [yukleniyor, setYukleniyor] = useState(false);
-
-  const handleDurumDegistir = async (yeniDurum: string) => {
-    setYukleniyor(true);
-    await destekDurumGuncelle(destek.id, yeniDurum);
-    setYukleniyor(false);
-    onGuncelle();
-  };
-
-  const handleCevapGonder = async () => {
-    if (!cevapMetni.trim()) return;
-    setYukleniyor(true);
-    await destekDurumGuncelle(destek.id, 'islemde', cevapMetni);
-    setYukleniyor(false);
-    setCevapAcik(false);
-    onGuncelle();
-  };
-
-  return (
-    <div className={`border rounded-xl p-5 shadow-sm transition-all ${destek.durum === 'beklemede' ? 'border-orange-200 bg-orange-50/50' : 'border-gray-100 bg-white'}`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white border flex items-center justify-center text-gray-400">
-            <HelpCircle size={20} />
-          </div>
-          <div>
-            <p className="font-bold text-gray-800">{destek.konu}</p>
-            <p className="text-xs text-gray-500">
-              {destek.profiles?.full_name || destek.profiles?.phone_number} • {new Date(destek.created_at).toLocaleString('tr-TR')}
-            </p>
-          </div>
-        </div>
-        <span className={`text-xs font-bold px-3 py-1 rounded-full shadow-sm ${durumRenk[destek.durum] || 'bg-gray-100'}`}>
-          {destek.durum.toUpperCase()}
-        </span>
-      </div>
-      <div className="text-sm text-gray-700 mb-4 p-4 bg-white/80 rounded-xl border border-dashed border-gray-200 leading-relaxed italic">
-        "{destek.mesaj}"
-      </div>
-      
-      {destek.cevap && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-100 rounded-xl relative">
-          <div className="absolute -top-2 left-4 px-2 bg-green-100 text-green-700 text-[10px] font-bold rounded">ADMİN YANITI</div>
-          <p className="text-sm text-gray-700">{destek.cevap}</p>
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-2 items-center justify-between">
-        <div className="flex gap-2">
-          {['beklemede', 'islemde', 'cozuldu'].map((d) => (
-            destek.durum !== d && (
-              <button key={d} onClick={() => handleDurumDegistir(d)} disabled={yukleniyor}
-                className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition shadow-sm">
-                {d} yap
-              </button>
-            )
-          ))}
-        </div>
-        <button onClick={() => setCevapAcik(!cevapAcik)}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-[#1a3c6e] text-white rounded-lg hover:bg-blue-900 transition shadow-md">
-          {cevapAcik ? <X size={16}/> : <Edit size={16}/>}
-          {cevapAcik ? 'İptal' : 'Yanıtla'}
-        </button>
-      </div>
-
-      {cevapAcik && (
-        <div className="mt-4 space-y-3">
-          <textarea value={cevapMetni} onChange={(e) => setCevapMetni(e.target.value)}
-            placeholder="Cevabınızı buraya yazın..." rows={3}
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e] bg-white shadow-inner" />
-          <div className="flex justify-end">
-            <button onClick={handleCevapGonder} disabled={yukleniyor || !cevapMetni.trim()}
-              className="px-6 py-2 bg-[#f97316] text-white text-sm font-bold rounded-lg hover:bg-orange-600 transition shadow-lg flex items-center gap-2">
-              <Save size={16}/> {yukleniyor ? 'Gönderiliyor...' : 'Yanıtı Gönder'}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// --- BİLEŞEN: KULLANICI DETAY ---
+// --- BİLEŞEN: KULLANICI DETAY MODALI ---
 function KullaniciDetay({ kullanici, onKapat, onGuncelle, onSil, isSuper, canSeePasswords }: {
   kullanici: Profile;
   onKapat: () => void;
@@ -143,16 +48,10 @@ function KullaniciDetay({ kullanici, onKapat, onGuncelle, onSil, isSuper, canSee
 }) {
   const [duzenle, setDuzenle] = useState(false);
   const [yeniSifre, setYeniSifre] = useState(kullanici.sifre_acik || '');
-  const [yetkiler, setYetkiler] = useState(kullanici.yetkiler || { 
-    ilan_verebilir: true, mesaj_gonderebilir: true, favori_ekleyebilir: true,
-    view_dashboard: false, manage_ads: false, manage_users: false, 
-    view_passwords: false, manage_support: false, manage_staff: false, delete_data: false
-  });
+  const [yetkiler, setYetkiler] = useState(kullanici.yetkiler || {});
   const [aktif, setAktif] = useState(kullanici.aktif !== false);
-  const [yukleniyor, setYukleniyor] = useState(false);
 
   const handleKaydet = async () => {
-    setYukleniyor(true);
     const updates: any = { yetkiler, aktif, sifre_acik: yeniSifre };
     if (yeniSifre !== kullanici.sifre_acik) {
       const encoder = new TextEncoder();
@@ -162,63 +61,68 @@ function KullaniciDetay({ kullanici, onKapat, onGuncelle, onSil, isSuper, canSee
     }
     await supabase.from('profiles').update(updates).eq('id', kullanici.id);
     onGuncelle(kullanici.id, updates);
-    setYukleniyor(false);
     setDuzenle(false);
+    alert("Bilgiler güncellendi.");
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="bg-[#1a3c6e] p-6 text-white flex justify-between items-center">
-          <h3 className="font-bold text-lg">{kullanici.full_name || 'Kullanıcı Detayı'}</h3>
-          <button onClick={onKapat} className="p-2 hover:bg-white/10 rounded-full"><X /></button>
+          <div>
+            <h3 className="font-bold text-xl">{kullanici.full_name || 'İsimsiz Üye'}</h3>
+            <p className="text-xs text-blue-200">{kullanici.type.toUpperCase()} HESABI</p>
+          </div>
+          <button onClick={onKapat} className="p-2 hover:bg-white/10 rounded-full transition"><X /></button>
         </div>
-        <div className="p-6 overflow-y-auto flex-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <div className="p-8 overflow-y-auto flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <h4 className="text-sm font-bold text-gray-400 border-b pb-1 uppercase">Genel Bilgiler</h4>
-              <div className="bg-gray-50 p-3 rounded-xl border">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Şifre (Açık)</p>
+              <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b pb-2">Üyelik Bilgileri</h4>
+              <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100">
+                <label className="text-[10px] font-black text-orange-600 uppercase">Giriş Şifresi (Açık)</label>
                 {canSeePasswords ? (
                   duzenle ? (
-                    <input value={yeniSifre} onChange={e => setYeniSifre(e.target.value)} className="w-full text-sm font-mono border rounded px-2 mt-1" />
+                    <input value={yeniSifre} onChange={e => setYeniSifre(e.target.value)} className="w-full mt-1 p-2 border rounded-lg font-mono text-sm" />
                   ) : (
-                    <p className="font-mono font-bold text-orange-600">{kullanici.sifre_acik || 'Belirtilmemiş'}</p>
+                    <p className="text-lg font-mono font-black text-gray-800">{kullanici.sifre_acik || '---'}</p>
                   )
-                ) : <p className="text-gray-400 italic text-sm">Görmeye yetkiniz yok</p>}
+                ) : <p className="text-gray-400 italic text-sm">Görme yetkiniz yok</p>}
               </div>
-              <div className="text-sm space-y-1">
-                <p><strong>Telefon:</strong> {kullanici.phone_number}</p>
-                <p><strong>Bölge:</strong> {kullanici.il} / {kullanici.ilce}</p>
-                <p><strong>Adres:</strong> {kullanici.adres}</p>
-                <p><strong>Tür:</strong> {kullanici.type}</p>
+              <div className="space-y-2 text-sm">
+                <p className="flex justify-between"><strong>Telefon:</strong> <span>{kullanici.phone_number}</span></p>
+                <p className="flex justify-between"><strong>İl/İlçe:</strong> <span>{kullanici.il} / {kullanici.ilce}</span></p>
+                <p className="flex justify-between"><strong>Kayıt:</strong> <span>{new Date(kullanici.created_at).toLocaleDateString('tr-TR')}</span></p>
               </div>
             </div>
+
             <div className="space-y-4">
-              <div className="flex justify-between items-center border-b pb-1">
-                <h4 className="text-sm font-bold text-gray-400 uppercase">Hesap & Yetkiler</h4>
-                <button onClick={() => setDuzenle(!duzenle)} className="text-xs text-blue-600 font-bold hover:underline">Düzenle</button>
+              <div className="flex justify-between items-center border-b pb-2">
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Yetki Ayarları</h4>
+                <button onClick={() => setDuzenle(!duzenle)} className="text-xs font-bold text-blue-600 hover:underline">{duzenle ? 'İptal' : 'Düzenle'}</button>
               </div>
-              <div className="bg-blue-50 p-4 rounded-xl space-y-3">
-                <label className="flex items-center justify-between text-xs font-bold text-gray-600">
-                  <span>HESAP AKTİF</span>
-                  <input type="checkbox" disabled={!duzenle} checked={aktif} onChange={() => setAktif(!aktif)} className="w-4 h-4" />
+              <div className="space-y-2 bg-gray-50 p-4 rounded-2xl max-h-60 overflow-y-auto">
+                <label className="flex items-center justify-between text-xs font-bold p-2 bg-white rounded-lg shadow-sm mb-4">
+                  <span>HESAP AKTİF Mİ?</span>
+                  <input type="checkbox" disabled={!duzenle} checked={aktif} onChange={() => setAktif(!aktif)} className="w-5 h-5 accent-green-500" />
                 </label>
-                {Object.keys(yetkiler).map((key) => (
-                  <label key={key} className="flex items-center justify-between text-xs text-gray-500">
-                    <span className="uppercase">{key.replace(/_/g, ' ')}</span>
-                    <input type="checkbox" disabled={!duzenle} checked={(yetkiler as any)[key]} onChange={() => setYetkiler({...yetkiler, [key]: !(yetkiler as any)[key]})} className="w-4 h-4" />
+                {Object.keys(yetkiler).map(key => (
+                  <label key={key} className="flex items-center justify-between text-[11px] text-gray-600 uppercase">
+                    <span>{key.replace(/_/g, ' ')}</span>
+                    <input type="checkbox" disabled={!duzenle} checked={(yetkiler as any)[key]} onChange={() => setYetkiler({...yetkiler, [key]: !(yetkiler as any)[key]})} className="w-4 h-4 accent-blue-600" />
                   </label>
                 ))}
               </div>
             </div>
           </div>
         </div>
+
         <div className="p-6 bg-gray-50 border-t flex gap-4">
           {duzenle ? (
-            <button onClick={handleKaydet} className="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold">Değişiklikleri Kaydet</button>
+            <button onClick={handleKaydet} className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-bold shadow-lg hover:bg-green-700 transition">Değişiklikleri Kaydet</button>
           ) : (
-            <button onClick={() => onSil(kullanici.id)} className="flex-1 py-3 bg-red-100 text-red-600 rounded-xl font-bold">Kullanıcıyı Sil</button>
+            <button onClick={() => onSil(kullanici.id)} className="flex-1 py-4 bg-red-100 text-red-600 rounded-2xl font-bold hover:bg-red-200 transition">Kullanıcıyı Tamamen Sil</button>
           )}
         </div>
       </div>
@@ -226,69 +130,21 @@ function KullaniciDetay({ kullanici, onKapat, onGuncelle, onSil, isSuper, canSee
   );
 }
 
-// --- BİLEŞEN: PERSONEL EKLE MODAL ---
-function PersonelEkleModal({ onKapat, onEklendi }: { onKapat: () => void, onEklendi: () => void }) {
-  const [form, setForm] = useState({ name: '', phone: '', password: '' });
-  const [yetkiler, setYetkiler] = useState({
-    view_dashboard: true, manage_ads: true, manage_users: false, 
-    view_passwords: false, manage_support: true, manage_staff: false, 
-    delete_data: false, ilan_verebilir: true, mesaj_gonderebilir: true, favori_ekleyebilir: true
-  });
-  const [yukleniyor, setYukleniyor] = useState(false);
-
-  const handleEkle = async () => {
-    if (!form.name || !form.phone || !form.password) return alert("Alanları doldurun!");
-    setYukleniyor(true);
-    const encoder = new TextEncoder();
-    const data = encoder.encode(form.password + 'servis-ilanlari-salt');
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    const password_hash = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-    await supabase.from('profiles').insert([{
-      full_name: form.name, phone_number: form.phone, password_hash, 
-      sifre_acik: form.password, type: 'staff', aktif: true, yetkiler
-    }]);
-    onEklendi();
-    onKapat();
-  };
-
-  return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#1a3c6e]/80 backdrop-blur-md">
-      <div className="bg-white w-full max-w-lg rounded-3xl p-8">
-        <h2 className="text-2xl font-black text-[#1a3c6e] mb-6">Personel Ekle</h2>
-        <div className="space-y-4 mb-6">
-          <input placeholder="Ad Soyad" className="w-full p-3 border rounded-xl" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
-          <input placeholder="Telefon" className="w-full p-3 border rounded-xl" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
-          <input placeholder="Şifre" className="w-full p-3 border rounded-xl" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
-        </div>
-        <div className="p-4 bg-gray-50 rounded-2xl mb-6 max-h-48 overflow-y-auto space-y-2">
-          {Object.keys(yetkiler).map(k => (
-            <label key={k} className="flex items-center justify-between text-xs font-bold text-gray-500 uppercase">
-              {k.replace(/_/g, ' ')}
-              <input type="checkbox" checked={(yetkiler as any)[k]} onChange={() => setYetkiler({...yetkiler, [k]: !(yetkiler as any)[k]})} />
-            </label>
-          ))}
-        </div>
-        <div className="flex gap-4">
-          <button onClick={onKapat} className="flex-1 font-bold">İptal</button>
-          <button onClick={handleEkle} disabled={yukleniyor} className="flex-2 bg-[#1a3c6e] text-white py-3 rounded-xl font-bold flex-1">Kaydet</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// --- ANA COMPONENT ---
+// --- ANA ADMİN SAYFASI ---
 export default function AdminPage({ onLogout, onIlanDetay }: { onLogout: () => void, onIlanDetay: (ilan: Ilan) => void }) {
   const [currentUser, setCurrentUser] = useState<Profile | null>(null);
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [kullanicilar, setKullanicilar] = useState<Profile[]>([]);
   const [destekler, setDestekler] = useState<any[]>([]);
+  const [duyurular, setDuyurular] = useState<any[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [secilenKullanici, setSecilenKullanici] = useState<Profile | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [personelEkleAcik, setPersonelEkleAcik] = useState(false);
   const [aramaMetni, setAramaMetni] = useState('');
+
+  // Duyuru Formu State
+  const [yeniDuyuru, setYeniDuyuru] = useState({ baslik: '', mesaj: '', resim_url: '', aktif: true });
 
   useEffect(() => {
     const check = async () => {
@@ -314,82 +170,119 @@ export default function AdminPage({ onLogout, onIlanDetay }: { onLogout: () => v
     if (users) setKullanicilar(users);
     const { data: support } = await destekTalepleriniGetir();
     if (support) setDestekler(support);
+    const { data: notices } = await supabase.from('duyurular').select('*').order('created_at', { ascending: false });
+    if (notices) setDuyurular(notices);
     setYukleniyor(false);
   };
 
-  const isSuper = currentUser?.phone_number === SUPER_ADMIN_PHONE;
-  const canSeePasswords = isSuper || currentUser?.yetkiler?.view_passwords;
+  const duyuruEkle = async () => {
+    if (!yeniDuyuru.baslik || !yeniDuyuru.mesaj) return alert("Başlık ve mesaj zorunludur!");
+    await supabase.from('duyurular').insert([yeniDuyuru]);
+    setYeniDuyuru({ baslik: '', mesaj: '', resim_url: '', aktif: true });
+    verileriYukle();
+    alert("Duyuru yayınlandı!");
+  };
+
+  const isSuper = currentUser?.phone_number === SUPER_ADMIN_TELEFON;
+  const canSeePasswords = isSuper || currentUser?.yetkiler?.sifreleri_gor;
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9] flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col md:flex-row">
+      
+      {/* YAN MENÜ */}
       <aside className={`fixed inset-y-0 left-0 z-[100] w-72 bg-[#1a3c6e] text-white transform transition-transform md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-8 flex flex-col h-full">
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-12 h-12 bg-orange-400 rounded-2xl flex items-center justify-center"><Shield size={28}/></div>
-            <h1 className="font-black text-xl">SALONUM ADMİN</h1>
+            <div className="w-12 h-12 bg-orange-400 rounded-2xl flex items-center justify-center shadow-xl rotate-3">
+              <Shield className="text-blue-900" size={28} />
+            </div>
+            <h1 className="font-black text-xl tracking-tighter">SALONUM <span className="text-orange-400">ADMİN</span></h1>
           </div>
+
           <nav className="space-y-2 flex-1">
-            <button onClick={() => setActiveMenu('dashboard')} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl ${activeMenu === 'dashboard' ? 'bg-orange-400 text-blue-900 font-bold' : ''}`}><LayoutDashboard size={20}/> Dashboard</button>
-            <button onClick={() => setActiveMenu('ilanlar')} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl ${activeMenu === 'ilanlar' ? 'bg-orange-400 text-blue-900 font-bold' : ''}`}><FileText size={20}/> İlanlar</button>
-            <button onClick={() => setActiveMenu('kullanicilar')} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl ${activeMenu === 'kullanicilar' ? 'bg-orange-400 text-blue-900 font-bold' : ''}`}><Users size={20}/> Kullanıcılar</button>
-            <button onClick={() => setActiveMenu('destek')} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl ${activeMenu === 'destek' ? 'bg-orange-400 text-blue-900 font-bold' : ''}`}><HelpCircle size={20}/> Destek</button>
-            {isSuper && <button onClick={() => setActiveMenu('personel')} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl ${activeMenu === 'personel' ? 'bg-orange-400 text-blue-900 font-bold' : ''}`}><ShieldCheck size={20}/> Personel</button>}
+            <button onClick={() => { setActiveMenu('dashboard'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${activeMenu === 'dashboard' ? 'bg-orange-400 text-blue-900 font-bold shadow-lg' : 'hover:bg-white/10'}`}><LayoutDashboard size={20}/> Dashboard</button>
+            <button onClick={() => { setActiveMenu('ilanlar'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${activeMenu === 'ilanlar' ? 'bg-orange-400 text-blue-900 font-bold shadow-lg' : 'hover:bg-white/10'}`}><FileText size={20}/> İlanlar</button>
+            <button onClick={() => { setActiveMenu('kullanicilar'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${activeMenu === 'kullanicilar' ? 'bg-orange-400 text-blue-900 font-bold shadow-lg' : 'hover:bg-white/10'}`}><Users size={20}/> Kullanıcılar</button>
+            <button onClick={() => { setActiveMenu('destek'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${activeMenu === 'destek' ? 'bg-orange-400 text-blue-900 font-bold shadow-lg' : 'hover:bg-white/10'}`}><HelpCircle size={20}/> Destek Talepleri</button>
+            <button onClick={() => { setActiveMenu('duyurular'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${activeMenu === 'duyurular' ? 'bg-orange-400 text-blue-900 font-bold shadow-lg' : 'hover:bg-white/10'}`}><Megaphone size={20}/> Duyuru Yönetimi</button>
+            {isSuper && <button onClick={() => { setActiveMenu('personel'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${activeMenu === 'personel' ? 'bg-orange-400 text-blue-900 font-bold shadow-lg' : 'hover:bg-white/10'}`}><ShieldCheck size={20}/> Personel Yönetimi</button>}
           </nav>
-          <button onClick={onLogout} className="mt-auto flex items-center gap-4 p-5 text-red-300 font-bold"><LogOut size={20}/> Çıkış</button>
+
+          <div className="mt-auto pt-6 border-t border-white/10">
+            <button onClick={onLogout} className="w-full flex items-center gap-3 px-5 py-4 text-red-300 font-bold hover:bg-red-500/10 rounded-2xl transition-colors"><LogOut size={20}/> Çıkış Yap</button>
+          </div>
         </div>
       </aside>
 
-      <div className="md:hidden bg-[#1a3c6e] p-4 flex justify-between text-white">
-        <span className="font-bold">ADMİN</span>
-        <button onClick={() => setIsSidebarOpen(true)}><Menu/></button>
+      {/* MOBİL ÜST BAR */}
+      <div className="md:hidden bg-[#1a3c6e] p-4 flex justify-between items-center text-white sticky top-0 z-[90]">
+        <span className="font-black tracking-widest">SALONUM ADMİN</span>
+        <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/10 rounded-lg"><Menu/></button>
       </div>
 
       <main className="flex-1 p-4 md:p-10">
+        
+        {/* DASHBOARD ÖZETİ */}
         {activeMenu === 'dashboard' && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-3xl shadow-sm">
-              <p className="text-xs font-bold text-gray-400">ÜYELER</p>
-              <h3 className="text-3xl font-black">{kullanicilar.length}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-in fade-in">
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-blue-50">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Toplam Üye</p>
+              <h3 className="text-4xl font-black text-blue-900">{kullanicilar.length}</h3>
             </div>
-            <div className="bg-white p-6 rounded-3xl shadow-sm">
-              <p className="text-xs font-bold text-gray-400">İLANLAR</p>
-              <h3 className="text-3xl font-black">{ilanlar.length}</h3>
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-orange-50">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Aktif İlanlar</p>
+              <h3 className="text-4xl font-black text-orange-500">{ilanlar.length}</h3>
             </div>
-            <div className="bg-white p-6 rounded-3xl shadow-sm">
-              <p className="text-xs font-bold text-gray-400">DESTEK</p>
-              <h3 className="text-3xl font-black">{destekler.filter(d => d.durum === 'beklemede').length}</h3>
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-red-50">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Bekleyen Destek</p>
+              <h3 className="text-4xl font-black text-red-500">{destekler.filter(d => d.durum === 'beklemede').length}</h3>
             </div>
-            <div className="bg-white p-6 rounded-3xl shadow-sm">
-              <p className="text-xs font-bold text-gray-400">PERSONEL</p>
-              <h3 className="text-3xl font-black">{kullanicilar.filter(k => k.type === 'staff').length}</h3>
+            <div className="bg-[#1a3c6e] p-8 rounded-[2.5rem] shadow-xl text-white">
+              <p className="text-[10px] font-black text-blue-200 uppercase tracking-widest mb-2">Sistem Personeli</p>
+              <h3 className="text-4xl font-black">{kullanicilar.filter(k => k.type === 'staff').length}</h3>
             </div>
           </div>
         )}
 
+        {/* KULLANICI LİSTESİ */}
         {activeMenu === 'kullanicilar' && (
-          <div className="bg-white p-6 rounded-3xl border shadow-sm">
-             <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
-                <h2 className="text-xl font-black">Kullanıcı Listesi</h2>
-                <input placeholder="Ara..." className="p-2 border rounded-xl" value={aramaMetni} onChange={e => setAramaMetni(e.target.value)} />
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border animate-in slide-in-from-bottom-4">
+             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <h2 className="text-2xl font-black text-blue-900">Üye Yönetimi</h2>
+                <div className="relative w-full md:w-80">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <input placeholder="İsim, telefon veya il ile ara..." className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 shadow-inner" value={aramaMetni} onChange={e => setAramaMetni(e.target.value)} />
+                </div>
              </div>
              <div className="overflow-x-auto">
                <table className="w-full text-sm">
-                 <thead className="border-b text-gray-400">
-                   <tr className="text-left">
-                     <th className="p-3">Ad Soyad</th>
-                     <th className="p-3">Şifre</th>
-                     <th className="p-3">Bölge</th>
-                     <th className="p-3 text-right">Eylem</th>
+                 <thead>
+                   <tr className="text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
+                     <th className="p-4">Ad Soyad</th>
+                     <th className="p-4 text-orange-600">Şifre</th>
+                     <th className="p-4">Bölge</th>
+                     <th className="p-4">Durum</th>
+                     <th className="p-4 text-right">İşlem</th>
                    </tr>
                  </thead>
-                 <tbody>
+                 <tbody className="divide-y divide-gray-50">
                    {kullanicilar.filter(u => u.type !== 'staff').filter(u => u.full_name?.toLowerCase().includes(aramaMetni.toLowerCase())).map(u => (
-                     <tr key={u.id} className="border-b hover:bg-gray-50">
-                       <td className="p-3 font-bold">{u.full_name}</td>
-                       <td className="p-3">{canSeePasswords ? <span className="bg-orange-50 text-orange-600 px-2 py-1 rounded font-mono">{u.sifre_acik}</span> : '******'}</td>
-                       <td className="p-3 text-xs">{u.il} / {u.ilce}</td>
-                       <td className="p-3 text-right">
-                         <button onClick={() => setSecilenKullanici(u)} className="p-2 bg-gray-100 rounded-lg hover:bg-blue-600 hover:text-white transition"><Edit size={14}/></button>
+                     <tr key={u.id} className="hover:bg-blue-50/50 transition cursor-pointer" onClick={() => setSecilenKullanici(u)}>
+                       <td className="p-4">
+                         <p className="font-bold text-gray-800">{u.full_name}</p>
+                         <p className="text-xs text-gray-500 font-mono">{u.phone_number}</p>
+                       </td>
+                       <td className="p-4">
+                         {canSeePasswords ? (
+                           <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg font-mono font-bold text-xs">{u.sifre_acik}</span>
+                         ) : <span className="text-gray-300 italic text-xs">Gizli</span>}
+                       </td>
+                       <td className="p-4 text-xs text-gray-500">{u.il} / {u.ilce}</td>
+                       <td className="p-4">
+                         <div className={`w-3 h-3 rounded-full ${u.aktif ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
+                       </td>
+                       <td className="p-4 text-right">
+                         <button className="p-3 bg-white border rounded-xl hover:bg-blue-900 hover:text-white transition shadow-sm"><Unlock size={16}/></button>
                        </td>
                      </tr>
                    ))}
@@ -399,48 +292,79 @@ export default function AdminPage({ onLogout, onIlanDetay }: { onLogout: () => v
           </div>
         )}
 
-        {activeMenu === 'personel' && isSuper && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-black">Yardımcı Personeller</h2>
-              <button onClick={() => setPersonelEkleAcik(true)} className="bg-orange-400 px-4 py-2 rounded-xl font-bold">Yeni Ekle</button>
+        {/* DUYURU YÖNETİMİ (POPUP SİSTEMİ) */}
+        {activeMenu === 'duyurular' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in slide-in-from-bottom-4">
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border h-fit">
+              <h2 className="text-2xl font-black text-blue-900 mb-6 flex items-center gap-3"><Megaphone /> Yeni Popup Yayınla</h2>
+              <div className="space-y-4">
+                <input placeholder="Popup Başlığı" className="w-full p-4 bg-gray-50 border-none rounded-2xl shadow-inner" value={yeniDuyuru.baslik} onChange={e => setYeniDuyuru({...yeniDuyuru, baslik: e.target.value})} />
+                <textarea placeholder="Kullanıcılara iletilecek mesaj..." rows={4} className="w-full p-4 bg-gray-50 border-none rounded-2xl shadow-inner" value={yeniDuyuru.mesaj} onChange={e => setYeniDuyuru({...yeniDuyuru, mesaj: e.target.value})} />
+                <input placeholder="Resim URL (Opsiyonel)" className="w-full p-4 bg-gray-50 border-none rounded-2xl shadow-inner" value={yeniDuyuru.resim_url} onChange={e => setYeniDuyuru({...yeniDuyuru, resim_url: e.target.value})} />
+                <button onClick={duyuruEkle} className="w-full py-4 bg-[#1a3c6e] text-white rounded-2xl font-bold shadow-lg hover:bg-blue-900 transition flex items-center justify-center gap-2">
+                  <Megaphone size={20}/> Şimdi Yayınla
+                </button>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {kullanicilar.filter(k => k.type === 'staff').map(s => (
-                <div key={s.id} className="bg-white p-6 rounded-3xl border shadow-sm">
-                  <h4 className="font-bold">{s.full_name}</h4>
-                  <p className="text-sm text-gray-500">{s.phone_number}</p>
-                  <div className="mt-4 flex gap-2">
-                    <button onClick={() => setSecilenKullanici(s)} className="flex-1 bg-gray-100 py-2 rounded-lg text-xs font-bold">Düzenle</button>
-                    <button onClick={async () => {
-                      if(confirm("Silinsin mi?")) {
-                         await supabase.from('profiles').delete().eq('id', s.id);
-                         verileriYukle();
-                      }
-                    }} className="p-2 bg-red-50 text-red-500 rounded-lg"><Trash2 size={14}/></button>
+
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border">
+              <h2 className="text-2xl font-black text-blue-900 mb-6">Aktif Duyurular</h2>
+              <div className="space-y-4">
+                {duyurular.map(d => (
+                  <div key={d.id} className="p-6 border rounded-[2rem] bg-gray-50 relative group">
+                    <button onClick={async () => { await supabase.from('duyurular').delete().eq('id', d.id); verileriYukle(); }} className="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition"><Trash2 size={20}/></button>
+                    <h4 className="font-bold text-blue-900 text-lg">{d.baslik}</h4>
+                    <p className="text-sm text-gray-600 mt-2">{d.mesaj}</p>
+                    {d.resim_url && <div className="mt-4 rounded-xl overflow-hidden h-32 border bg-white flex items-center justify-center"><img src={d.resim_url} className="h-full object-contain" alt="Popup" /></div>}
+                    <div className="mt-4 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-gray-400">{new Date(d.created_at).toLocaleString('tr-TR')}</span>
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${d.aktif ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{d.aktif ? 'YAYINDA' : 'PASİF'}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {activeMenu === 'destek' && (
-          <div className="grid grid-cols-1 gap-4">
-            {destekler.map(d => <DestekKart key={d.id} destek={d} onGuncelle={verileriYukle} />)}
+        {/* PERSONEL YÖNETİMİ (Sadece Superadmin) */}
+        {activeMenu === 'personel' && isSuper && (
+          <div className="space-y-6 animate-in slide-in-from-bottom-4">
+             <div className="bg-blue-900 p-10 rounded-[3rem] text-white flex justify-between items-center shadow-2xl">
+                <div>
+                   <h2 className="text-3xl font-black mb-2">Sistem Personeli</h2>
+                   <p className="text-blue-200">Yardımcı adminler ekleyebilir ve yetkilerini kısıtlayabilirsiniz.</p>
+                </div>
+                <button onClick={() => alert("Kullanıcı Listesi'nden tipi 'staff' yaparak personel atayabilirsiniz.")} className="p-5 bg-orange-400 text-blue-900 rounded-[2rem] font-black shadow-lg hover:scale-105 transition-transform"><UserPlus size={28}/></button>
+             </div>
+             
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {kullanicilar.filter(k => k.type === 'staff').map(s => (
+                   <div key={s.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-orange-100">
+                      <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4"><ShieldCheck className="text-blue-900" size={32}/></div>
+                      <h4 className="font-black text-lg text-gray-800">{s.full_name}</h4>
+                      <p className="text-sm font-mono text-blue-600 mb-6">{s.phone_number}</p>
+                      <div className="bg-orange-50 p-3 rounded-xl mb-6">
+                         <p className="text-[10px] font-black text-orange-600 uppercase mb-1">Şifre</p>
+                         <p className="font-mono font-bold">{s.sifre_acik}</p>
+                      </div>
+                      <button onClick={() => setSecilenKullanici(s)} className="w-full py-3 bg-gray-100 rounded-xl font-bold hover:bg-blue-900 hover:text-white transition">Yetkileri Düzenle</button>
+                   </div>
+                ))}
+             </div>
           </div>
         )}
+
       </main>
 
-      {personelEkleAcik && <PersonelEkleModal onKapat={() => setPersonelEkleAcik(false)} onEklendi={verileriYukle} />}
+      {/* MODALLAR */}
       {secilenKullanici && (
         <KullaniciDetay 
           kullanici={secilenKullanici} 
           onKapat={() => setSecilenKullanici(null)} 
           onGuncelle={verileriYukle} 
           onSil={async (id) => {
-            if(confirm("Tamamen silinecek?")) {
-              await supabase.from('ilanlar').delete().eq('user_id', id);
+            if(confirm("DİKKAT! Bu kullanıcıyı silmek istediğinizden emin misiniz?")) {
               await supabase.from('profiles').delete().eq('id', id);
               setSecilenKullanici(null);
               verileriYukle();
