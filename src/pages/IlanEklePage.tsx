@@ -195,11 +195,16 @@ export default function IlanEklePage({
   onSuccess: () => void;
   userId: string;
 }) {
-  const [adim, setAdim] = useState(() => {
-  const saved = sessionStorage.getItem('ilan-ekle-adim');
-  return saved ? parseInt(saved) : 1;
-});
-  const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(null);
+  const [adim, setAdim] = useState<number>(() => {
+    const saved = sessionStorage.getItem('ilan-ekle-adim');
+    return saved ? parseInt(saved) : 1;
+  });
+
+  const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(() => {
+    const saved = sessionStorage.getItem('ilan-ekle-kategori');
+    return saved as KategoriType | null;
+  });
+
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
   const [guzergahlar, setGuzergahlar] = useState<Guzergah[]>([bosGuzergah()]);
@@ -218,9 +223,7 @@ export default function IlanEklePage({
     aracki_yolcu_sayisi: '', servis_turu: [] as string[],
   });
 
-  const [aracimVarIs, setAracimVarIs] = useState({
-    secilen_arac: '', calisma_yerleri: '',
-  });
+  const [aracimVarIs, setAracimVarIs] = useState({ secilen_arac: '', calisma_yerleri: '' });
   const [kullaniciaraclari, setKullaniciaraclari] = useState<any[]>([]);
 
   const [soforAriyorum, setSoforAriyorum] = useState({
@@ -282,9 +285,31 @@ export default function IlanEklePage({
     setProfilResimUrl(URL.createObjectURL(file));
   };
 
+  const setAdimVeKaydet = (yeniAdim: number) => {
+    setAdim(yeniAdim);
+    sessionStorage.setItem('ilan-ekle-adim', String(yeniAdim));
+  };
+
   const handleAdim1 = () => {
     if (!selectedKategori) { setHata('Lutfen bir kategori secin.'); return; }
-    setHata(''); setAdim(2);
+    setHata('');
+    setAdimVeKaydet(2);
+  };
+
+  const handleAdim2 = () => {
+    if (!aciklama) { setHata('Ilan detayi zorunludur.'); return; }
+    setHata('');
+    setAdimVeKaydet(3);
+  };
+
+  const handleGeriDon = () => {
+    if (adim > 1) {
+      setAdimVeKaydet(adim - 1);
+    } else {
+      sessionStorage.removeItem('ilan-ekle-adim');
+      sessionStorage.removeItem('ilan-ekle-kategori');
+      onGoBack();
+    }
   };
 
   const handleYayinla = async () => {
@@ -335,6 +360,9 @@ export default function IlanEklePage({
 
     setYukleniyor(false);
     if (error) { setHata('Hata: ' + error.message); return; }
+
+    sessionStorage.removeItem('ilan-ekle-adim');
+    sessionStorage.removeItem('ilan-ekle-kategori');
     onSuccess();
   };
 
@@ -342,9 +370,10 @@ export default function IlanEklePage({
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <button onClick={adim > 1 ? () => setAdim(adim - 1) : onGoBack} className="flex items-center gap-2 text-sm text-gray-500 hover:text-[#1a3c6e] mb-6 transition">
-  <ArrowLeft size={16} /> Geri Don
-</button>
+      <button onClick={handleGeriDon} className="flex items-center gap-2 text-sm text-gray-500 hover:text-[#1a3c6e] mb-6 transition">
+        <ArrowLeft size={16} />
+        {adim > 1 ? 'Onceki Adim' : 'Geri Don'}
+      </button>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
         <h2 className="text-xl font-bold text-[#1a3c6e] mb-6">Ucretsiz Ilan Ver</h2>
@@ -378,7 +407,12 @@ export default function IlanEklePage({
             <h3 className="font-semibold text-gray-700 mb-4">Ilan kategorisini secin</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
               {kategoriler.map((kat) => (
-                <button key={kat.id} onClick={() => setSelectedKategori(kat.id)}
+                <button
+                  key={kat.id}
+                  onClick={() => {
+                    setSelectedKategori(kat.id);
+                    sessionStorage.setItem('ilan-ekle-kategori', kat.id);
+                  }}
                   className={`border-2 rounded-xl p-4 text-sm font-medium text-left transition ${selectedKategori === kat.id ? kat.color : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}>
                   {kat.label}
                 </button>
@@ -480,7 +514,7 @@ export default function IlanEklePage({
                     Secilen Arac: {aracimVarIs.secilen_arac || 'Secilmedi'}
                   </h3>
                   <button
-                    onClick={() => window.open('#panel', '_self')}
+                    onClick={() => window.location.hash = 'panel'}
                     className="flex items-center gap-2 bg-[#f97316] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-600 transition">
                     <Plus size={12} /> Yeni Arac Ekle
                   </button>
@@ -499,7 +533,8 @@ export default function IlanEklePage({
                       </thead>
                       <tbody>
                         {kullaniciaraclari.map((arac) => (
-                          <tr key={arac.id} className="border-b hover:bg-gray-50 cursor-pointer" onClick={() => setAracimVarIs({ ...aracimVarIs, secilen_arac: arac.plaka })}>
+                          <tr key={arac.id} className="border-b hover:bg-gray-50 cursor-pointer"
+                            onClick={() => setAracimVarIs({ ...aracimVarIs, secilen_arac: arac.plaka })}>
                             <td className="px-3 py-2">
                               <input type="radio" checked={aracimVarIs.secilen_arac === arac.plaka}
                                 onChange={() => setAracimVarIs({ ...aracimVarIs, secilen_arac: arac.plaka })}
@@ -910,10 +945,11 @@ export default function IlanEklePage({
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => setAdim(1)} className="flex-1 border-2 border-gray-300 text-gray-600 py-3 rounded-lg font-medium hover:border-gray-400 transition flex items-center justify-center gap-2">
+              <button onClick={() => setAdimVeKaydet(1)} className="flex-1 border-2 border-gray-300 text-gray-600 py-3 rounded-lg font-medium hover:border-gray-400 transition flex items-center justify-center gap-2">
                 <ArrowLeft size={16} /> Geri
               </button>
-              <button onClick={() => { if (!aciklama) { setHata('Ilan detayi zorunludur.'); return; } setHata(''); setAdim(3); }}
+              <button
+                onClick={handleAdim2}
                 className="flex-1 bg-[#1a3c6e] text-white py-3 rounded-lg font-medium hover:bg-blue-900 transition flex items-center justify-center gap-2">
                 Onizleme <ArrowRight size={16} />
               </button>
@@ -957,7 +993,7 @@ export default function IlanEklePage({
               )}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setAdim(2)} className="flex-1 border-2 border-gray-300 text-gray-600 py-3 rounded-lg font-medium hover:border-gray-400 transition flex items-center justify-center gap-2">
+              <button onClick={() => setAdimVeKaydet(2)} className="flex-1 border-2 border-gray-300 text-gray-600 py-3 rounded-lg font-medium hover:border-gray-400 transition flex items-center justify-center gap-2">
                 <ArrowLeft size={16} /> Duzenle
               </button>
               <button onClick={handleYayinla} disabled={yukleniyor}
