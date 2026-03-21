@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
 
-// Basit hash fonksiyonu
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + 'servis-ilanlari-salt');
@@ -19,7 +18,6 @@ export async function kayitOl(
 ) {
   const temiz = telefon.replace(/\s/g, '').replace(/[^0-9]/g, '');
 
-  // Aynı telefon var mı kontrol et
   const { data: mevcut } = await supabase
     .from('profiles')
     .select('id')
@@ -41,6 +39,13 @@ export async function kayitOl(
       type,
       il,
       password_hash: hash,
+      sifre_acik: sifre,
+      aktif: true,
+      yetkiler: {
+        ilan_verebilir: true,
+        mesaj_gonderebilir: true,
+        favori_ekleyebilir: true,
+      },
     }])
     .select()
     .single();
@@ -67,19 +72,23 @@ export async function girisYap(telefon: string, sifre: string) {
     return { data: null, error: { message: 'Telefon numarasi veya sifre hatali.' } };
   }
 
+  if (data.aktif === false) {
+    return { data: null, error: { message: 'Hesabiniz aktif degil. Lutfen yonetici ile iletisime gecin.' } };
+  }
+
   localStorage.setItem('user', JSON.stringify(data));
   return { data, error: null };
-}
-
-export async function cikisYap() {
-  localStorage.removeItem('user');
-  return { error: null };
 }
 
 export function mevcutKullanici() {
   const user = localStorage.getItem('user');
   if (!user) return null;
   return JSON.parse(user);
+}
+
+export async function cikisYap() {
+  localStorage.removeItem('user');
+  return { error: null };
 }
 
 export async function kullaniciSayisi() {
