@@ -325,60 +325,36 @@ export default function AdminPage({
           )}
 
           {activeMenu === 'destek' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-bold text-[#1a3c6e] mb-6">
-                Destek Talepleri
-                {bekleyenDestek > 0 && (
-                  <span className="ml-2 bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">{bekleyenDestek} bekliyor</span>
-                )}
-              </h2>
-              {yukleniyor ? (
-                <div className="flex flex-col gap-3">
-                  {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse"></div>)}
-                </div>
-              ) : destekler.length === 0 ? (
-                <div className="text-center py-16 text-gray-400">
-                  <HelpCircle size={48} className="mx-auto mb-4 opacity-30" />
-                  <p>Henuz destek talebi yok</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {destekler.map((destek) => (
-                    <div key={destek.id} className={`border rounded-xl p-4 ${
-                      destek.durum === 'beklemede' ? 'border-orange-200 bg-orange-50' : 'border-gray-200 bg-white'
-                    }`}>
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <p className="font-medium text-gray-800">{destek.konu}</p>
-                          <p className="text-xs text-gray-500">
-                            {destek.profiles?.full_name || destek.profiles?.phone_number} •{' '}
-                            {new Date(destek.created_at).toLocaleDateString('tr-TR')}
-                          </p>
-                        </div>
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                          destek.durum === 'beklemede' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
-                        }`}>
-                          {destek.durum === 'beklemede' ? 'Beklemede' : 'Cozuldu'}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-700 mb-3">{destek.mesaj}</p>
-                      {destek.durum === 'beklemede' && (
-                        <button
-                          onClick={() => handleDestekDurum(destek.id, 'cozuldu')}
-                          className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg text-xs font-medium hover:bg-green-600 transition"
-                        >
-                          <CheckCircle size={14} />
-                          Cozuldu Olarak Isaretle
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+    <h2 className="text-lg font-bold text-[#1a3c6e] mb-6">
+      Destek Talepleri
+      {bekleyenDestek > 0 && (
+        <span className="ml-2 bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
+          {bekleyenDestek} bekliyor
+        </span>
+      )}
+    </h2>
+    {yukleniyor ? (
+      <div className="flex flex-col gap-3">
+        {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse"></div>)}
       </div>
-    </div>
-  );
-}
+    ) : destekler.length === 0 ? (
+      <div className="text-center py-16 text-gray-400">
+        <HelpCircle size={48} className="mx-auto mb-4 opacity-30" />
+        <p>Henuz destek talebi yok</p>
+      </div>
+    ) : (
+      <div className="flex flex-col gap-4">
+        {destekler.map((destek) => (
+          <DestekKart
+            key={destek.id}
+            destek={destek}
+            onDurumGuncelle={async (id, durum, cevap) => {
+              await handleDestekDurum(id, durum, cevap);
+            }}
+          />
+        ))}
+      </div>
+    )}
+  </div>
+)}
