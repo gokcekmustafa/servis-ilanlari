@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, FileText, Trash2, Eye, CheckCircle, XCircle, LogOut, HelpCircle, Bell } from 'lucide-react';
+import { Users, FileText, Trash2, Eye, CheckCircle, XCircle, LogOut, HelpCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { destekTalepleriniGetir, destekDurumGuncelle } from '../lib/ilanlar';
 import { Ilan } from '../types';
@@ -21,6 +21,126 @@ const menuItems = [
   { id: 'kullanicilar', label: 'Tum Kullanicilar', icon: Users },
   { id: 'destek', label: 'Destek Talepleri', icon: HelpCircle },
 ];
+
+const durumRenk: Record<string, string> = {
+  beklemede: 'bg-orange-100 text-orange-700',
+  islemde: 'bg-blue-100 text-blue-700',
+  cozuldu: 'bg-green-100 text-green-700',
+};
+
+const durumLabel: Record<string, string> = {
+  beklemede: 'Beklemede',
+  islemde: 'İslemde',
+  cozuldu: 'Cozuldu',
+};
+
+function DestekKart({ destek, onGuncelle }: { destek: any; onGuncelle: () => void }) {
+  const [cevapMetni, setCevapMetni] = useState(destek.cevap || '');
+  const [cevapAcik, setCevapAcik] = useState(false);
+  const [yukleniyor, setYukleniyor] = useState(false);
+
+  const handleDurumDegistir = async (yeniDurum: string) => {
+    setYukleniyor(true);
+    await destekDurumGuncelle(destek.id, yeniDurum);
+    setYukleniyor(false);
+    onGuncelle();
+  };
+
+  const handleCevapGonder = async () => {
+    if (!cevapMetni.trim()) return;
+    setYukleniyor(true);
+    await destekDurumGuncelle(destek.id, 'islemde', cevapMetni);
+    setYukleniyor(false);
+    setCevapAcik(false);
+    onGuncelle();
+  };
+
+  return (
+    <div className={`border rounded-xl p-4 ${destek.durum === 'beklemede' ? 'border-orange-200 bg-orange-50' : destek.durum === 'islemde' ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+      <div className="flex items-start justify-between mb-2">
+        <div>
+          <p className="font-medium text-gray-800">{destek.konu}</p>
+          <p className="text-xs text-gray-500">
+            {destek.profiles?.full_name || destek.profiles?.phone_number} - {new Date(destek.created_at).toLocaleDateString('tr-TR')}
+          </p>
+        </div>
+        <span className={`text-xs font-medium px-2 py-1 rounded-full ${durumRenk[destek.durum] || 'bg-gray-100 text-gray-700'}`}>
+          {durumLabel[destek.durum] || destek.durum}
+        </span>
+      </div>
+
+      <p className="text-sm text-gray-700 mb-3 p-3 bg-white rounded-lg border border-gray-100">{destek.mesaj}</p>
+
+      {destek.cevap && (
+        <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-xs font-medium text-green-700 mb-1">Admin Cevabi:</p>
+          <p className="text-sm text-gray-700">{destek.cevap}</p>
+          {destek.cevap_tarihi && (
+            <p className="text-xs text-gray-400 mt-1">{new Date(destek.cevap_tarihi).toLocaleDateString('tr-TR')}</p>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2 mt-3">
+        <div className="flex gap-2">
+          {destek.durum !== 'beklemede' && (
+            <button
+              onClick={() => handleDurumDegistir('beklemede')}
+              disabled={yukleniyor}
+              className="px-3 py-1.5 text-xs font-medium bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition disabled:opacity-50"
+            >
+              Beklemede
+            </button>
+          )}
+          {destek.durum !== 'islemde' && (
+            <button
+              onClick={() => handleDurumDegistir('islemde')}
+              disabled={yukleniyor}
+              className="px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition disabled:opacity-50"
+            >
+              İslemde
+            </button>
+          )}
+          {destek.durum !== 'cozuldu' && (
+            <button
+              onClick={() => handleDurumDegistir('cozuldu')}
+              disabled={yukleniyor}
+              className="px-3 py-1.5 text-xs font-medium bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition disabled:opacity-50"
+            >
+              Cozuldu
+            </button>
+          )}
+        </div>
+
+        <button
+          onClick={() => setCevapAcik(!cevapAcik)}
+          className="px-3 py-1.5 text-xs font-medium bg-[#1a3c6e] text-white rounded-lg hover:bg-blue-900 transition"
+        >
+          {cevapAcik ? 'İptal' : 'Cevap Ver'}
+        </button>
+      </div>
+
+      {cevapAcik && (
+        <div className="mt-3 flex flex-col gap-2">
+          <textarea
+            value={cevapMetni}
+            onChange={(e) => setCevapMetni(e.target.value)}
+            placeholder="Cevabinizi yazin..."
+            rows={3}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]"
+          />
+          <button
+            onClick={handleCevapGonder}
+            disabled={yukleniyor || !cevapMetni.trim()}
+            className="self-end px-4 py-2 bg-[#f97316] text-white text-xs font-medium rounded-lg hover:bg-orange-600 transition disabled:opacity-50"
+          >
+            {yukleniyor ? 'Gonderiliyor...' : 'Gonder ve İslemde Yap'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AdminPage({
   onLogout,
@@ -45,28 +165,20 @@ export default function AdminPage({
 
   useEffect(() => {
     destekTalepleriniGetir().then(({ data }) => {
-      if (data) {
-        setBekleyenDestek(data.filter((d: any) => d.durum === 'beklemede').length);
-      }
+      if (data) setBekleyenDestek(data.filter((d: any) => d.durum === 'beklemede').length);
     });
   }, []);
 
   const ilanlariYukle = async () => {
     setYukleniyor(true);
-    const { data } = await supabase
-      .from('ilanlar')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data } = await supabase.from('ilanlar').select('*').order('created_at', { ascending: false });
     if (data) setIlanlar(data as Ilan[]);
     setYukleniyor(false);
   };
 
   const kullanicilariYukle = async () => {
     setYukleniyor(true);
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
     if (data) setKullanicilar(data as Profile[]);
     setYukleniyor(false);
   };
@@ -74,7 +186,10 @@ export default function AdminPage({
   const destekleriYukle = async () => {
     setYukleniyor(true);
     const { data } = await destekTalepleriniGetir();
-    if (data) setDestekler(data);
+    if (data) {
+      setDestekler(data);
+      setBekleyenDestek(data.filter((d: any) => d.durum === 'beklemede').length);
+    }
     setYukleniyor(false);
   };
 
@@ -99,12 +214,6 @@ export default function AdminPage({
     await supabase.from('profiles').delete().eq('id', id);
     setKullanicilar(kullanicilar.filter((k) => k.id !== id));
     if (secilenKullanici?.id === id) setSecilenKullanici(null);
-  };
-
-  const handleDestekDurum = async (id: string, durum: string) => {
-    await destekDurumGuncelle(id, durum);
-    setDestekler(destekler.map((d) => d.id === id ? { ...d, durum } : d));
-    if (durum === 'cozuldu') setBekleyenDestek(Math.max(0, bekleyenDestek - 1));
   };
 
   return (
@@ -199,11 +308,15 @@ export default function AdminPage({
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <button onClick={() => onIlanDetay(ilan)} className="p-1.5 text-gray-400 hover:text-[#1a3c6e] hover:bg-blue-50 rounded-lg transition"><Eye size={15} /></button>
+                              <button onClick={() => onIlanDetay(ilan)} className="p-1.5 text-gray-400 hover:text-[#1a3c6e] hover:bg-blue-50 rounded-lg transition">
+                                <Eye size={15} />
+                              </button>
                               <button onClick={() => handleDurumDegistir(ilan.id, ilan.durum)} className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition">
                                 {ilan.durum === 'aktif' ? <XCircle size={15} /> : <CheckCircle size={15} />}
                               </button>
-                              <button onClick={() => handleIlanSil(ilan.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"><Trash2 size={15} /></button>
+                              <button onClick={() => handleIlanSil(ilan.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
+                                <Trash2 size={15} />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -281,7 +394,7 @@ export default function AdminPage({
                 <div className="w-72 flex-shrink-0 bg-white rounded-2xl shadow-sm border border-gray-200 p-6 h-fit">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-gray-800">Kullanici Detayi</h3>
-                    <button onClick={() => setSecilenKullanici(null)} className="text-gray-400 hover:text-gray-600">✕</button>
+                    <button onClick={() => setSecilenKullanici(null)} className="text-gray-400 hover:text-gray-600">x</button>
                   </div>
                   <div className="flex flex-col gap-3 text-sm">
                     <div className="bg-gray-50 rounded-lg p-3">
@@ -325,36 +438,39 @@ export default function AdminPage({
           )}
 
           {activeMenu === 'destek' && (
-  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-    <h2 className="text-lg font-bold text-[#1a3c6e] mb-6">
-      Destek Talepleri
-      {bekleyenDestek > 0 && (
-        <span className="ml-2 bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
-          {bekleyenDestek} bekliyor
-        </span>
-      )}
-    </h2>
-    {yukleniyor ? (
-      <div className="flex flex-col gap-3">
-        {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse"></div>)}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-bold text-[#1a3c6e] mb-6">
+                Destek Talepleri
+                {bekleyenDestek > 0 && (
+                  <span className="ml-2 bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
+                    {bekleyenDestek} bekliyor
+                  </span>
+                )}
+              </h2>
+              {yukleniyor ? (
+                <div className="flex flex-col gap-3">
+                  {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse"></div>)}
+                </div>
+              ) : destekler.length === 0 ? (
+                <div className="text-center py-16 text-gray-400">
+                  <HelpCircle size={48} className="mx-auto mb-4 opacity-30" />
+                  <p>Henuz destek talebi yok</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {destekler.map((destek) => (
+                    <DestekKart
+                      key={destek.id}
+                      destek={destek}
+                      onGuncelle={destekleriYukle}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    ) : destekler.length === 0 ? (
-      <div className="text-center py-16 text-gray-400">
-        <HelpCircle size={48} className="mx-auto mb-4 opacity-30" />
-        <p>Henuz destek talebi yok</p>
-      </div>
-    ) : (
-      <div className="flex flex-col gap-4">
-        {destekler.map((destek) => (
-          <DestekKart
-            key={destek.id}
-            destek={destek}
-            onDurumGuncelle={async (id, durum, cevap) => {
-              await handleDestekDurum(id, durum, cevap);
-            }}
-          />
-        ))}
-      </div>
-    )}
-  </div>
-)}
+    </div>
+  );
+}
