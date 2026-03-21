@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, FileText, Trash2, Eye, CheckCircle, XCircle, LogOut, HelpCircle, Edit, Save, X } from 'lucide-react';
+import { Users, FileText, Trash2, Eye, CheckCircle, XCircle, LogOut, HelpCircle, Edit, Save, X, Menu } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { destekTalepleriniGetir, destekDurumGuncelle } from '../lib/ilanlar';
 import { Ilan } from '../types';
@@ -24,8 +24,8 @@ interface Profile {
 }
 
 const menuItems = [
-  { id: 'ilanlar', label: 'Tum İlanlar', icon: FileText },
-  { id: 'kullanicilar', label: 'Tum Kullanicilar', icon: Users },
+  { id: 'ilanlar', label: 'Tüm İlanlar', icon: FileText },
+  { id: 'kullanicilar', label: 'Tüm Kullanıcılar', icon: Users },
   { id: 'destek', label: 'Destek Talepleri', icon: HelpCircle },
 ];
 
@@ -37,8 +37,8 @@ const durumRenk: Record<string, string> = {
 
 const durumLabel: Record<string, string> = {
   beklemede: 'Beklemede',
-  islemde: 'İslemde',
-  cozuldu: 'Cozuldu',
+  islemde: 'İşlemde',
+  cozuldu: 'Çözüldü',
 };
 
 function DestekKart({ destek, onGuncelle }: { destek: any; onGuncelle: () => void }) {
@@ -78,7 +78,7 @@ function DestekKart({ destek, onGuncelle }: { destek: any; onGuncelle: () => voi
       <p className="text-sm text-gray-700 mb-3 p-3 bg-white rounded-lg border border-gray-100">{destek.mesaj}</p>
       {destek.cevap && (
         <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-xs font-medium text-green-700 mb-1">Admin Cevabi:</p>
+          <p className="text-xs font-medium text-green-700 mb-1">Admin Cevabı:</p>
           <p className="text-sm text-gray-700">{destek.cevap}</p>
           {destek.cevap_tarihi && (
             <p className="text-xs text-gray-400 mt-1">{new Date(destek.cevap_tarihi).toLocaleDateString('tr-TR')}</p>
@@ -96,13 +96,13 @@ function DestekKart({ destek, onGuncelle }: { destek: any; onGuncelle: () => voi
           {destek.durum !== 'islemde' && (
             <button onClick={() => handleDurumDegistir('islemde')} disabled={yukleniyor}
               className="px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition disabled:opacity-50">
-              İslemde
+              İşlemde
             </button>
           )}
           {destek.durum !== 'cozuldu' && (
             <button onClick={() => handleDurumDegistir('cozuldu')} disabled={yukleniyor}
               className="px-3 py-1.5 text-xs font-medium bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition disabled:opacity-50">
-              Cozuldu
+              Çözüldü
             </button>
           )}
         </div>
@@ -114,11 +114,11 @@ function DestekKart({ destek, onGuncelle }: { destek: any; onGuncelle: () => voi
       {cevapAcik && (
         <div className="mt-3 flex flex-col gap-2">
           <textarea value={cevapMetni} onChange={(e) => setCevapMetni(e.target.value)}
-            placeholder="Cevabinizi yazin..." rows={3}
+            placeholder="Cevabınızı yazın..." rows={3}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]" />
           <button onClick={handleCevapGonder} disabled={yukleniyor || !cevapMetni.trim()}
             className="self-end px-4 py-2 bg-[#f97316] text-white text-xs font-medium rounded-lg hover:bg-orange-600 transition disabled:opacity-50">
-            {yukleniyor ? 'Gonderiliyor...' : 'Gonder ve İslemde Yap'}
+            {yukleniyor ? 'Gönderiliyor...' : 'Gönder ve İşlemde Yap'}
           </button>
         </div>
       )}
@@ -175,123 +175,125 @@ function KullaniciDetay({ kullanici, onKapat, onGuncelle, onSil }: {
   };
 
   return (
-    <div className="w-80 flex-shrink-0 bg-white rounded-2xl shadow-sm border border-gray-200 p-5 h-fit">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-gray-800">Kullanici Detayi</h3>
-        <button onClick={onKapat} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
-      </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 md:relative md:bg-transparent md:p-0 md:inset-auto md:w-80 md:flex-shrink-0">
+      <div className="w-full max-w-lg md:max-w-none bg-white rounded-2xl shadow-xl md:shadow-sm border border-gray-200 p-5 h-[90vh] md:h-fit overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-gray-800">Kullanıcı Detayı</h3>
+          <button onClick={onKapat} className="text-gray-400 hover:text-gray-600 p-2"><X size={20} /></button>
+        </div>
 
-      {basari && <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg mb-3 text-xs">{basari}</div>}
+        {basari && <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg mb-3 text-xs">{basari}</div>}
 
-      <div className="flex flex-col items-center mb-4">
-        <div className="w-20 h-20 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center overflow-hidden mb-2">
-          {kullanici.profil_resmi ? (
-            <img src={kullanici.profil_resmi} alt="Profil" className="w-full h-full object-cover" />
-          ) : (
-            <Users size={28} className="text-gray-400" />
-          )}
+        <div className="flex flex-col items-center mb-4">
+          <div className="w-20 h-20 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center overflow-hidden mb-2">
+            {kullanici.profil_resmi ? (
+              <img src={kullanici.profil_resmi} alt="Profil" className="w-full h-full object-cover" />
+            ) : (
+              <Users size={28} className="text-gray-400" />
+            )}
+          </div>
+          <div className="flex gap-2">
+            <label className="cursor-pointer text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-200 transition">
+              Değiştir
+              <input type="file" accept="image/*" onChange={handleResimDegistir} className="hidden" />
+            </label>
+            {kullanici.profil_resmi && (
+              <button onClick={handleResimSil} className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-lg hover:bg-red-200 transition">Sil</button>
+            )}
+          </div>
         </div>
-        <div className="flex gap-2">
-          <label className="cursor-pointer text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-200 transition">
-            Degistir
-            <input type="file" accept="image/*" onChange={handleResimDegistir} className="hidden" />
-          </label>
-          {kullanici.profil_resmi && (
-            <button onClick={handleResimSil} className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-lg hover:bg-red-200 transition">Sil</button>
-          )}
-        </div>
-      </div>
 
-      <div className="flex flex-col gap-2 text-sm mb-4">
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-400 mb-1">Ad Soyad</p>
-          <p className="font-medium">{kullanici.full_name || '-'}</p>
+        <div className="flex flex-col gap-2 text-sm mb-4">
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-xs text-gray-400 mb-1">Ad Soyad</p>
+            <p className="font-medium">{kullanici.full_name || '-'}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-xs text-gray-400 mb-1">Telefon</p>
+            <p className="font-medium">{kullanici.phone_number}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-xs text-gray-400 mb-1">Şifre</p>
+            <p className="font-mono font-medium text-orange-600">{kullanici.sifre_acik || '******'}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-xs text-gray-400 mb-1">Üyelik Tipi</p>
+            <p className="font-medium">{kullanici.type === 'kurumsal' ? 'Kurumsal' : 'Bireysel'}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-xs text-gray-400 mb-1">İl / İlçe</p>
+            <p className="font-medium">{kullanici.il || '-'} / {kullanici.ilce || '-'}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-xs text-gray-400 mb-1">Adres</p>
+            <p className="font-medium">{kullanici.adres || '-'}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-xs text-gray-400 mb-1">Kayıt Tarihi</p>
+            <p className="font-medium">{new Date(kullanici.created_at).toLocaleDateString('tr-TR')}</p>
+          </div>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-400 mb-1">Telefon</p>
-          <p className="font-medium">{kullanici.phone_number}</p>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-400 mb-1">Sifre</p>
-          <p className="font-mono font-medium text-orange-600">{kullanici.sifre_acik || '******'}</p>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-400 mb-1">Uyelik Tipi</p>
-          <p className="font-medium">{kullanici.type === 'kurumsal' ? 'Kurumsal' : 'Bireysel'}</p>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-400 mb-1">Il / İlce</p>
-          <p className="font-medium">{kullanici.il || '-'} / {kullanici.ilce || '-'}</p>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-400 mb-1">Adres</p>
-          <p className="font-medium">{kullanici.adres || '-'}</p>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-400 mb-1">Kayit Tarihi</p>
-          <p className="font-medium">{new Date(kullanici.created_at).toLocaleDateString('tr-TR')}</p>
-        </div>
-      </div>
 
-      <div className="border border-gray-200 rounded-lg p-3 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-bold text-gray-700">Hesap Durumu ve Yetkiler</p>
-          <button onClick={() => setDuzenle(!duzenle)} className="text-xs text-[#1a3c6e] hover:underline flex items-center gap-1">
-            <Edit size={12} /> Duzenle
+        <div className="border border-gray-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-bold text-gray-700">Hesap Durumu ve Yetkiler</p>
+            <button onClick={() => setDuzenle(!duzenle)} className="text-xs text-[#1a3c6e] hover:underline flex items-center gap-1">
+              <Edit size={12} /> Düzenle
+            </button>
+          </div>
+
+          <div className="mb-3">
+            <label className="flex items-center justify-between text-xs text-gray-600 mb-1">
+              <span>Hesap Aktif</span>
+              <div className={`relative inline-flex items-center cursor-pointer ${!duzenle ? 'opacity-60' : ''}`}>
+                <input type="checkbox" checked={aktif} onChange={(e) => duzenle && setAktif(e.target.checked)} className="sr-only" disabled={!duzenle} />
+                <div onClick={() => duzenle && setAktif(!aktif)} className={`w-9 h-5 rounded-full transition ${aktif ? 'bg-green-500' : 'bg-gray-300'} cursor-pointer`}>
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${aktif ? 'translate-x-4' : ''}`}></div>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          {[
+            { key: 'ilan_verebilir', label: 'İlan Verebilir' },
+            { key: 'mesaj_gonderebilir', label: 'Mesaj Gönderebilir' },
+            { key: 'favori_ekleyebilir', label: 'Favori Ekleyebilir' },
+          ].map((item) => (
+            <label key={item.key} className="flex items-center justify-between text-xs text-gray-600 mb-2">
+              <span>{item.label}</span>
+              <div className={`relative inline-flex items-center cursor-pointer ${!duzenle ? 'opacity-60' : ''}`}>
+                <input type="checkbox" checked={(yetkiler as any)[item.key]} onChange={(e) => duzenle && setYetkiler({ ...yetkiler, [item.key]: e.target.checked })} className="sr-only" disabled={!duzenle} />
+                <div onClick={() => duzenle && setYetkiler({ ...yetkiler, [item.key]: !(yetkiler as any)[item.key] })}
+                  className={`w-9 h-5 rounded-full transition cursor-pointer ${(yetkiler as any)[item.key] ? 'bg-green-500' : 'bg-gray-300'}`}>
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${(yetkiler as any)[item.key] ? 'translate-x-4' : ''}`}></div>
+                </div>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        {duzenle && (
+          <div className="mb-4">
+            <label className="text-xs text-gray-500 mb-1 block">Yeni Şifre (boş bırakabilirsiniz)</label>
+            <input type="text" value={yeniSifre} onChange={(e) => setYeniSifre(e.target.value)}
+              placeholder="Yeni şifre"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]" />
+          </div>
+        )}
+
+        {duzenle && (
+          <button onClick={handleKaydet} disabled={yukleniyor}
+            className="w-full bg-[#1a3c6e] text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-900 transition mb-2 flex items-center justify-center gap-2 disabled:opacity-50">
+            <Save size={14} />
+            {yukleniyor ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
           </button>
-        </div>
+        )}
 
-        <div className="mb-3">
-          <label className="flex items-center justify-between text-xs text-gray-600 mb-1">
-            <span>Hesap Aktif</span>
-            <div className={`relative inline-flex items-center cursor-pointer ${!duzenle ? 'opacity-60' : ''}`}>
-              <input type="checkbox" checked={aktif} onChange={(e) => duzenle && setAktif(e.target.checked)} className="sr-only" disabled={!duzenle} />
-              <div onClick={() => duzenle && setAktif(!aktif)} className={`w-9 h-5 rounded-full transition ${aktif ? 'bg-green-500' : 'bg-gray-300'} cursor-pointer`}>
-                <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${aktif ? 'translate-x-4' : ''}`}></div>
-              </div>
-            </div>
-          </label>
-        </div>
-
-        {[
-          { key: 'ilan_verebilir', label: 'İlan Verebilir' },
-          { key: 'mesaj_gonderebilir', label: 'Mesaj Gonderebilir' },
-          { key: 'favori_ekleyebilir', label: 'Favori Ekleyebilir' },
-        ].map((item) => (
-          <label key={item.key} className="flex items-center justify-between text-xs text-gray-600 mb-2">
-            <span>{item.label}</span>
-            <div className={`relative inline-flex items-center cursor-pointer ${!duzenle ? 'opacity-60' : ''}`}>
-              <input type="checkbox" checked={(yetkiler as any)[item.key]} onChange={(e) => duzenle && setYetkiler({ ...yetkiler, [item.key]: e.target.checked })} className="sr-only" disabled={!duzenle} />
-              <div onClick={() => duzenle && setYetkiler({ ...yetkiler, [item.key]: !(yetkiler as any)[item.key] })}
-                className={`w-9 h-5 rounded-full transition cursor-pointer ${(yetkiler as any)[item.key] ? 'bg-green-500' : 'bg-gray-300'}`}>
-                <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${(yetkiler as any)[item.key] ? 'translate-x-4' : ''}`}></div>
-              </div>
-            </div>
-          </label>
-        ))}
-      </div>
-
-      {duzenle && (
-        <div className="mb-4">
-          <label className="text-xs text-gray-500 mb-1 block">Yeni Sifre (bos bırakabilirsiniz)</label>
-          <input type="text" value={yeniSifre} onChange={(e) => setYeniSifre(e.target.value)}
-            placeholder="Yeni sifre"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3c6e]" />
-        </div>
-      )}
-
-      {duzenle && (
-        <button onClick={handleKaydet} disabled={yukleniyor}
-          className="w-full bg-[#1a3c6e] text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-900 transition mb-2 flex items-center justify-center gap-2 disabled:opacity-50">
-          <Save size={14} />
-          {yukleniyor ? 'Kaydediliyor...' : 'Degisiklikleri Kaydet'}
+        <button onClick={() => onSil(kullanici.id)}
+          className="w-full bg-red-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition">
+          Kullanıcıyı Sil
         </button>
-      )}
-
-      <button onClick={() => onSil(kullanici.id)}
-        className="w-full bg-red-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition">
-        Kullaniciyi Sil
-      </button>
+      </div>
     </div>
   );
 }
@@ -311,6 +313,7 @@ export default function AdminPage({
   const [secilenKullanici, setSecilenKullanici] = useState<Profile | null>(null);
   const [bekleyenDestek, setBekleyenDestek] = useState(0);
   const [aramaMetni, setAramaMetni] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobil menü durumu
 
   useEffect(() => {
     if (activeMenu === 'ilanlar') ilanlariYukle();
@@ -349,7 +352,7 @@ export default function AdminPage({
   };
 
   const handleIlanSil = async (id: string) => {
-    if (!confirm('Bu ilani silmek istediginizden emin misiniz?')) return;
+    if (!confirm('Bu ilanı silmek istediğinizden emin misiniz?')) return;
     await supabase.from('ilanlar').delete().eq('id', id);
     setIlanlar(ilanlar.filter((i) => i.id !== id));
   };
@@ -361,7 +364,7 @@ export default function AdminPage({
   };
 
   const handleKullaniciSil = async (id: string) => {
-    if (!confirm('Bu kullaniciyi ve tum verilerini silmek istediginizden emin misiniz?')) return;
+    if (!confirm('Bu kullanıcıyı ve tüm verilerini silmek istediğinizden emin misiniz?')) return;
     await supabase.from('ilanlar').delete().eq('user_id', id);
     await supabase.from('araclar').delete().eq('user_id', id);
     await supabase.from('favoriler').delete().eq('user_id', id);
@@ -384,42 +387,69 @@ export default function AdminPage({
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="flex gap-6">
-        <aside className="w-64 flex-shrink-0">
-          <div className="bg-[#1a3c6e] rounded-2xl p-6 mb-4 text-white text-center">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
-              <span className="text-[#1a3c6e] font-bold text-2xl">A</span>
+    <div className="max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-6">
+      
+      {/* MOBIL HEADER */}
+      <div className="flex md:hidden items-center justify-between bg-white p-4 rounded-2xl shadow-sm border mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-[#1a3c6e] rounded-full flex items-center justify-center text-white text-xs font-bold">A</div>
+          <span className="font-bold text-[#1a3c6e]">Admin Paneli</span>
+        </div>
+        <button 
+          onClick={() => setIsSidebarOpen(true)}
+          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+        >
+          <Menu size={24} />
+        </button>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-6">
+        
+        {/* SIDEBAR (Desktop: Sabit, Mobil: Overlay) */}
+        <div className={`
+          fixed inset-0 z-[60] transform transition-transform duration-300 md:relative md:translate-x-0 md:inset-auto
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          w-64 flex-shrink-0
+        `}>
+          {/* Mobil Arka Karartma */}
+          <div className="absolute inset-0 bg-black/50 md:hidden" onClick={() => setIsSidebarOpen(false)} />
+          
+          <aside className="relative w-64 h-full md:h-auto bg-gray-50 md:bg-transparent p-4 md:p-0">
+            <div className="bg-[#1a3c6e] rounded-2xl p-6 mb-4 text-white text-center">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-[#1a3c6e] font-bold text-2xl">A</span>
+              </div>
+              <p className="font-bold">Admin Panel</p>
+              <p className="text-xs text-blue-200 mt-1">Superadmin</p>
             </div>
-            <p className="font-bold">Admin Panel</p>
-            <p className="text-xs text-blue-200 mt-1">Superadmin</p>
-          </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            {menuItems.map((item) => (
-              <button key={item.id} onClick={() => setActiveMenu(item.id)}
-                className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition border-b border-gray-100 ${activeMenu === item.id ? 'bg-[#1a3c6e] text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
-                <div className="flex items-center gap-3">
-                  <item.icon size={16} />
-                  {item.label}
-                </div>
-                {item.id === 'destek' && bekleyenDestek > 0 && (
-                  <span className="w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{bekleyenDestek}</span>
-                )}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              {menuItems.map((item) => (
+                <button key={item.id} onClick={() => { setActiveMenu(item.id); setIsSidebarOpen(false); }}
+                  className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition border-b border-gray-100 ${activeMenu === item.id ? 'bg-[#1a3c6e] text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <div className="flex items-center gap-3">
+                    <item.icon size={16} />
+                    {item.label}
+                  </div>
+                  {item.id === 'destek' && bekleyenDestek > 0 && (
+                    <span className="w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{bekleyenDestek}</span>
+                  )}
+                </button>
+              ))}
+              <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition">
+                <LogOut size={16} /> Çıkış Yap
               </button>
-            ))}
-            <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition">
-              <LogOut size={16} /> Cikis Yap
-            </button>
-          </div>
-        </aside>
+            </div>
+          </aside>
+        </div>
 
+        {/* ANA İÇERİK ALANI */}
         <div className="flex-1 min-w-0">
           {activeMenu === 'ilanlar' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-bold text-[#1a3c6e]">
-                  Tum İlanlar
+                  Tüm İlanlar
                   <span className="ml-2 bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">{ilanlar.length}</span>
                 </h2>
               </div>
@@ -428,8 +458,8 @@ export default function AdminPage({
                   {[1, 2, 3].map((i) => <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse"></div>)}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                  <table className="w-full text-sm min-w-[600px]">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-200">
                         <th className="px-4 py-3 text-left font-medium text-gray-600">İlan</th>
@@ -437,7 +467,7 @@ export default function AdminPage({
                         <th className="px-4 py-3 text-left font-medium text-gray-600">İlan Veren</th>
                         <th className="px-4 py-3 text-left font-medium text-gray-600">Tarih</th>
                         <th className="px-4 py-3 text-left font-medium text-gray-600">Durum</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-600">İslemler</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-600">İşlemler</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -447,12 +477,12 @@ export default function AdminPage({
                             <p className="text-gray-700 font-medium line-clamp-1 max-w-xs">{ilan.aciklama}</p>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">
+                            <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap">
                               {ilan.kategori.replace(/_/g, ' ')}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-gray-600 text-xs">{ilan.ilan_veren}</td>
-                          <td className="px-4 py-3 text-gray-500 text-xs">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</td>
+                          <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">{ilan.ilan_veren}</td>
+                          <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</td>
                           <td className="px-4 py-3">
                             <span className={`text-xs font-medium px-2 py-1 rounded-full ${ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                               {ilan.durum === 'aktif' ? 'Aktif' : 'Pasif'}
@@ -477,11 +507,11 @@ export default function AdminPage({
           )}
 
           {activeMenu === 'kullanicilar' && (
-            <div className="flex gap-4">
-              <div className="flex-1 min-w-0 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 min-w-0 bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-[#1a3c6e]">
-                    Tum Kullanicilar
+                    Tüm Kullanıcılar
                     <span className="ml-2 bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">{kullanicilar.length}</span>
                   </h2>
                 </div>
@@ -496,18 +526,18 @@ export default function AdminPage({
                     {[1, 2, 3].map((i) => <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse"></div>)}
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                  <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                    <table className="w-full text-sm min-w-[700px]">
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-200">
                           <th className="px-3 py-3 text-left font-medium text-gray-600">Resim</th>
                           <th className="px-3 py-3 text-left font-medium text-gray-600">Ad Soyad</th>
                           <th className="px-3 py-3 text-left font-medium text-gray-600">Telefon</th>
-                          <th className="px-3 py-3 text-left font-medium text-gray-600">Sifre</th>
+                          <th className="px-3 py-3 text-left font-medium text-gray-600">Şifre</th>
                           <th className="px-3 py-3 text-left font-medium text-gray-600">Tip</th>
-                          <th className="px-3 py-3 text-left font-medium text-gray-600">Il</th>
+                          <th className="px-3 py-3 text-left font-medium text-gray-600">İl</th>
                           <th className="px-3 py-3 text-left font-medium text-gray-600">Durum</th>
-                          <th className="px-3 py-3 text-left font-medium text-gray-600">İslemler</th>
+                          <th className="px-3 py-3 text-left font-medium text-gray-600">İşlemler</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -524,15 +554,15 @@ export default function AdminPage({
                                 )}
                               </div>
                             </td>
-                            <td className="px-3 py-3 font-medium text-gray-700">{k.full_name || '-'}</td>
-                            <td className="px-3 py-3 text-gray-600">{k.phone_number}</td>
-                            <td className="px-3 py-3 text-gray-600 font-mono text-xs">{k.sifre_acik || '******'}</td>
+                            <td className="px-3 py-3 font-medium text-gray-700 whitespace-nowrap">{k.full_name || '-'}</td>
+                            <td className="px-3 py-3 text-gray-600 whitespace-nowrap">{k.phone_number}</td>
+                            <td className="px-3 py-3 text-gray-600 font-mono text-xs whitespace-nowrap">{k.sifre_acik || '******'}</td>
                             <td className="px-3 py-3">
-                              <span className={`text-xs font-medium px-2 py-1 rounded-full ${k.type === 'kurumsal' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                              <span className={`text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap ${k.type === 'kurumsal' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
                                 {k.type === 'kurumsal' ? 'Kurumsal' : 'Bireysel'}
                               </span>
                             </td>
-                            <td className="px-3 py-3 text-gray-600 text-xs">{k.il || '-'}</td>
+                            <td className="px-3 py-3 text-gray-600 text-xs whitespace-nowrap">{k.il || '-'}</td>
                             <td className="px-3 py-3">
                               <span className={`text-xs font-medium px-2 py-1 rounded-full ${k.aktif !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                 {k.aktif !== false ? 'Aktif' : 'Pasif'}
@@ -564,7 +594,7 @@ export default function AdminPage({
           )}
 
           {activeMenu === 'destek' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
               <h2 className="text-lg font-bold text-[#1a3c6e] mb-6">
                 Destek Talepleri
                 {bekleyenDestek > 0 && (
@@ -578,7 +608,7 @@ export default function AdminPage({
               ) : destekler.length === 0 ? (
                 <div className="text-center py-16 text-gray-400">
                   <HelpCircle size={48} className="mx-auto mb-4 opacity-30" />
-                  <p>Henuz destek talebi yok</p>
+                  <p>Henüz destek talebi yok</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-4">
