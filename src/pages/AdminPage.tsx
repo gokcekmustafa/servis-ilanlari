@@ -4,7 +4,7 @@ import {
   LogOut, HelpCircle, Edit, Save, X, Menu, Shield, 
   Search, Unlock, Phone, LayoutDashboard, UserPlus, 
   ShieldCheck, Megaphone, LayoutPanelTop, Plus, Image as ImageIcon,
-  Clock, ExternalLink, AlertCircle
+  Clock, ExternalLink, MapPin
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { destekTalepleriniGetir } from '../lib/ilanlar';
@@ -12,6 +12,84 @@ import { Ilan } from '../types';
 
 const SUPER_ADMIN_TELEFON = "05369500280";
 
+// --- YARDIMCI BİLEŞEN: ÜYE/PERSONEL DETAY MODALI ---
+function DetayModal({ kullanici, onKapat, onGuncelle, onSil, isSuper, canSeePasswords }: any) {
+  const [duzenle, setDuzenle] = useState(false);
+  const [yeniSifre, setYeniSifre] = useState(kullanici.sifre_acik || '');
+  const [aktif, setAktif] = useState(kullanici.aktif !== false);
+  const [yetkiler, setYetkiler] = useState(kullanici.yetkiler || {});
+
+  const handleKaydet = async () => {
+    const updates: any = { aktif, sifre_acik: yeniSifre, yetkiler };
+    if (yeniSifre !== kullanici.sifre_acik) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(yeniSifre + 'servis-ilanlari-salt');
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      updates.password_hash = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    await supabase.from('profiles').update(updates).eq('id', kullanici.id);
+    onGuncelle();
+    setDuzenle(false);
+    alert("Kayıt başarıyla güncellendi.");
+  };
+
+  return (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in duration-200">
+        <div className="bg-[#1e293b] p-6 text-white flex justify-between items-center">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center font-bold">{kullanici.full_name?.[0]}</div>
+             <h3 className="font-bold text-lg">{kullanici.full_name}</h3>
+          </div>
+          <button onClick={onKapat} className="p-2 hover:bg-white/10 rounded-full transition"><X /></button>
+        </div>
+        
+        <div className="p-8 overflow-y-auto flex-1 space-y-6">
+          <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">GİRİŞ ŞİFRESİ (AÇIK)</p>
+              {canSeePasswords ? (
+                duzenle ? (
+                  <input value={yeniSifre} onChange={e => setYeniSifre(e.target.value)} className="p-2 border rounded-xl font-mono text-sm bg-white" />
+                ) : (
+                  <p className="text-3xl font-mono font-black text-slate-800">{kullanici.sifre_acik || '---'}</p>
+                )
+              ) : <p className="text-slate-400 italic font-bold tracking-widest">GİZLİ</p>}
+            </div>
+            {!duzenle && <button onClick={() => setDuzenle(true)} className="p-3 bg-white rounded-2xl shadow-sm text-orange-600"><Edit size={20}/></button>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-4">
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Kişisel Bilgiler</p>
+               <div className="space-y-3">
+                 <p className="flex items-center gap-2 text-sm"><strong>Telefon:</strong> {kullanici.phone_number}</p>
+                 <p className="flex items-center gap-2 text-sm"><strong>Bölge:</strong> {kullanici.il} / {kullanici.ilce}</p>
+                 <p className="flex items-center gap-2 text-sm"><strong>Tür:</strong> <span className="uppercase font-bold text-blue-600">{kullanici.type}</span></p>
+               </div>
+            </div>
+            <div className="space-y-4">
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Hesap Durumu</p>
+               <label className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl">
+                 <span className="text-xs font-bold">AKTİF HESAP</span>
+                 <input type="checkbox" checked={aktif} onChange={() => setAktif(!aktif)} disabled={!duzenle} className="w-5 h-5 accent-green-600" />
+               </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-8 bg-slate-50 border-t flex gap-4">
+          {duzenle && (
+            <button onClick={handleKaydet} className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black shadow-lg">DEĞİŞİKLİKLERİ KAYDET</button>
+          )}
+          <button onClick={() => onSil(kullanici.id)} className="px-8 py-4 bg-red-100 text-red-600 rounded-2xl font-black hover:bg-red-600 hover:text-white transition-all">SİL</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- ANA COMPONENT ---
 export default function AdminPage({ onLogout, onIlanDetay }: any) {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeMenu, setActiveMenu] = useState('dashboard');
@@ -24,19 +102,20 @@ export default function AdminPage({ onLogout, onIlanDetay }: any) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [aramaMetni, setAramaMetni] = useState('');
 
-  // Duyuru Form State
+  // Form States
   const [duyuruForm, setDuyuruForm] = useState({ baslik: '', mesaj: '', resim_url: '', saniye: 5, aktif: true });
+  const [personelForm, setPersonelForm] = useState({ full_name: '', phone_number: '', sifre_acik: '' });
+  const [personelEkleAcik, setPersonelEkleAcik] = useState(false);
 
   useEffect(() => {
-    const checkUser = async () => {
+    const init = async () => {
       const saved = localStorage.getItem('user');
       if (saved) {
-        const p = JSON.parse(saved);
-        const { data } = await supabase.from('profiles').select('*').eq('id', p.id).single();
+        const { data } = await supabase.from('profiles').select('*').eq('id', JSON.parse(saved).id).single();
         if (data) setCurrentUser(data);
       }
     };
-    checkUser();
+    init();
   }, []);
 
   useEffect(() => {
@@ -56,156 +135,90 @@ export default function AdminPage({ onLogout, onIlanDetay }: any) {
     setYukleniyor(false);
   };
 
-  // --- İŞLEM FONKSİYONLARI ---
   const handleYeniBannerEkle = async () => {
-    const { error } = await supabase.from('reklamlar').insert([{
-      baslik: 'Yeni Reklam Başlığı',
-      alt_baslik: 'Alt başlık metni buraya',
-      tip: 'ana_slider',
-      aktif: true,
-      sira: reklamlar.length
-    }]);
+    const { error } = await supabase.from('reklamlar').insert([{ baslik: 'Yeni Banner', tip: 'ana_slider', sira: reklamlar.length, aktif: true }]);
     if (error) alert("Hata: " + error.message);
     else verileriYukle();
   };
 
-  const handleResimYukle = async (e: any, table: string, id: string) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const path = `${table}-${id}-${Date.now()}`;
-    const { data, error } = await supabase.storage.from('reklam-resimleri').upload(path, file);
-    if (error) return alert("Hata: " + error.message);
-    
-    const { data: urlData } = supabase.storage.from('reklam-resimleri').getPublicUrl(data.path);
-    await supabase.from(table).update({ resim_url: urlData.publicUrl }).eq('id', id);
-    verileriYukle();
+  const handlePersonelEkle = async () => {
+    if (!personelForm.full_name || !personelForm.phone_number || !personelForm.sifre_acik) return alert("Eksik alan!");
+    const { error } = await supabase.from('profiles').insert([{ ...personelForm, type: 'staff', aktif: true }]);
+    if (error) alert("Hata: " + error.message);
+    else { setPersonelEkleAcik(false); setPersonelForm({ full_name: '', phone_number: '', sifre_acik: '' }); verileriYukle(); }
   };
 
   const isSuper = currentUser?.phone_number === SUPER_ADMIN_TELEFON;
   const canSeePasswords = isSuper || currentUser?.yetkiler?.sifreleri_gor;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-[#f1f5f9] flex flex-col md:flex-row">
       
-      {/* PROFESYONEL SIDEBAR */}
-      <aside className={`fixed inset-y-0 left-0 z-[100] w-72 bg-[#1e293b] text-white transform transition-all duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      {/* SIDEBAR */}
+      <aside className={`fixed inset-y-0 left-0 z-[100] w-72 bg-[#1e293b] text-white transform transition-transform md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-8 flex flex-col h-full">
-          <div className="flex items-center gap-3 mb-10 border-b border-white/10 pb-6">
-            <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/20">
-              <Shield className="text-white" size={28} />
-            </div>
-            <div>
-              <h1 className="font-black text-xl tracking-tighter uppercase leading-none">SALONUM</h1>
-              <span className="text-[10px] font-bold text-orange-400 tracking-[0.2em]">KONTROL PANELİ</span>
-            </div>
+          <div className="flex items-center gap-3 mb-12 border-b border-white/10 pb-6">
+            <Shield className="text-orange-500" size={32} />
+            <h1 className="font-black text-xl italic tracking-tighter">SALONUM <span className="text-orange-400">ADMİN</span></h1>
           </div>
-
-          <nav className="space-y-1.5 flex-1">
+          <nav className="space-y-1 flex-1">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-              { id: 'ilanlar', label: 'İlanları Yönet', icon: FileText },
+              { id: 'ilanlar', label: 'İlan Yönetimi', icon: FileText },
               { id: 'kullanicilar', label: 'Üye Listesi', icon: Users },
-              { id: 'reklamlar', label: 'Banner & Reklam', icon: LayoutPanelTop },
-              { id: 'duyurular', label: 'Popup Duyuru', icon: Megaphone },
+              { id: 'reklamlar', label: 'Reklam & Banner', icon: LayoutPanelTop },
+              { id: 'duyurular', label: 'Duyuru & Popup', icon: Megaphone },
               { id: 'personel', label: 'Personel Ayarları', icon: ShieldCheck, super: true },
             ].map(item => (
               (!item.super || isSuper) && (
-                <button key={item.id} onClick={() => { setActiveMenu(item.id); setIsSidebarOpen(false); }}
-                  className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all group ${activeMenu === item.id ? 'bg-orange-500 text-white font-bold shadow-lg shadow-orange-500/30' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
-                  <item.icon size={20} className={activeMenu === item.id ? 'text-white' : 'group-hover:text-orange-400'} />
-                  {item.label}
+                <button key={item.id} onClick={() => {setActiveMenu(item.id); setIsSidebarOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${activeMenu === item.id ? 'bg-orange-500 text-white font-black shadow-lg shadow-orange-500/30' : 'text-slate-400 hover:bg-white/5'}`}>
+                  <item.icon size={20} /> {item.label}
                 </button>
               )
             ))}
           </nav>
-
-          <button onClick={onLogout} className="mt-auto flex items-center gap-4 px-6 py-4 bg-red-500/10 text-red-400 rounded-2xl hover:bg-red-500 hover:text-white transition-all font-bold">
-            <LogOut size={20} /> Güvenli Çıkış
-          </button>
+          <button onClick={onLogout} className="mt-auto flex items-center gap-4 p-5 text-red-400 font-bold hover:bg-red-500/10 rounded-2xl"><LogOut size={20}/> Çıkış Yap</button>
         </div>
       </aside>
 
       {/* MOBİL ÜST BAR */}
       <div className="md:hidden bg-[#1e293b] p-4 flex justify-between items-center text-white sticky top-0 z-[90]">
-        <div className="flex items-center gap-2">
-          <Shield className="text-orange-500" size={24} />
-          <span className="font-black">SALONUM ADMİN</span>
-        </div>
+        <span className="font-black">SALONUM ADMİN</span>
         <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/10 rounded-xl"><Menu/></button>
       </div>
 
       <main className="flex-1 p-4 md:p-10 overflow-x-hidden">
         <div className="max-w-7xl mx-auto">
 
-          {/* 1. DASHBOARD */}
+          {/* DASHBOARD */}
           {activeMenu === 'dashboard' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
-               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center text-center">
-                    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4"><Users size={28}/></div>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Toplam Üye</p>
-                    <h3 className="text-4xl font-black text-slate-800 mt-1">{kullanicilar.length}</h3>
-                  </div>
-                  <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center text-center">
-                    <div className="w-14 h-14 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-4"><FileText size={28}/></div>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aktif İlan</p>
-                    <h3 className="text-4xl font-black text-slate-800 mt-1">{ilanlar.length}</h3>
-                  </div>
-               </div>
-               <div className="bg-[#1e293b] rounded-[3rem] p-10 text-white relative overflow-hidden shadow-2xl">
-                 <div className="relative z-10">
-                   <h2 className="text-3xl font-black mb-2">Hoş Geldin, Yönetici 👋</h2>
-                   <p className="text-slate-400 max-w-md leading-relaxed text-sm">Sistemi buradan tam yetkiyle yönetebilirsin. Tüm değişiklikler anında yayına alınır.</p>
-                 </div>
-                 <Shield size={120} className="absolute -right-10 -bottom-10 text-white/5 rotate-12" />
-               </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 flex items-center gap-6">
+                 <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><Users size={32}/></div>
+                 <div><p className="text-xs font-black text-slate-400 uppercase">Toplam Üye</p><h3 className="text-4xl font-black">{kullanicilar.length}</h3></div>
+              </div>
+              <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 flex items-center gap-6">
+                 <div className="w-16 h-16 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center"><FileText size={32}/></div>
+                 <div><p className="text-xs font-black text-slate-400 uppercase">Aktif İlan</p><h3 className="text-4xl font-black">{ilanlar.length}</h3></div>
+              </div>
             </div>
           )}
 
-          {/* 2. İLANLAR (GELİŞMİŞ TABLO) */}
+          {/* İLANLAR */}
           {activeMenu === 'ilanlar' && (
-            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden animate-in slide-in-from-bottom-4">
-              <div className="p-8 border-b bg-slate-50/50 flex justify-between items-center">
-                <h2 className="text-2xl font-black text-slate-800">Yayındaki İlanlar</h2>
-                <div className="bg-orange-100 text-orange-700 px-4 py-1.5 rounded-full text-xs font-bold">{ilanlar.length} İLAN</div>
-              </div>
+            <div className="bg-white rounded-[3rem] shadow-sm border overflow-hidden animate-in slide-in-from-bottom-4">
+              <div className="p-8 border-b bg-slate-50 flex justify-between items-center"><h2 className="text-2xl font-black">Sistemdeki İlanlar</h2></div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-[11px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/30">
-                      <th className="px-8 py-5">İlan Detayı</th>
-                      <th className="px-8 py-5">Kategori</th>
-                      <th className="px-8 py-5">Yayınlayan</th>
-                      <th className="px-8 py-5">Tarih</th>
-                      <th className="px-8 py-5 text-right">Eylemler</th>
-                    </tr>
-                  </thead>
+                  <thead><tr className="text-left text-[11px] font-black text-slate-400 uppercase bg-slate-50 border-b"><th className="p-6">İlan Başlığı</th><th className="p-6">Yayınlayan</th><th className="p-6 text-right">İşlem</th></tr></thead>
                   <tbody className="divide-y divide-slate-100">
-                    {ilanlar.map(ilan => (
-                      <tr key={ilan.id} className="hover:bg-slate-50/80 transition-all group">
-                        <td className="px-8 py-5">
-                          <p className="font-bold text-slate-700 leading-tight group-hover:text-blue-600 transition-colors">{ilan.aciklama}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`w-2 h-2 rounded-full ${ilan.durum === 'aktif' ? 'bg-green-500' : 'bg-slate-300'}`} />
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">{ilan.durum}</span>
-                          </div>
-                        </td>
-                        <td className="px-8 py-5">
-                          <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-black text-[10px] uppercase">
-                            {ilan.kategori.replace(/_/g, ' ')}
-                          </span>
-                        </td>
-                        <td className="px-8 py-5">
-                          <p className="font-bold text-slate-600 text-xs">{ilan.ilan_veren}</p>
-                        </td>
-                        <td className="px-8 py-5 text-slate-400 text-xs font-medium">
-                          {new Date(ilan.created_at).toLocaleDateString('tr-TR')}
-                        </td>
-                        <td className="px-8 py-5 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button onClick={() => onIlanDetay(ilan)} className="p-2 bg-slate-100 rounded-xl hover:bg-blue-600 hover:text-white transition shadow-sm"><Eye size={16}/></button>
-                            <button onClick={async () => { if(confirm("SİLELİM Mİ?")) { await supabase.from('ilanlar').delete().eq('id', ilan.id); verileriYukle(); } }} className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition shadow-sm"><Trash2 size={16}/></button>
-                          </div>
+                    {ilanlar.map(i => (
+                      <tr key={i.id} className="hover:bg-slate-50 transition">
+                        <td className="p-6 font-bold text-slate-700">{i.aciklama}</td>
+                        <td className="p-6 text-xs text-slate-500 font-bold uppercase">{i.ilan_veren}</td>
+                        <td className="p-6 text-right flex justify-end gap-2">
+                          <button onClick={() => onIlanDetay(i)} className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Eye size={18}/></button>
+                          <button onClick={async () => { if(confirm("Silinsin mi?")) { await supabase.from('ilanlar').delete().eq('id', i.id); verileriYukle(); } }} className="p-3 bg-red-50 text-red-600 rounded-xl"><Trash2 size={18}/></button>
                         </td>
                       </tr>
                     ))}
@@ -215,133 +228,138 @@ export default function AdminPage({ onLogout, onIlanDetay }: any) {
             </div>
           )}
 
-          {/* 3. REKLAM & BANNER (GELİŞMİŞ TASARIM) */}
+          {/* ÜYE LİSTESİ */}
+          {activeMenu === 'kullanicilar' && (
+            <div className="bg-white p-8 rounded-[3rem] shadow-sm border animate-in slide-in-from-bottom-4">
+              <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+                <h2 className="text-2xl font-black">Üye Yönetimi</h2>
+                <div className="relative w-full md:w-80">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <input placeholder="Ara..." className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl shadow-inner" value={aramaMetni} onChange={e => setAramaMetni(e.target.value)} />
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead><tr className="text-left text-[11px] font-black text-slate-400 uppercase border-b"><th className="p-4">Ad Soyad</th><th className="p-4 text-orange-600">Şifre</th><th className="p-4">Bölge</th><th className="p-4 text-right">Eylem</th></tr></thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {kullanicilar.filter(u => u.type !== 'staff' && u.full_name?.toLowerCase().includes(aramaMetni.toLowerCase())).map(u => (
+                      <tr key={u.id} onClick={() => setSecilenKullanici(u)} className="hover:bg-blue-50/50 transition cursor-pointer">
+                        <td className="p-4 font-bold">{u.full_name} <br/><span className="text-xs text-slate-400 font-normal">{u.phone_number}</span></td>
+                        <td className="p-4">{canSeePasswords ? <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg font-mono font-bold text-xs">{u.sifre_acik}</span> : '******'}</td>
+                        <td className="p-4 text-xs font-bold uppercase text-blue-600">{u.il || '-'}</td>
+                        <td className="p-4 text-right"><button className="p-3 border rounded-2xl"><Unlock size={16}/></button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* REKLAM & BANNER */}
           {activeMenu === 'reklamlar' && (
-            <div className="space-y-6 animate-in slide-in-from-bottom-4">
-               <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex justify-between items-center">
-                  <div>
-                    <h2 className="text-2xl font-black text-slate-800">Banner & Slider Ayarları</h2>
-                    <p className="text-sm text-slate-400">Ana sayfadaki reklam alanlarını buradan yönetin.</p>
-                  </div>
-                  <button onClick={handleYeniBannerEkle} className="bg-orange-500 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 hover:scale-105 transition shadow-lg shadow-orange-500/20">
-                    <Plus /> YENİ BANNER EKLE
-                  </button>
+            <div className="space-y-6">
+               <div className="bg-white p-8 rounded-[2.5rem] border flex justify-between items-center shadow-sm">
+                  <h2 className="text-2xl font-black">Banner & Slider Ayarları</h2>
+                  <button onClick={handleYeniBannerEkle} className="bg-blue-900 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-lg"><Plus /> YENİ BANNER EKLE</button>
                </div>
-               
                <div className="grid grid-cols-1 gap-6">
-                  {reklamlar.map((r, idx) => (
-                    <div key={r.id} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex flex-col lg:flex-row gap-8 items-center group hover:shadow-xl transition-all">
-                      {/* Resim Alanı */}
-                      <div className="w-full lg:w-72 h-44 bg-slate-100 rounded-[2rem] overflow-hidden relative border-4 border-slate-50">
-                        {r.resim_url ? (
-                          <img src={r.resim_url} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
-                            <ImageIcon size={32} className="opacity-20" />
-                            <span className="text-[10px] font-black uppercase tracking-tighter">Görsel Bekleniyor</span>
-                          </div>
-                        )}
-                        <label className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer text-white transition-all backdrop-blur-sm">
-                           <div className="flex flex-col items-center gap-2">
-                              <ImageIcon size={24} />
-                              <span className="text-[10px] font-black uppercase">Resmi Değiştir</span>
-                           </div>
-                           <input type="file" className="hidden" onChange={(e) => handleResimYukle(e, 'reklamlar', r.id)} />
-                        </label>
-                      </div>
-
-                      {/* Bilgi Formu */}
-                      <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
-                         <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase">Banner Başlığı</label>
-                            <input className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-orange-500 font-bold" defaultValue={r.baslik} onBlur={async (e) => { await supabase.from('reklamlar').update({ baslik: e.target.value }).eq('id', r.id); }} />
-                         </div>
-                         <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase">Alt Başlık</label>
-                            <input className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-orange-500" defaultValue={r.alt_baslik} onBlur={async (e) => { await supabase.from('reklamlar').update({ alt_baslik: e.target.value }).eq('id', r.id); }} />
-                         </div>
-                         <div className="space-y-1 md:col-span-2">
-                            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase">Bağlantı Linki (URL)</label>
-                            <div className="relative">
-                              <input className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-orange-500 text-blue-600 text-xs font-mono" defaultValue={r.link_url} onBlur={async (e) => { await supabase.from('reklamlar').update({ link_url: e.target.value }).eq('id', r.id); }} />
-                              <ExternalLink className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                            </div>
-                         </div>
-                      </div>
-
-                      <button onClick={async () => { if(confirm("SİLİNSİN Mİ?")) { await supabase.from('reklamlar').delete().eq('id', r.id); verileriYukle(); } }} className="p-5 bg-red-50 text-red-500 rounded-[1.5rem] hover:bg-red-500 hover:text-white transition-all shadow-sm">
-                        <Trash2 size={24}/>
-                      </button>
+                  {reklamlar.map(r => (
+                    <div key={r.id} className="bg-white p-8 rounded-[3rem] border shadow-sm flex flex-col md:flex-row gap-8 items-center group">
+                       <div className="w-full md:w-64 h-40 bg-slate-100 rounded-[2rem] overflow-hidden relative group">
+                          {r.resim_url && <img src={r.resim_url} className="w-full h-full object-cover" />}
+                          <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer text-white font-black text-xs transition-all">GÖRSELİ DEĞİŞTİR<input type="file" className="hidden" onChange={async (e) => {
+                             const file = e.target.files?.[0]; if (!file) return;
+                             const path = `banner-${Date.now()}`;
+                             const { data } = await supabase.storage.from('reklam-resimleri').upload(path, file);
+                             if (data) {
+                                const { data: urlData } = supabase.storage.from('reklam-resimleri').getPublicUrl(data.path);
+                                await supabase.from('reklamlar').update({ resim_url: urlData.publicUrl }).eq('id', r.id);
+                                verileriYukle();
+                             }
+                          }} /></label>
+                       </div>
+                       <div className="flex-1 space-y-3 w-full">
+                          <input className="w-full p-4 bg-slate-50 rounded-2xl border-none font-black" defaultValue={r.baslik} onBlur={async (e) => { await supabase.from('reklamlar').update({ baslik: e.target.value }).eq('id', r.id); }} />
+                          <input className="w-full p-4 bg-slate-50 rounded-2xl border-none text-blue-600 font-mono text-xs" defaultValue={r.link_url} onBlur={async (e) => { await supabase.from('reklamlar').update({ link_url: e.target.value }).eq('id', r.id); }} />
+                       </div>
+                       <button onClick={async () => { if(confirm("Silinsin mi?")) { await supabase.from('reklamlar').delete().eq('id', r.id); verileriYukle(); } }} className="p-5 bg-red-50 text-red-500 rounded-3xl"><Trash2/></button>
                     </div>
                   ))}
                </div>
             </div>
           )}
 
-          {/* 4. DUYURU & POPUP (RESİMLİ VE SÜRELİ) */}
+          {/* DUYURU & POPUP */}
           {activeMenu === 'duyurular' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in slide-in-from-bottom-4">
-               {/* Duyuru Ekleme Kartı */}
-               <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 h-fit">
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center"><Megaphone size={24}/></div>
-                    <h2 className="text-2xl font-black text-slate-800 tracking-tighter">Yeni Duyuru Hazırla</h2>
-                  </div>
-                  <div className="space-y-5">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 ml-2 uppercase">Duyuru Başlığı</label>
-                      <input className="w-full p-4 bg-slate-50 rounded-2xl border-none shadow-inner" placeholder="..." value={duyuruForm.baslik} onChange={e => setDuyuruForm({...duyuruForm, baslik: e.target.value})} />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 ml-2 uppercase">Duyuru Mesajı</label>
-                      <textarea rows={4} className="w-full p-4 bg-slate-50 rounded-2xl border-none shadow-inner" placeholder="..." value={duyuruForm.mesaj} onChange={e => setDuyuruForm({...duyuruForm, mesaj: e.target.value})} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 ml-2 uppercase">Görünme Süresi (Sn)</label>
-                          <div className="relative">
-                            <input type="number" className="w-full p-4 bg-slate-50 rounded-2xl border-none shadow-inner" value={duyuruForm.saniye} onChange={e => setDuyuruForm({...duyuruForm, saniye: parseInt(e.target.value)})} />
-                            <Clock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                          </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 animate-in slide-in-from-bottom-4">
+              <div className="bg-white p-10 rounded-[3rem] border shadow-sm h-fit space-y-6">
+                <h2 className="text-2xl font-black text-blue-900 flex items-center gap-3"><Megaphone /> Duyuru Yayınla</h2>
+                <input placeholder="Popup Başlığı" className="w-full p-4 bg-slate-50 rounded-2xl border-none shadow-inner font-bold" value={duyuruForm.baslik} onChange={e => setDuyuruForm({...duyuruForm, baslik: e.target.value})} />
+                <textarea placeholder="Mesajınız..." rows={4} className="w-full p-4 bg-slate-50 rounded-2xl border-none shadow-inner" value={duyuruForm.mesaj} onChange={e => setDuyuruForm({...duyuruForm, mesaj: e.target.value})} />
+                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl">
+                   <Clock size={20} className="text-slate-400" />
+                   <div className="flex-1">
+                      <p className="text-[10px] font-black text-slate-400">GÖRÜNME SÜRESİ (SANİYE)</p>
+                      <input type="number" className="bg-transparent font-bold w-full" value={duyuruForm.saniye} onChange={e => setDuyuruForm({...duyuruForm, saniye: parseInt(e.target.value)})} />
+                   </div>
+                </div>
+                <button onClick={async () => { await supabase.from('duyurular').insert([duyuruForm]); setDuyuruForm({ baslik: '', mesaj: '', resim_url: '', saniye: 5, aktif: true }); verileriYukle(); }} className="w-full py-5 bg-blue-900 text-white rounded-[2rem] font-black shadow-xl">ŞİMDİ YAYINLA</button>
+              </div>
+              <div className="space-y-6">
+                {duyurular.map(d => (
+                  <div key={d.id} className="bg-white p-8 rounded-[3rem] border relative group transition-all hover:border-blue-900">
+                    <button onClick={async () => { await supabase.from('duyurular').delete().eq('id', d.id); verileriYukle(); }} className="absolute top-6 right-6 text-red-400"><Trash2 size={20}/></button>
+                    <div className="flex gap-4">
+                       <div className="w-20 h-20 bg-slate-50 rounded-2xl overflow-hidden border relative flex-shrink-0 group/img">
+                          {d.resim_url ? <img src={d.resim_url} className="w-full h-full object-cover" /> : <ImageIcon className="w-full h-full p-6 text-slate-200" />}
+                          <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer text-white text-[8px] font-black transition-all">RESİM SEÇ<input type="file" className="hidden" onChange={async (e) => {
+                             const file = e.target.files?.[0]; if (!file) return;
+                             const path = `duyuru-${Date.now()}`;
+                             const { data } = await supabase.storage.from('reklam-resimleri').upload(path, file);
+                             if (data) {
+                                const { data: urlData } = supabase.storage.from('reklam-resimleri').getPublicUrl(data.path);
+                                await supabase.from('duyurular').update({ resim_url: urlData.publicUrl }).eq('id', d.id);
+                                verileriYukle();
+                             }
+                          }} /></label>
                        </div>
-                       <div className="flex flex-col justify-end">
-                         <button onClick={async () => {
-                            if(!duyuruForm.baslik || !duyuruForm.mesaj) return alert("Başlık ve mesaj girin!");
-                            const { data, error } = await supabase.from('duyurular').insert([duyuruForm]).select();
-                            if(error) alert("Hata: " + error.message);
-                            else { alert("Duyuru başarıyla kaydedildi."); setDuyuruForm({ baslik: '', mesaj: '', resim_url: '', saniye: 5, aktif: true }); verileriYukle(); }
-                         }} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">ŞİMDİ YAYINLA</button>
+                       <div>
+                          <h4 className="font-black text-blue-900 text-lg mb-2">{d.baslik}</h4>
+                          <p className="text-xs text-slate-500 line-clamp-2">{d.mesaj}</p>
+                          <span className="inline-block mt-4 text-[9px] font-black bg-slate-100 px-2 py-1 rounded uppercase tracking-tighter">{d.saniye} SANİYE</span>
                        </div>
                     </div>
                   </div>
-               </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-               {/* Önceki Duyurular Galerisi */}
-               <div className="space-y-6">
-                  <h3 className="text-xl font-black text-slate-400 tracking-tighter flex items-center gap-2">
-                    <History size={20} /> ÖNCEKİ DUYURULAR
-                  </h3>
-                  {duyurular.map(d => (
-                    <div key={d.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 relative group overflow-hidden">
-                       <div className="flex gap-6">
-                          <div className="w-24 h-24 bg-slate-50 rounded-2xl overflow-hidden border relative group/img">
-                            {d.resim_url ? <img src={d.resim_url} className="w-full h-full object-cover" /> : <ImageIcon className="w-full h-full p-6 text-slate-200" />}
-                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer text-white text-[8px] font-black transition-all">
-                              RESİM SEÇ
-                              <input type="file" className="hidden" onChange={(e) => handleResimYukle(e, 'duyurular', d.id)} />
-                            </label>
-                          </div>
-                          <div className="flex-1">
-                             <div className="flex justify-between items-start">
-                                <h4 className="font-black text-slate-800 text-lg leading-none">{d.baslik}</h4>
-                                <button onClick={async () => { if(confirm("DUYURU SİLİNSİN Mİ?")) { await supabase.from('duyurular').delete().eq('id', d.id); verileriYukle(); } }} className="text-red-400 hover:text-red-600 transition-colors"><Trash2 size={18}/></button>
-                             </div>
-                             <p className="text-xs text-slate-500 mt-2 line-clamp-2">{d.mesaj}</p>
-                             <div className="flex items-center gap-3 mt-4">
-                               <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-1 rounded tracking-widest uppercase">{d.saniye} SANİYE</span>
-                               <span className="text-[9px] font-black text-slate-300">{new Date(d.created_at).toLocaleString('tr-TR')}</span>
-                             </div>
-                          </div>
+          {/* PERSONEL YÖNETİMİ */}
+          {activeMenu === 'personel' && isSuper && (
+            <div className="space-y-8">
+               <div className="bg-[#1e293b] p-10 rounded-[4rem] text-white flex justify-between items-center shadow-2xl relative overflow-hidden">
+                  <div className="relative z-10">
+                    <h2 className="text-3xl font-black mb-2">Personel Ekibi</h2>
+                    <p className="text-slate-400">Yardımcı adminleri buradan ekleyip yetkilendirebilirsiniz.</p>
+                  </div>
+                  <button onClick={() => setPersonelEkleAcik(true)} className="relative z-10 bg-orange-500 text-white px-8 py-5 rounded-[2.5rem] font-black shadow-xl hover:scale-105 transition-transform flex items-center gap-3"><UserPlus /> YENİ PERSONEL EKLE</button>
+                  <ShieldCheck size={160} className="absolute -right-10 -bottom-10 text-white/5 rotate-12" />
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {kullanicilar.filter(k => k.type === 'staff').map(s => (
+                    <div key={s.id} className="bg-white p-8 rounded-[3rem] border shadow-sm group hover:border-orange-500 transition-all">
+                       <div className="w-16 h-16 bg-blue-50 text-blue-900 rounded-2xl flex items-center justify-center font-black text-2xl mb-6 group-hover:bg-orange-100 transition">{s.full_name[0]}</div>
+                       <h4 className="font-black text-xl mb-1">{s.full_name}</h4>
+                       <p className="text-sm font-mono text-blue-600 mb-6">{s.phone_number}</p>
+                       <div className="bg-slate-50 p-4 rounded-2xl mb-6">
+                          <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">ŞİFRE</p>
+                          <p className="font-mono font-bold text-slate-800">{s.sifre_acik}</p>
+                       </div>
+                       <div className="flex gap-3">
+                          <button onClick={() => setSecilenKullanici(s)} className="flex-1 py-3 bg-blue-900 text-white rounded-2xl font-black">YETKİLER</button>
+                          <button onClick={async () => { if(confirm("Personeli çıkar?")) { await supabase.from('profiles').delete().eq('id', s.id); verileriYukle(); } }} className="p-4 bg-red-50 text-red-500 rounded-2xl"><Trash2 size={20}/></button>
                        </div>
                     </div>
                   ))}
@@ -351,9 +369,26 @@ export default function AdminPage({ onLogout, onIlanDetay }: any) {
 
         </div>
       </main>
+
+      {/* MODALLAR */}
+      {personelEkleAcik && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+           <div className="bg-white w-full max-w-md rounded-[3rem] p-10 shadow-2xl">
+              <h2 className="text-2xl font-black mb-8">Personel Kayıt</h2>
+              <div className="space-y-4">
+                 <input placeholder="Ad Soyad" className="w-full p-4 bg-slate-50 rounded-2xl border-none" value={personelForm.full_name} onChange={e => setPersonelForm({...personelForm, full_name: e.target.value})} />
+                 <input placeholder="Telefon" className="w-full p-4 bg-slate-50 rounded-2xl border-none" value={personelForm.phone_number} onChange={e => setPersonelForm({...personelForm, phone_number: e.target.value})} />
+                 <input placeholder="Giriş Şifresi" className="w-full p-4 bg-slate-50 rounded-2xl border-none" value={personelForm.sifre_acik} onChange={e => setPersonelForm({...personelForm, sifre_acik: e.target.value})} />
+                 <div className="flex gap-4 pt-4">
+                    <button onClick={() => setPersonelEkleAcik(false)} className="flex-1 font-bold text-slate-400">İptal</button>
+                    <button onClick={handlePersonelEkle} className="flex-1 py-4 bg-blue-900 text-white rounded-2xl font-black shadow-lg">KAYDET</button>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {secilenKullanici && <DetayModal kullanici={secilenKullanici} onKapat={() => setSecilenKullanici(null)} onGuncelle={verileriYukle} onSil={async (id: any) => { if(confirm("Tüm verileri silinsin mi?")) { await supabase.from('profiles').delete().eq('id', id); setSecilenKullanici(null); verileriYukle(); } }} isSuper={isSuper} canSeePasswords={canSeePasswords} />}
     </div>
   );
 }
-
-// --- EK BİLEŞENLER (Dashboard sayacı gibi) ---
-function History({ size }: { size: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>; }
