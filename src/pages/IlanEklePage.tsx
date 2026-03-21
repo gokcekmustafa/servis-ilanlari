@@ -27,7 +27,7 @@ const kategoriRenk: Record<string, string> = {
   plaka_satiyorum: 'bg-red-600',
 };
 
-const iller = Object.keys(ilceler).sort();
+const tumIller = Object.keys(ilceler).sort();
 
 interface Guzergah {
   giris_saati: string;
@@ -55,20 +55,26 @@ function IlIlceMahalle({ il, ilce, mah, onIlChange, onIlceChange, onMahChange }:
   const mahalleleri = il === 'Istanbul' && ilce ? (mahalleler[ilce] || []) : [];
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       <div>
         <label className="text-xs text-gray-500 mb-1 block">Sehir</label>
-        <select value={il} onChange={(e) => { onIlChange(e.target.value); onIlceChange(''); onMahChange(''); }}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+        <select
+          value={il}
+          onChange={(e) => { onIlChange(e.target.value); onIlceChange(''); onMahChange(''); }}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+        >
           <option value="">Il Sec</option>
-          {iller.map((i) => <option key={i} value={i}>{i}</option>)}
+          {tumIller.map((i) => <option key={i} value={i}>{i}</option>)}
         </select>
       </div>
       <div>
         <label className="text-xs text-gray-500 mb-1 block">Ilce</label>
-        <select value={ilce} onChange={(e) => { onIlceChange(e.target.value); onMahChange(''); }}
+        <select
+          value={ilce}
+          onChange={(e) => { onIlceChange(e.target.value); onMahChange(''); }}
           disabled={!il}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100">
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+        >
           <option value="">Ilce Sec</option>
           {ilceleri.map((i) => <option key={i} value={i}>{i}</option>)}
         </select>
@@ -76,16 +82,22 @@ function IlIlceMahalle({ il, ilce, mah, onIlChange, onIlceChange, onMahChange }:
       <div>
         <label className="text-xs text-gray-500 mb-1 block">Mahalle</label>
         {il === 'Istanbul' ? (
-          <select value={mah} onChange={(e) => onMahChange(e.target.value)}
+          <select
+            value={mah}
+            onChange={(e) => onMahChange(e.target.value)}
             disabled={!ilce}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100">
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+          >
             <option value="">Mahalle Sec</option>
             {mahalleleri.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
         ) : (
-          <input value={mah} onChange={(e) => onMahChange(e.target.value)}
+          <input
+            value={mah}
+            onChange={(e) => onMahChange(e.target.value)}
             placeholder="Mahalle"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+          />
         )}
       </div>
     </div>
@@ -95,7 +107,8 @@ function IlIlceMahalle({ il, ilce, mah, onIlChange, onIlceChange, onMahChange }:
 function GuzergahSatiri({ guzergah, index, onChange, onRemove, showRemove }: {
   guzergah: Guzergah; index: number;
   onChange: (index: number, field: string, value: string) => void;
-  onRemove: (index: number) => void; showRemove: boolean;
+  onRemove: (index: number) => void;
+  showRemove: boolean;
 }) {
   return (
     <div className="border border-gray-200 rounded-xl p-4 mb-3 bg-gray-50">
@@ -110,30 +123,32 @@ function GuzergahSatiri({ guzergah, index, onChange, onRemove, showRemove }: {
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div>
           <label className="text-xs text-gray-500 mb-1 block">Giris Saati</label>
-          <input type="time" value={guzergah.giris_saati} onChange={(e) => onChange(index, 'giris_saati', e.target.value)}
+          <input type="time" value={guzergah.giris_saati}
+            onChange={(e) => onChange(index, 'giris_saati', e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
         </div>
         <div>
           <label className="text-xs text-gray-500 mb-1 block">Cikis Saati</label>
-          <input type="time" value={guzergah.cikis_saati} onChange={(e) => onChange(index, 'cikis_saati', e.target.value)}
+          <input type="time" value={guzergah.cikis_saati}
+            onChange={(e) => onChange(index, 'cikis_saati', e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
         </div>
       </div>
-      <div className="mb-2">
-        <p className="text-xs font-medium text-gray-500 mb-2">Kalkis</p>
+      <div className="mb-3">
+        <p className="text-xs font-semibold text-gray-500 mb-2">Kalkis</p>
         <IlIlceMahalle
           il={guzergah.kalkis_il} ilce={guzergah.kalkis_ilce} mah={guzergah.kalkis_mah}
-          onIlChange={(v) => onChange(index, 'kalkis_il', v)}
-          onIlceChange={(v) => onChange(index, 'kalkis_ilce', v)}
+          onIlChange={(v) => { onChange(index, 'kalkis_il', v); onChange(index, 'kalkis_ilce', ''); onChange(index, 'kalkis_mah', ''); }}
+          onIlceChange={(v) => { onChange(index, 'kalkis_ilce', v); onChange(index, 'kalkis_mah', ''); }}
           onMahChange={(v) => onChange(index, 'kalkis_mah', v)}
         />
       </div>
       <div>
-        <p className="text-xs font-medium text-gray-500 mb-2">Varis</p>
+        <p className="text-xs font-semibold text-gray-500 mb-2">Varis</p>
         <IlIlceMahalle
           il={guzergah.varis_il} ilce={guzergah.varis_ilce} mah={guzergah.varis_mah}
-          onIlChange={(v) => onChange(index, 'varis_il', v)}
-          onIlceChange={(v) => onChange(index, 'varis_ilce', v)}
+          onIlChange={(v) => { onChange(index, 'varis_il', v); onChange(index, 'varis_ilce', ''); onChange(index, 'varis_mah', ''); }}
+          onIlceChange={(v) => { onChange(index, 'varis_ilce', v); onChange(index, 'varis_mah', ''); }}
           onMahChange={(v) => onChange(index, 'varis_mah', v)}
         />
       </div>
@@ -257,12 +272,11 @@ export default function IlanEklePage({
   const toggleArray = (arr: string[], val: string) =>
     arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val];
 
-  const handleProfilResimSec = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilResimSec = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setProfilResim(file);
-    const url = URL.createObjectURL(file);
-    setProfilResimUrl(url);
+    setProfilResimUrl(URL.createObjectURL(file));
   };
 
   const handleAdim1 = () => {
@@ -329,21 +343,21 @@ export default function IlanEklePage({
         <ArrowLeft size={16} /> Geri Don
       </button>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
         <h2 className="text-xl font-bold text-[#1a3c6e] mb-6">Ucretsiz Ilan Ver</h2>
 
         <div className="flex items-center mb-6">
           {[1, 2, 3].map((s) => (
             <React.Fragment key={s}>
-              <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition ${adim > s ? 'bg-green-500 text-white' : adim === s ? 'bg-[#1a3c6e] text-white' : 'bg-gray-200 text-gray-500'}`}>
-                  {adim > s ? <Check size={14} /> : s}
+              <div className="flex items-center gap-1 md:gap-2">
+                <div className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-bold transition ${adim > s ? 'bg-green-500 text-white' : adim === s ? 'bg-[#1a3c6e] text-white' : 'bg-gray-200 text-gray-500'}`}>
+                  {adim > s ? <Check size={12} /> : s}
                 </div>
-                <span className={`text-sm font-medium ${adim === s ? 'text-[#1a3c6e]' : 'text-gray-400'}`}>
+                <span className={`text-xs md:text-sm font-medium hidden md:block ${adim === s ? 'text-[#1a3c6e]' : 'text-gray-400'}`}>
                   {s === 1 ? 'Kategori' : s === 2 ? 'Detaylar' : 'Onizleme'}
                 </span>
               </div>
-              {s < 3 && <div className={`flex-1 h-1 mx-3 rounded ${adim > s ? 'bg-green-400' : 'bg-gray-200'}`} />}
+              {s < 3 && <div className={`flex-1 h-1 mx-2 md:mx-3 rounded ${adim > s ? 'bg-green-400' : 'bg-gray-200'}`} />}
             </React.Fragment>
           ))}
         </div>
@@ -359,7 +373,7 @@ export default function IlanEklePage({
         {adim === 1 && (
           <div>
             <h3 className="font-semibold text-gray-700 mb-4">Ilan kategorisini secin</h3>
-            <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
               {kategoriler.map((kat) => (
                 <button key={kat.id} onClick={() => setSelectedKategori(kat.id)}
                   className={`border-2 rounded-xl p-4 text-sm font-medium text-left transition ${selectedKategori === kat.id ? kat.color : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}>
@@ -377,7 +391,7 @@ export default function IlanEklePage({
           <div className="flex flex-col gap-6">
 
             {selectedKategori === 'isim_var_arac' && (
-              <div className="border border-gray-200 rounded-xl p-5">
+              <div className="border border-gray-200 rounded-xl p-4 md:p-5">
                 <h3 className="font-bold text-gray-700 mb-4">Arac Bilgileri</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                   <div>
@@ -405,7 +419,7 @@ export default function IlanEklePage({
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Arac Kapasitesi</label>
+                    <label className="text-xs text-gray-500 mb-1 block">Kapasite</label>
                     <select value={isimVarArac.arac_kapasitesi} onChange={(e) => setIsimVarArac({ ...isimVarArac, arac_kapasitesi: e.target.value })}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
                       <option value="">Secin</option>
@@ -425,7 +439,7 @@ export default function IlanEklePage({
                       placeholder="50" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Calisılacak Gun</label>
+                    <label className="text-xs text-gray-500 mb-1 block">Calisacak Gun</label>
                     <input type="number" value={isimVarArac.calisılacak_gun} onChange={(e) => setIsimVarArac({ ...isimVarArac, calisılacak_gun: e.target.value })}
                       placeholder="22" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
                   </div>
@@ -436,13 +450,13 @@ export default function IlanEklePage({
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="text-xs text-gray-500 mb-1 block">Aractaki Yolcu Sayisi</label>
+                  <label className="text-xs text-gray-500 mb-1 block">Yolcu Sayisi</label>
                   <input type="number" value={isimVarArac.aracki_yolcu_sayisi} onChange={(e) => setIsimVarArac({ ...isimVarArac, aracki_yolcu_sayisi: e.target.value })}
-                    placeholder="16" className="w-48 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
+                    placeholder="16" className="w-full md:w-48 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 mb-2 block">Servis Turu</label>
-                  <div className="flex flex-wrap gap-4">
+                  <div className="flex flex-wrap gap-3 md:gap-4">
                     {['Okul', 'Personel', 'Hafif Minibus', 'Turizm', 'Diger'].map((t) => (
                       <label key={t} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                         <input type="checkbox" checked={isimVarArac.servis_turu.includes(t)}
@@ -457,27 +471,27 @@ export default function IlanEklePage({
             )}
 
             {selectedKategori === 'aracim_var_is' && (
-              <div className="border border-gray-200 rounded-xl p-5">
-                <div className="flex items-center justify-between mb-4">
+              <div className="border border-gray-200 rounded-xl p-4 md:p-5">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <h3 className="font-bold text-gray-700">
                     Secilen Arac: {aracimVarIs.secilen_arac || 'Secilmedi'}
                   </h3>
                   <button
-                    onClick={() => window.open('/panel', '_blank')}
+                    onClick={() => window.open('#panel', '_self')}
                     className="flex items-center gap-2 bg-[#f97316] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-600 transition">
                     <Plus size={12} /> Yeni Arac Ekle
                   </button>
                 </div>
                 {kullaniciaraclari.length > 0 ? (
-                  <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
-                    <table className="w-full text-sm">
+                  <div className="border border-gray-200 rounded-lg overflow-hidden mb-4 overflow-x-auto">
+                    <table className="w-full text-sm min-w-max">
                       <thead>
                         <tr className="bg-gray-50 border-b">
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500"></th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">PLAKA</th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">MARKA MODEL</th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">KOLTUK</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">EKLENME TARIHI</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">TARIH</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -513,8 +527,8 @@ export default function IlanEklePage({
             )}
 
             {selectedKategori === 'sofor_ariyorum' && (
-              <div className="border border-gray-200 rounded-xl p-5">
-                <div className="flex gap-4 mb-4">
+              <div className="border border-gray-200 rounded-xl p-4 md:p-5">
+                <div className="flex flex-wrap gap-4 mb-4">
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <input type="radio" checked={soforAriyorum.arac_secimi === 'araclarimdan'} onChange={() => setSoforAriyorum({ ...soforAriyorum, arac_secimi: 'araclarimdan' })} className="accent-[#f97316]" />
                     Araclarimdan secilecegim
@@ -525,7 +539,7 @@ export default function IlanEklePage({
                   </label>
                 </div>
                 <h3 className="font-bold text-gray-700 mb-4">İlan Detaylari</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">Odeme Sekli</label>
                     <input value={soforAriyorum.odeme_sekli} onChange={(e) => setSoforAriyorum({ ...soforAriyorum, odeme_sekli: e.target.value })}
@@ -534,7 +548,7 @@ export default function IlanEklePage({
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">Ucret (TL)</label>
                     <input type="number" value={soforAriyorum.ucret} onChange={(e) => setSoforAriyorum({ ...soforAriyorum, ucret: e.target.value })}
-                      placeholder="500" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">Aranan Tecrube</label>
@@ -563,13 +577,13 @@ export default function IlanEklePage({
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="text-xs text-gray-500 mb-1 block">Calisılacak Gun</label>
+                  <label className="text-xs text-gray-500 mb-1 block">Calisacak Gun</label>
                   <input type="number" value={soforAriyorum.calisılacak_gun} onChange={(e) => setSoforAriyorum({ ...soforAriyorum, calisılacak_gun: e.target.value })}
-                    className="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
+                    className="w-full md:w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 mb-2 block">İstenen Yabanci Diller</label>
-                  <div className="flex flex-wrap gap-4">
+                  <div className="flex flex-wrap gap-3">
                     {['İngilizce', 'Arapca', 'Almanca', 'Fransizca', 'Diger'].map((d) => (
                       <label key={d} className="flex items-center gap-2 text-sm cursor-pointer">
                         <input type="checkbox" checked={soforAriyorum.yabanci_diller.includes(d)}
@@ -584,18 +598,18 @@ export default function IlanEklePage({
             )}
 
             {selectedKategori === 'hostes_ariyorum' && (
-              <div className="border border-gray-200 rounded-xl p-5">
+              <div className="border border-gray-200 rounded-xl p-4 md:p-5">
                 <h3 className="font-bold text-gray-700 mb-4">İlan Detaylari</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">Ucret (TL)</label>
                     <input type="number" value={hostesAriyorum.ucret} onChange={(e) => setHostesAriyorum({ ...hostesAriyorum, ucret: e.target.value })}
-                      placeholder="500" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Calisılacak Okul</label>
+                    <label className="text-xs text-gray-500 mb-1 block">Calisacak Okul</label>
                     <input value={hostesAriyorum.calisılacak_okul} onChange={(e) => setHostesAriyorum({ ...hostesAriyorum, calisılacak_okul: e.target.value })}
-                      placeholder="Okul adi" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">Aranan Tecrube</label>
@@ -609,8 +623,8 @@ export default function IlanEklePage({
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="text-xs text-gray-500 mb-2 block">Calisılacak Okul Turu</label>
-                  <div className="flex gap-4">
+                  <label className="text-xs text-gray-500 mb-2 block">Okul Turu</label>
+                  <div className="flex flex-wrap gap-4">
                     {['Anaokulu Kres', 'İlk Ogretim', 'Lise'].map((t) => (
                       <label key={t} className="flex items-center gap-2 text-sm cursor-pointer">
                         <input type="radio" checked={hostesAriyorum.okul_turu === t}
@@ -622,8 +636,8 @@ export default function IlanEklePage({
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-2 block">Bilinen Yabanci Diller</label>
-                  <div className="flex flex-wrap gap-4">
+                  <label className="text-xs text-gray-500 mb-2 block">Yabanci Diller</label>
+                  <div className="flex flex-wrap gap-3">
                     {['İngilizce', 'Arapca', 'Almanca', 'Fransizca', 'Diger'].map((d) => (
                       <label key={d} className="flex items-center gap-2 text-sm cursor-pointer">
                         <input type="checkbox" checked={hostesAriyorum.yabanci_diller.includes(d)}
@@ -638,9 +652,9 @@ export default function IlanEklePage({
             )}
 
             {selectedKategori === 'hostesim_is' && (
-              <div className="border border-gray-200 rounded-xl p-5">
+              <div className="border border-gray-200 rounded-xl p-4 md:p-5">
                 <h3 className="font-bold text-gray-700 mb-4">İlan Detaylari</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">Dogum Tarihi</label>
                     <input type="date" value={hostesimIs.dogum_tarihi} onChange={(e) => setHostesimIs({ ...hostesimIs, dogum_tarihi: e.target.value })}
@@ -649,7 +663,7 @@ export default function IlanEklePage({
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">Dogum Yeri</label>
                     <input value={hostesimIs.dogum_yeri} onChange={(e) => setHostesimIs({ ...hostesimIs, dogum_yeri: e.target.value })}
-                      placeholder="Sehir" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">Egitim Durumu</label>
@@ -664,8 +678,8 @@ export default function IlanEklePage({
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="text-xs text-gray-500 mb-2 block">Bilinen Yabanci Diller</label>
-                  <div className="flex flex-wrap gap-4">
+                  <label className="text-xs text-gray-500 mb-2 block">Yabanci Diller</label>
+                  <div className="flex flex-wrap gap-3">
                     {['İngilizce', 'Arapca', 'Almanca', 'Fransizca', 'Diger'].map((d) => (
                       <label key={d} className="flex items-center gap-2 text-sm cursor-pointer">
                         <input type="checkbox" checked={hostesimIs.yabanci_diller.includes(d)}
@@ -676,7 +690,7 @@ export default function IlanEklePage({
                     ))}
                   </div>
                 </div>
-                <div className="mb-4">
+                <div>
                   <label className="text-xs text-gray-500 mb-2 block">Servis Tasimacilik Deneyimi</label>
                   <div className="flex gap-4">
                     {['var', 'yok'].map((v) => (
@@ -693,9 +707,9 @@ export default function IlanEklePage({
             )}
 
             {selectedKategori === 'soforum_is' && (
-              <div className="border border-gray-200 rounded-xl p-5">
+              <div className="border border-gray-200 rounded-xl p-4 md:p-5">
                 <h3 className="font-bold text-gray-700 mb-4">Ehliyet ve Arac Bilgileri</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">Surucubelgesi</label>
                     <select value={soforumIs.surucubelgesi} onChange={(e) => setSoforumIs({ ...soforumIs, surucubelgesi: e.target.value })}
@@ -705,12 +719,12 @@ export default function IlanEklePage({
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Ehliyet Alinma Tarihi</label>
+                    <label className="text-xs text-gray-500 mb-1 block">Ehliyet Tarihi</label>
                     <input type="date" value={soforumIs.ehliyet_alinma_tarihi} onChange={(e) => setSoforumIs({ ...soforumIs, ehliyet_alinma_tarihi: e.target.value })}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Sinav Belgeleri (SRC)</label>
+                    <label className="text-xs text-gray-500 mb-1 block">SRC Belgeleri</label>
                     <input value={soforumIs.sinav_belgeleri} onChange={(e) => setSoforumIs({ ...soforumIs, sinav_belgeleri: e.target.value })}
                       placeholder="SRC2, SRC3" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
                   </div>
@@ -722,12 +736,12 @@ export default function IlanEklePage({
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">Dogum Yeri</label>
                     <input value={soforumIs.dogum_yeri} onChange={(e) => setSoforumIs({ ...soforumIs, dogum_yeri: e.target.value })}
-                      placeholder="Sehir" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="text-xs text-gray-500 mb-2 block">Kullanmak İstedigi Arac Turu</label>
-                  <div className="flex flex-wrap gap-4">
+                  <label className="text-xs text-gray-500 mb-2 block">Arac Turu</label>
+                  <div className="flex flex-wrap gap-3">
                     {['Minibus', 'Midibus', 'Otobus', 'Van', 'Otomobil'].map((t) => (
                       <label key={t} className="flex items-center gap-2 text-sm cursor-pointer">
                         <input type="checkbox" checked={soforumIs.arac_turu.includes(t)}
@@ -740,7 +754,7 @@ export default function IlanEklePage({
                 </div>
                 <div className="mb-4">
                   <label className="text-xs text-gray-500 mb-2 block">Belgeler</label>
-                  <div className="flex flex-wrap gap-4 mb-3">
+                  <div className="flex flex-wrap gap-3 mb-3">
                     {['Src', 'Src1', 'Src2', 'Src3', 'Diger', 'Tam Sofor Kart'].map((b) => (
                       <label key={b} className="flex items-center gap-2 text-sm cursor-pointer">
                         <input type="checkbox" checked={soforumIs.belgeler.includes(b)}
@@ -751,7 +765,7 @@ export default function IlanEklePage({
                     ))}
                   </div>
                   <label className="text-xs text-gray-500 mb-2 block">Yabanci Diller</label>
-                  <div className="flex flex-wrap gap-4">
+                  <div className="flex flex-wrap gap-3">
                     {['İngilizce', 'Arapca', 'Almanca', 'Fransizca', 'Diger'].map((d) => (
                       <label key={d} className="flex items-center gap-2 text-sm cursor-pointer">
                         <input type="checkbox" checked={soforumIs.yabanci_diller.includes(d)}
@@ -762,14 +776,14 @@ export default function IlanEklePage({
                     ))}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[
                     { label: 'Emekli misiniz?', key: 'emekli' },
-                    { label: 'Mesleki Yeterlilik Belgeniz?', key: 'mesleki_yeterlilik' },
+                    { label: 'Mesleki Yeterlilik?', key: 'mesleki_yeterlilik' },
                     { label: 'Sabika kaydi?', key: 'sabika_kaydi' },
-                    { label: 'Tam zamanli misiniz?', key: 'tam_zamanlimi' },
-                    { label: 'Servis Tasimacilik Deneyimi?', key: 'servis_tasimacilik_deneyimi' },
-                    { label: 'Baska ise gider misiniz?', key: 'baska_ise_gider_misiniz' },
+                    { label: 'Tam zamanli?', key: 'tam_zamanlimi' },
+                    { label: 'Servis Deneyimi?', key: 'servis_tasimacilik_deneyimi' },
+                    { label: 'Baska ise gider?', key: 'baska_ise_gider_misiniz' },
                   ].map((item) => (
                     <div key={item.key}>
                       <label className="text-xs text-gray-500 mb-2 block">{item.label}</label>
@@ -791,7 +805,7 @@ export default function IlanEklePage({
             )}
 
             {selectedKategori === 'plaka_satiyorum' && (
-              <div className="border border-gray-200 rounded-xl p-5">
+              <div className="border border-gray-200 rounded-xl p-4 md:p-5">
                 <h3 className="font-bold text-gray-700 mb-4">Arac Plakasi (Plakaniz Gizlenecektir)</h3>
                 <div className="flex items-center gap-2 mb-4 flex-wrap">
                   <input value={plakaSatiyorum.plaka_il} onChange={(e) => setPlakaSatiyorum({ ...plakaSatiyorum, plaka_il: e.target.value })}
@@ -830,11 +844,11 @@ export default function IlanEklePage({
             )}
 
             {selectedKategori !== 'plaka_satiyorum' && selectedKategori !== 'hostesim_is' && selectedKategori !== 'soforum_is' && (
-              <div className="border border-gray-200 rounded-xl p-5">
-                <div className="flex items-center justify-between mb-3">
+              <div className="border border-gray-200 rounded-xl p-4 md:p-5">
+                <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
                   <div>
                     <h3 className="font-bold text-gray-700">Guzergah Listesi</h3>
-                    <p className="text-xs text-orange-500 mt-1">LUTFEN ASAGIDAN GUZERGAHLARINIZIN BASLANGIC VE BITIS YERLERINI VE SAAT EKLEYİNİZ</p>
+                    <p className="text-xs text-orange-500 mt-1">LUTFEN ASAGIDAN GUZERGAHLARINIZIN BASLANGIC VE BITIS YERLERINI EKLEYİNİZ</p>
                   </div>
                   <button onClick={() => setGuzergahlar([...guzergahlar, bosGuzergah()])}
                     className="flex items-center gap-2 bg-[#1a3c6e] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-900 transition">
@@ -860,9 +874,9 @@ export default function IlanEklePage({
             )}
 
             {(selectedKategori === 'hostesim_is' || selectedKategori === 'soforum_is') && (
-              <div className="border border-gray-200 rounded-xl p-5">
+              <div className="border border-gray-200 rounded-xl p-4 md:p-5">
                 <h3 className="font-bold text-gray-700 mb-4">Kisisel Bilgiler</h3>
-                <div className="flex items-start gap-6">
+                <div className="flex flex-col md:flex-row items-start gap-6">
                   <div className="flex flex-col items-center gap-3">
                     <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center overflow-hidden">
                       {profilResimUrl ? (
@@ -877,20 +891,14 @@ export default function IlanEklePage({
                       Dosya Sec
                       <input type="file" accept="image/jpeg,image/png,image/gif" onChange={handleProfilResimSec} className="hidden" />
                     </label>
-                    {profilResim && (
-                      <p className="text-xs text-green-600">{profilResim.name}</p>
-                    )}
+                    {profilResim && <p className="text-xs text-green-600 text-center">{profilResim.name}</p>}
                     <p className="text-xs text-gray-400 text-center">Maks 20MB, JPEG/PNG/GIF</p>
-                    <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
-                      <input type="checkbox" className="accent-[#f97316]" />
-                      Fotografim sitede yayinlanmasin
-                    </label>
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="border border-gray-200 rounded-xl p-5">
+            <div className="border border-gray-200 rounded-xl p-4 md:p-5">
               <h3 className="font-bold text-gray-700 mb-3">İlan Detayi</h3>
               <textarea value={aciklama} onChange={(e) => setAciklama(e.target.value)}
                 placeholder="İlan detaylarini yazin..."
@@ -921,26 +929,28 @@ export default function IlanEklePage({
               </div>
               <p className="text-sm text-gray-600 mb-4">{aciklama}</p>
               {guzergahlar.length > 0 && guzergahlar[0].kalkis_il && (
-                <table className="w-full text-xs border border-gray-200 rounded">
-                  <thead>
-                    <tr className="bg-[#1a3c6e] text-white">
-                      <th className="px-2 py-1 text-left">Giris</th>
-                      <th className="px-2 py-1 text-left">Nereden</th>
-                      <th className="px-2 py-1 text-left">Nereye</th>
-                      <th className="px-2 py-1 text-left">Cikis</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {guzergahlar.map((g, i) => (
-                      <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-2 py-1 font-medium text-[#1a3c6e]">{g.giris_saati || '--:--'}</td>
-                        <td className="px-2 py-1">{g.kalkis_mah} {g.kalkis_ilce} / {g.kalkis_il}</td>
-                        <td className="px-2 py-1">{g.varis_mah} {g.varis_ilce} / {g.varis_il}</td>
-                        <td className="px-2 py-1 font-medium text-[#1a3c6e]">{g.cikis_saati || '--:--'}</td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs border border-gray-200 rounded min-w-max">
+                    <thead>
+                      <tr className="bg-[#1a3c6e] text-white">
+                        <th className="px-2 py-1 text-left">Giris</th>
+                        <th className="px-2 py-1 text-left">Nereden</th>
+                        <th className="px-2 py-1 text-left">Nereye</th>
+                        <th className="px-2 py-1 text-left">Cikis</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {guzergahlar.map((g, i) => (
+                        <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-2 py-1 font-medium text-[#1a3c6e]">{g.giris_saati || '--:--'}</td>
+                          <td className="px-2 py-1">{g.kalkis_mah} {g.kalkis_ilce} / {g.kalkis_il}</td>
+                          <td className="px-2 py-1">{g.varis_mah} {g.varis_ilce} / {g.varis_il}</td>
+                          <td className="px-2 py-1 font-medium text-[#1a3c6e]">{g.cikis_saati || '--:--'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
             <div className="flex gap-3">
