@@ -195,7 +195,10 @@ export default function IlanEklePage({
   onSuccess: () => void;
   userId: string;
 }) {
-  const [adim, setAdim] = useState(1);
+  const [adim, setAdim] = useState(() => {
+  const saved = sessionStorage.getItem('ilan-ekle-adim');
+  return saved ? parseInt(saved) : 1;
+});
   const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(null);
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
