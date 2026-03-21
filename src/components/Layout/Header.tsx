@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Truck, LogOut, LayoutDashboard } from 'lucide-react';
+import { kullaniciSayisi } from '../../lib/auth';
 
 interface HeaderProps {
   isLoggedIn: boolean;
@@ -20,10 +21,21 @@ export default function Header({
   onGoPanel,
   onNavigate,
 }: HeaderProps) {
+  const [sayi, setSayi] = useState<number | null>(null);
+
+  useEffect(() => {
+    kullaniciSayisi().then(({ count }) => {
+      if (count !== null) setSayi(count);
+    });
+  }, []);
+
   return (
     <header>
       <div className="bg-[#1a3c6e] text-white text-center py-2 text-sm font-medium">
-        Sistemde Kayitli Kisi Sayisi: <span className="font-bold text-lg ml-1">0</span>
+        Sistemde Kayitli Kisi Sayisi:{' '}
+        <span className="font-bold text-lg ml-1">
+          {sayi !== null ? sayi.toLocaleString('tr-TR') : '...'}
+        </span>
       </div>
 
       <div className="bg-white shadow-md px-4 py-3">
