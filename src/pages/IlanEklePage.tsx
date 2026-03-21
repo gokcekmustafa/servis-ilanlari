@@ -339,9 +339,9 @@ export default function IlanEklePage({
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <button onClick={onGoBack} className="flex items-center gap-2 text-sm text-gray-500 hover:text-[#1a3c6e] mb-6 transition">
-        <ArrowLeft size={16} /> Geri Don
-      </button>
+      <button onClick={adim > 1 ? () => setAdim(adim - 1) : onGoBack} className="flex items-center gap-2 text-sm text-gray-500 hover:text-[#1a3c6e] mb-6 transition">
+  <ArrowLeft size={16} /> Geri Don
+</button>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
         <h2 className="text-xl font-bold text-[#1a3c6e] mb-6">Ucretsiz Ilan Ver</h2>
