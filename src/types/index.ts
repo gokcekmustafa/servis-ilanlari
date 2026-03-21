@@ -20,11 +20,12 @@ export interface Guzergah {
 
 export interface Ilan {
   id: string;
+  user_id: string;
   kategori: KategoriType;
   servis_turu: string[];
   aciklama: string;
   ilan_veren: string;
   guzergahlar: Guzergah[];
   created_at: string;
-  durum: 'aktif' | 'pasif';
+  durum: string;
 }
