@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Truck, LogOut, LayoutDashboard } from 'lucide-react';
+import { Truck, LogOut, LayoutDashboard, Bell } from 'lucide-react';
 import { kullaniciSayisi } from '../../lib/auth';
+import { okunmamisMesajSayisi } from '../../lib/ilanlar';
+import { mevcutKullanici } from '../../lib/auth';
 
 interface HeaderProps {
   isLoggedIn: boolean;
@@ -22,12 +24,24 @@ export default function Header({
   onNavigate,
 }: HeaderProps) {
   const [sayi, setSayi] = useState<number | null>(null);
+  const [okunmamis, setOkunmamis] = useState(0);
 
   useEffect(() => {
     kullaniciSayisi().then(({ count }) => {
       if (count !== null) setSayi(count);
     });
   }, []);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      const user = mevcutKullanici();
+      if (user) {
+        okunmamisMesajSayisi(user.id).then(({ count }) => {
+          if (count) setOkunmamis(count);
+        });
+      }
+    }
+  }, [isLoggedIn]);
 
   return (
     <header>
@@ -56,13 +70,28 @@ export default function Header({
                 >
                   Ilan Ver
                 </button>
+
                 <button
                   onClick={onGoPanel}
-                  className="flex items-center gap-2 border-2 border-[#1a3c6e] text-[#1a3c6e] px-4 py-2 rounded-lg font-medium hover:bg-[#1a3c6e] hover:text-white transition"
+                  className="relative flex items-center gap-2 border-2 border-[#1a3c6e] text-[#1a3c6e] px-4 py-2 rounded-lg font-medium hover:bg-[#1a3c6e] hover:text-white transition"
                 >
                   <LayoutDashboard size={16} />
                   {isAdmin ? 'Admin Panel' : 'Panelim'}
                 </button>
+
+                <button
+                  onClick={onGoPanel}
+                  className="relative p-2 text-gray-500 hover:text-[#1a3c6e] transition"
+                  title="Bildirimler"
+                >
+                  <Bell size={22} />
+                  {okunmamis > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {okunmamis}
+                    </span>
+                  )}
+                </button>
+
                 <button
                   onClick={onLogout}
                   className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition"
