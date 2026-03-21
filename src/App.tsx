@@ -46,14 +46,14 @@ export default function App() {
   const setCurrentPage = (page: Page) => {
     setPrevPage(currentPage);
     setCurrentPageState(page);
-    window.location.hash = page === 'home' ? '' : page;
+    window.history.pushState({ page }, '', page === 'home' ? '/' : `/${page}`);
     window.scrollTo(0, 0);
   };
 
   useEffect(() => {
-    const hash = window.location.hash.replace('#', '');
-    if (hash && validPages.includes(hash as Page)) {
-      setCurrentPageState(hash as Page);
+    const path = window.location.pathname.replace('/', '');
+    if (path && validPages.includes(path as Page)) {
+      setCurrentPageState(path as Page);
     }
 
     const user = mevcutKullanici();
@@ -68,16 +68,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (!hash || hash === 'home') {
+    const handlePopState = (e: PopStateEvent) => {
+      const path = window.location.pathname.replace('/', '');
+      if (!path || path === 'home') {
         setCurrentPageState('home');
-      } else if (validPages.includes(hash as Page)) {
-        setCurrentPageState(hash as Page);
+      } else if (validPages.includes(path as Page)) {
+        setCurrentPageState(path as Page);
       }
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const handleLogin = () => {
