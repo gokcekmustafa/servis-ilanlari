@@ -49,6 +49,8 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   const [reklamlar, setReklamlar] = useState<any[]>([]);
   const [duyuru, setDuyuru] = useState<any>(null);
   const [popupAcik, setPopupAcik] = useState(false);
+  const [popupKapatildi, setPopupKapatildi] = useState(false); // oturumda kapatıldı mı
+  const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   // Mobilde filtre paneli
   const [filtreAcik, setFiltreAcik] = useState(false);
 
@@ -80,8 +82,32 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
     const { data } = await supabase.from('duyurular').select('*').eq('aktif', true).limit(1).single();
     if (data) {
       setDuyuru(data);
+      // saniye: popup'ın kaç saniye sonra AÇILACAĞI (admin panelinden ayarlanır)
       setTimeout(() => setPopupAcik(true), (data.saniye || 2) * 1000);
     }
+  };
+
+  // Popup açıldığında otomatik kapanma sayacını başlat
+  // goster_sure: kaç saniye görüneceği — duyuru tablosundaki goster_sure alanı, yoksa 8 sn
+  useEffect(() => {
+    if (!popupAcik || !duyuru) return;
+    const goruntuleSure = (duyuru.goster_sure || 8) * 1000;
+    const timer = setTimeout(() => {
+      setPopupAcik(false);
+      // Otomatik kapanmada oturumda tekrar gösterme
+      setPopupKapatildi(true);
+    }, goruntuleSure);
+    setOtomatikKapatTimer(timer);
+    return () => clearTimeout(timer);
+  }, [popupAcik, duyuru]);
+
+  // Kullanıcı aktif olarak kapatırsa (× veya dışarı tıklama)
+  const popupKapat = (kullaniciKapatti: boolean) => {
+    // Sayacı iptal et
+    if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
+    setPopupAcik(false);
+    // Kullanıcı kapattıysa oturumda bir daha gösterme
+    if (kullaniciKapatti) setPopupKapatildi(true);
   };
 
   const handleFilter = () => {
@@ -206,12 +232,23 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
       )}
 
       {/* DUYURU POPUP */}
-      {popupAcik && duyuru && (
-        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md relative shadow-xl overflow-hidden">
+      {popupAcik && duyuru && !popupKapatildi && (
+        // Dışarı tıklayınca kapat (kullanıcı kapattı = true)
+        <div
+          className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4"
+          onClick={() => popupKapat(true)}
+        >
+          {/* İçerik alanına tıklama overlay'i kapatmasın */}
+          <div
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md relative shadow-xl overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Otomatik kapanma ilerleme çubuğu */}
+            <OtomatikKapatCubugu sure={duyuru.goster_sure || 8} />
+
             {/* Kapatma butonu */}
             <button
-              onClick={() => setPopupAcik(false)}
+              onClick={() => popupKapat(true)}
               className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center bg-black/30 hover:bg-black/50 text-white rounded-full text-lg font-bold transition"
             >
               ×
@@ -229,7 +266,7 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
                   <h2 className="text-base font-bold text-slate-800 mb-1.5">{duyuru.baslik}</h2>
                   <p className="text-sm text-slate-500 leading-relaxed">{duyuru.mesaj}</p>
                   <button
-                    onClick={() => setPopupAcik(false)}
+                    onClick={() => popupKapat(true)}
                     className="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition"
                   >
                     Kapat
@@ -241,7 +278,7 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
                 <h2 className="text-base font-bold text-slate-800 mb-2 pr-8">{duyuru.baslik}</h2>
                 <p className="text-sm text-slate-500 leading-relaxed">{duyuru.mesaj}</p>
                 <button
-                  onClick={() => setPopupAcik(false)}
+                  onClick={() => popupKapat(true)}
                   className="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition"
                 >
                   Kapat
@@ -251,6 +288,33 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Otomatik kapanma ilerleme çubuğu — süre dolunca sıfırlanır
+function OtomatikKapatCubugu({ sure }: { sure: number }) {
+  const [kalan, setKalan] = React.useState(sure);
+
+  React.useEffect(() => {
+    setKalan(sure);
+    const interval = setInterval(() => {
+      setKalan(prev => {
+        if (prev <= 0.1) { clearInterval(interval); return 0; }
+        return +(prev - 0.1).toFixed(1);
+      });
+    }, 100);
+    return () => clearInterval(interval);
+  }, [sure]);
+
+  const yuzde = Math.round((kalan / sure) * 100);
+
+  return (
+    <div className="absolute top-0 left-0 right-0 h-1 bg-black/10 z-20">
+      <div
+        className="h-full bg-orange-500 transition-none"
+        style={{ width: yuzde + '%', transition: 'width 0.1s linear' }}
+      />
     </div>
   );
 }
