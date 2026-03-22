@@ -4,12 +4,25 @@ import { Ilan } from '../types';
 import {
   LayoutDashboard, Users, FileText, Megaphone,
   Image, HeadphonesIcon, LogOut, Trash2, PlusCircle, RefreshCw,
-  Shield, UserPlus, CheckCircle2, XCircle, Edit2, Save, X
+  Shield, UserPlus, CheckCircle2, XCircle, Edit2, Save, X, Lock
 } from 'lucide-react';
+
+// Yetkiler tipi
+export type Yetkiler = {
+  ilan_onay?: boolean;
+  kullanici_yonetimi?: boolean;
+  destek_yonetimi?: boolean;
+  reklam_yonetimi?: boolean;
+  duyuru_yonetimi?: boolean;
+  ilan_sil?: boolean;
+};
 
 type AdminPageProps = {
   onLogout: () => void;
   onIlanDetay: (ilan: Ilan) => void;
+  // App.tsx'ten gelen rol ve yetki bilgileri
+  isSuperAdmin: boolean;
+  yetkiler: Yetkiler;
 };
 
 type Sekme =
@@ -21,7 +34,16 @@ type Sekme =
   | 'destek'
   | 'personel';
 
-export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
+// Her sekme için gereken yetki anahtarı
+const SEKME_YETKI: Partial<Record<Sekme, keyof Yetkiler>> = {
+  ilanlar: 'ilan_onay',
+  kullanicilar: 'kullanici_yonetimi',
+  reklamlar: 'reklam_yonetimi',
+  duyurular: 'duyuru_yonetimi',
+  destek: 'destek_yonetimi',
+};
+
+export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkiler }: AdminPageProps) {
   const [aktifSekme, setAktifSekme] = useState<Sekme>('istatistik');
   const [ilanlar, setIlanlar] = useState<any[]>([]);
   const [kullanicilar, setKullanicilar] = useState<any[]>([]);
@@ -41,7 +63,7 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
   const [seciliDestek, setSeciliDestek] = useState<any>(null);
   const [destekCevap, setDestekCevap] = useState('');
 
-  // --- PERSONEL YONETIMI STATELERI ---
+  // Personel yönetimi
   const [isPersonelFormOpen, setIsPersonelFormOpen] = useState(false);
   const [seciliPersonel, setSeciliPersonel] = useState<any>(null);
   const [personelForm, setPersonelForm] = useState({
@@ -51,16 +73,23 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
     aktif: true,
     yetkiler: {
       ilan_onay: false,
+      ilan_sil: false,
       kullanici_yonetimi: false,
       destek_yonetimi: false,
       reklam_yonetimi: false,
-      duyuru_yonetimi: false
-    }
+      duyuru_yonetimi: false,
+    } as Yetkiler
   });
 
-  // Superadmin kontrolu (Sadece 05369500280 numarali kisi veya type='superadmin' olanlar)
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const isSuperAdmin = currentUser?.phone_number === '05369500280' || currentUser?.type === 'superadmin';
+  // Yetki kontrolü: superadmin her şeyi görebilir, personel sadece yetkili sekmeleri
+  const sekmeYetkiVarMi = (sekme: Sekme): boolean => {
+    if (isSuperAdmin) return true;
+    if (sekme === 'istatistik') return true; // İstatistik herkese açık
+    if (sekme === 'personel') return false;  // Personel sekmesi sadece superadmin
+    const gerekliYetki = SEKME_YETKI[sekme];
+    if (!gerekliYetki) return true;
+    return !!yetkiler[gerekliYetki];
+  };
 
   useEffect(() => {
     hepsiniYukle();
@@ -93,7 +122,7 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
 
   const dosyaYukle = async (dosya: File) => {
     if (!dosya.type.startsWith('image/')) {
-      alert('Sadece resim dosyasi yukleyebilirsiniz');
+      alert('Sadece resim dosyası yükleyebilirsiniz');
       return;
     }
     setReklamYukleniyor(true);
@@ -102,13 +131,11 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
       .from('reklamlar')
       .upload(dosyaAdi, dosya, { contentType: dosya.type });
     if (error) {
-      alert('Yuklerken hata olustu: ' + error.message);
+      alert('Yüklerken hata oluştu: ' + error.message);
       setReklamYukleniyor(false);
       return;
     }
-    const { data: urlData } = supabase.storage
-      .from('reklamlar')
-      .getPublicUrl(dosyaAdi);
+    const { data: urlData } = supabase.storage.from('reklamlar').getPublicUrl(dosyaAdi);
     setYeniReklam(prev => ({ ...prev, resim_url: urlData.publicUrl }));
     setReklamYukleniyor(false);
   };
@@ -121,18 +148,22 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
   };
 
   const ilanSil = async (id: string) => {
-    if (!window.confirm('Bu ilani silmek istediginizden emin misiniz?')) return;
+    // İlan silme için hem ilan_onay hem ilan_sil yetkisi gerekebilir
+    if (!isSuperAdmin && !yetkiler.ilan_sil && !yetkiler.ilan_onay) return;
+    if (!window.confirm('Bu ilanı silmek istediğinizden emin misiniz?')) return;
     await supabase.from('ilanlar').delete().eq('id', id);
     hepsiniYukle();
   };
 
   const ilanDurumDegistir = async (id: string, durum: string) => {
+    if (!sekmeYetkiVarMi('ilanlar')) return;
     await supabase.from('ilanlar').update({ durum }).eq('id', id);
     hepsiniYukle();
   };
 
   const kullaniciSil = async (id: string) => {
-    if (!window.confirm('Bu kullaniciyi silmek istediginizden emin misiniz?')) return;
+    if (!isSuperAdmin && !yetkiler.kullanici_yonetimi) return;
+    if (!window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) return;
     await supabase.from('profiles').delete().eq('id', id);
     hepsiniYukle();
   };
@@ -170,20 +201,19 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
     hepsiniYukle();
   };
 
-  // --- PERSONEL KAYDETME FONKSIYONU ---
+  // Personel kaydetme — yetkileri doğru şekilde kaydeder
   const personelKaydet = async () => {
     if (!personelForm.full_name || !personelForm.phone_number) {
-      alert('Lutfen ad soyad ve telefon numarasi giriniz.');
+      alert('Lütfen ad soyad ve telefon numarası giriniz.');
       return;
     }
-
     if (seciliPersonel) {
-      // Guncelleme
       const guncelleme: any = {
         full_name: personelForm.full_name,
         phone_number: personelForm.phone_number,
         aktif: personelForm.aktif,
-        yetkiler: personelForm.yetkiler
+        yetkiler: personelForm.yetkiler,
+        type: 'admin', // Personel her zaman admin tipinde
       };
       if (personelForm.password) {
         guncelleme.password_hash = await hashPassword(personelForm.password);
@@ -191,29 +221,26 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
       }
       await supabase.from('profiles').update(guncelleme).eq('id', seciliPersonel.id);
     } else {
-      // Yeni Ekleme
       if (!personelForm.password) {
-        alert('Yeni personel icin sifre belirlemelisiniz.');
+        alert('Yeni personel için şifre belirlemelisiniz.');
         return;
       }
       const hash = await hashPassword(personelForm.password);
       await supabase.from('profiles').insert([{
         full_name: personelForm.full_name,
         phone_number: personelForm.phone_number,
-        type: 'admin', // Personeller admin tipindedir
+        type: 'admin',
         sifre_acik: personelForm.password,
         password_hash: hash,
         aktif: personelForm.aktif,
-        yetkiler: personelForm.yetkiler
+        yetkiler: personelForm.yetkiler,
       }]);
     }
-
-    // Formu temizle ve listeyi yenile
     setSeciliPersonel(null);
     setIsPersonelFormOpen(false);
     setPersonelForm({
       full_name: '', phone_number: '', password: '', aktif: true,
-      yetkiler: { ilan_onay: false, kullanici_yonetimi: false, destek_yonetimi: false, reklam_yonetimi: false, duyuru_yonetimi: false }
+      yetkiler: { ilan_onay: false, ilan_sil: false, kullanici_yonetimi: false, destek_yonetimi: false, reklam_yonetimi: false, duyuru_yonetimi: false }
     });
     hepsiniYukle();
   };
@@ -223,10 +250,16 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
     setPersonelForm({
       full_name: personel.full_name,
       phone_number: personel.phone_number,
-      password: '', // Sifre bos gelir, girilirse guncellenir
+      password: '',
       aktif: personel.aktif ?? true,
-      yetkiler: personel.yetkiler || {
-        ilan_onay: false, kullanici_yonetimi: false, destek_yonetimi: false, reklam_yonetimi: false, duyuru_yonetimi: false
+      yetkiler: {
+        ilan_onay: false,
+        ilan_sil: false,
+        kullanici_yonetimi: false,
+        destek_yonetimi: false,
+        reklam_yonetimi: false,
+        duyuru_yonetimi: false,
+        ...(personel.yetkiler || {}),
       }
     });
     setIsPersonelFormOpen(true);
@@ -278,28 +311,46 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
     hepsiniYukle();
   };
 
-  const menuItems: any[] = [
-    { id: 'istatistik', label: 'Istatistikler', icon: LayoutDashboard },
-    { id: 'ilanlar', label: 'Ilanlar', icon: FileText, sayi: ilanlar.length },
-    { id: 'kullanicilar', label: 'Kullanicilar', icon: Users, sayi: kullanicilar.length },
-    { id: 'reklamlar', label: 'Reklamlar', icon: Image, sayi: reklamlar.length },
-    { id: 'duyurular', label: 'Duyurular', icon: Megaphone, sayi: duyurular.length },
-    { id: 'destek', label: 'Destek', icon: HeadphonesIcon, sayi: destekler.filter(d => d.durum === 'bekliyor').length },
+  // Yetki etiketi için Türkçe isimler ve açıklamalar
+  const yetkiTanimlar: Record<string, { label: string; aciklama: string }> = {
+    ilan_onay:         { label: 'İlan Onay',       aciklama: 'İlanları aktif/pasif yapabilir' },
+    ilan_sil:          { label: 'İlan Sil',         aciklama: 'İlanları silebilir' },
+    kullanici_yonetimi:{ label: 'Kullanıcı',        aciklama: 'Kullanıcıları düzenleyip silebilir' },
+    destek_yonetimi:   { label: 'Destek',           aciklama: 'Destek taleplerini cevaplayabilir' },
+    reklam_yonetimi:   { label: 'Reklam',           aciklama: 'Reklam ekleyip yönetebilir' },
+    duyuru_yonetimi:   { label: 'Duyuru',           aciklama: 'Duyuru ekleyip yönetebilir' },
+  };
+
+  // Menü öğelerini yetkiye göre filtrele
+  const tumMenuItems = [
+    { id: 'istatistik',  label: 'İstatistikler', icon: LayoutDashboard },
+    { id: 'ilanlar',     label: 'İlanlar',        icon: FileText,         sayi: ilanlar.length },
+    { id: 'kullanicilar',label: 'Kullanıcılar',   icon: Users,            sayi: kullanicilar.length },
+    { id: 'reklamlar',   label: 'Reklamlar',      icon: Image,            sayi: reklamlar.length },
+    { id: 'duyurular',   label: 'Duyurular',      icon: Megaphone,        sayi: duyurular.length },
+    { id: 'destek',      label: 'Destek',         icon: HeadphonesIcon,   sayi: destekler.filter(d => d.durum === 'bekliyor').length },
+    // Sadece superadmin görür
+    ...(isSuperAdmin ? [{ id: 'personel', label: 'Personel', icon: Shield, sayi: kullanicilar.filter(u => u.type === 'admin').length }] : []),
   ];
 
-  // Sadece Superadmin ise Personel sekmesini menuye ekle
-  if (isSuperAdmin) {
-    menuItems.push({ 
-      id: 'personel', 
-      label: 'Personel', 
-      icon: Shield, 
-      sayi: kullanicilar.filter(u => u.type === 'admin').length 
-    });
-  }
+  // Yetkisi olmayan sekmeleri kilitle (göster ama grileştir)
+  const menuItems = tumMenuItems.map(item => ({
+    ...item,
+    kilitli: !sekmeYetkiVarMi(item.id as Sekme),
+  }));
 
   const ic = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
   const btnO = 'bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition';
   const btnS = 'bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium px-4 py-2 rounded-lg transition';
+
+  // Yetkisiz sekme mesajı
+  const YetkisizUyari = ({ sekme }: { sekme: string }) => (
+    <div className="flex flex-col items-center justify-center py-24 text-slate-400">
+      <Lock size={36} className="mb-3 text-slate-300" />
+      <p className="text-sm font-medium text-slate-500">Bu bölüme erişim yetkiniz yok</p>
+      <p className="text-xs mt-1">Superadmin'den "{sekme}" yetkisi talep ediniz.</p>
+    </div>
+  );
 
   return (
     <div className="flex min-h-screen bg-slate-100">
@@ -307,7 +358,9 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
       <aside className="w-56 bg-slate-800 flex-shrink-0 flex flex-col">
         <div className="px-4 py-5 border-b border-slate-700">
           <p className="text-white font-bold text-base">Admin Panel</p>
-          <p className="text-slate-400 text-xs mt-0.5">salonum.site</p>
+          <p className="text-slate-400 text-xs mt-0.5">
+            {isSuperAdmin ? '⭐ Superadmin' : '🔑 Personel'}
+          </p>
         </div>
         <nav className="flex-1 py-3">
           {menuItems.map((item) => {
@@ -316,32 +369,61 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
             return (
               <button
                 key={item.id}
-                onClick={() => setAktifSekme(item.id as Sekme)}
+                onClick={() => {
+                  if (item.kilitli) return; // Kilitli sekmeye geçiş engelle
+                  setAktifSekme(item.id as Sekme);
+                }}
                 className={
                   'w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium transition ' +
-                  (aktif ? 'bg-orange-500 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white')
+                  (item.kilitli
+                    ? 'text-slate-600 cursor-not-allowed opacity-50'
+                    : aktif
+                      ? 'bg-orange-500 text-white'
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white')
                 }
+                title={item.kilitli ? 'Bu bölüm için yetkiniz yok' : ''}
               >
                 <span className="flex items-center gap-2.5">
                   <Icon size={16} />
                   {item.label}
                 </span>
-                {item.sayi !== undefined && item.sayi > 0 && (
-                  <span className={'text-xs px-1.5 py-0.5 rounded-full font-bold ' + (aktif ? 'bg-white/20 text-white' : 'bg-slate-600 text-slate-300')}>
-                    {item.sayi}
-                  </span>
-                )}
+                <span className="flex items-center gap-1">
+                  {item.kilitli && <Lock size={10} className="text-slate-500" />}
+                  {(item as any).sayi !== undefined && (item as any).sayi > 0 && !item.kilitli && (
+                    <span className={'text-xs px-1.5 py-0.5 rounded-full font-bold ' + (aktif ? 'bg-white/20 text-white' : 'bg-slate-600 text-slate-300')}>
+                      {(item as any).sayi}
+                    </span>
+                  )}
+                </span>
               </button>
             );
           })}
         </nav>
+
+        {/* Mevcut personelin yetkileri — sidebar alt kısmında */}
+        {!isSuperAdmin && (
+          <div className="px-4 py-3 border-t border-slate-700">
+            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-2">Yetkilerim</p>
+            <div className="flex flex-wrap gap-1">
+              {Object.entries(yetkiler).filter(([, v]) => v).map(([k]) => (
+                <span key={k} className="text-[10px] bg-orange-900/40 text-orange-300 px-1.5 py-0.5 rounded-full">
+                  {yetkiTanimlar[k]?.label || k}
+                </span>
+              ))}
+              {Object.values(yetkiler).every(v => !v) && (
+                <span className="text-[10px] text-slate-500">Yetki atanmamış</span>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="p-4 border-t border-slate-700">
           <button
             onClick={onLogout}
             className="w-full flex items-center gap-2 text-slate-400 hover:text-red-400 text-sm py-2 transition"
           >
             <LogOut size={15} />
-            Cikis Yap
+            Çıkış Yap
           </button>
         </div>
       </aside>
@@ -358,16 +440,17 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
         </div>
 
         {yukleniyor && (
-          <div className="text-center py-20 text-slate-400 text-sm">Yukleniyor...</div>
+          <div className="text-center py-20 text-slate-400 text-sm">Yükleniyor...</div>
         )}
 
+        {/* ─── İSTATİSTİK ─── */}
         {!yukleniyor && aktifSekme === 'istatistik' && (
           <div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {[
-                { label: 'Toplam Ilan', value: ilanlar.length, renk: 'bg-blue-50 text-blue-700 border-blue-200' },
-                { label: 'Toplam Uye', value: kullanicilar.length, renk: 'bg-green-50 text-green-700 border-green-200' },
-                { label: 'Aktif Reklam', value: reklamlar.filter(r => r.aktif).length, renk: 'bg-orange-50 text-orange-700 border-orange-200' },
+                { label: 'Toplam İlan',     value: ilanlar.length,                                       renk: 'bg-blue-50 text-blue-700 border-blue-200' },
+                { label: 'Toplam Üye',      value: kullanicilar.filter(u => u.type !== 'admin').length,  renk: 'bg-green-50 text-green-700 border-green-200' },
+                { label: 'Aktif Reklam',    value: reklamlar.filter(r => r.aktif).length,                renk: 'bg-orange-50 text-orange-700 border-orange-200' },
                 { label: 'Bekleyen Destek', value: destekler.filter(d => d.durum === 'bekliyor').length, renk: 'bg-red-50 text-red-700 border-red-200' },
               ].map((stat) => (
                 <div key={stat.label} className={'rounded-xl border p-4 ' + stat.renk}>
@@ -378,7 +461,7 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white rounded-xl border border-slate-200 p-4">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Son Ilanlar</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Son İlanlar</p>
                 {ilanlar.slice(0, 5).map(i => (
                   <div key={i.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
                     <span className="text-sm text-slate-600 truncate">{i.ilan_veren || 'Anonim'}</span>
@@ -387,10 +470,10 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                 ))}
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-4">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Son Uyeler</p>
-                {kullanicilar.slice(0, 5).map(u => (
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Son Üyeler</p>
+                {kullanicilar.filter(u => u.type !== 'admin').slice(0, 5).map(u => (
                   <div key={u.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-                    <span className="text-sm text-slate-600">{u.full_name || 'Isimsiz'}</span>
+                    <span className="text-sm text-slate-600">{u.full_name || 'İsimsiz'}</span>
                     <span className="text-xs text-slate-400">{u.phone_number}</span>
                   </div>
                 ))}
@@ -399,21 +482,22 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
           </div>
         )}
 
-        {/* --- YENI EKLENEN PERSONEL SEKMESI --- */}
-        {!yukleniyor && aktifSekme === 'personel' && isSuperAdmin && (
+        {/* ─── PERSONEL (sadece superadmin) ─── */}
+        {!yukleniyor && aktifSekme === 'personel' && (
+          isSuperAdmin ? (
           <div className="max-w-5xl mx-auto">
             <div className="flex justify-end mb-4">
               {!isPersonelFormOpen && (
-                <button 
+                <button
                   onClick={() => {
                     setSeciliPersonel(null);
                     setPersonelForm({
                       full_name: '', phone_number: '', password: '', aktif: true,
-                      yetkiler: { ilan_onay: false, kullanici_yonetimi: false, destek_yonetimi: false, reklam_yonetimi: false, duyuru_yonetimi: false }
+                      yetkiler: { ilan_onay: false, ilan_sil: false, kullanici_yonetimi: false, destek_yonetimi: false, reklam_yonetimi: false, duyuru_yonetimi: false }
                     });
                     setIsPersonelFormOpen(true);
                   }}
-                  className={btnO + " flex items-center shadow-sm"}
+                  className={btnO + ' flex items-center shadow-sm'}
                 >
                   <UserPlus className="w-4 h-4 mr-2" /> Personel Ekle
                 </button>
@@ -423,88 +507,75 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
             {isPersonelFormOpen && (
               <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6 shadow-sm">
                 <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
-                  {seciliPersonel ? 'Personel Duzenle' : 'Yeni Personel Ekle'}
+                  {seciliPersonel ? 'Personel Düzenle' : 'Yeni Personel Ekle'}
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div>
                     <label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label>
-                    <input 
-                      type="text" 
-                      className={ic}
+                    <input type="text" className={ic}
                       value={personelForm.full_name}
-                      onChange={(e) => setPersonelForm({...personelForm, full_name: e.target.value})}
-                      placeholder="Orn: Ahmet Yilmaz"
-                    />
+                      onChange={(e) => setPersonelForm({ ...personelForm, full_name: e.target.value })}
+                      placeholder="Ör: Ahmet Yılmaz" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Telefon Numarasi</label>
-                    <input 
-                      type="text" 
-                      className={ic}
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Telefon Numarası</label>
+                    <input type="text" className={ic}
                       value={personelForm.phone_number}
-                      onChange={(e) => setPersonelForm({...personelForm, phone_number: e.target.value})}
-                      placeholder="Orn: 05551234567"
-                    />
+                      onChange={(e) => setPersonelForm({ ...personelForm, phone_number: e.target.value })}
+                      placeholder="Ör: 05551234567" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-500 mb-1">
-                      {seciliPersonel ? 'Yeni Sifre (Bos birakilabilir)' : 'Sifre Belirle'}
+                      {seciliPersonel ? 'Yeni Şifre (Boş bırakılabilir)' : 'Şifre Belirle'}
                     </label>
-                    <input 
-                      type="password" 
-                      className={ic}
+                    <input type="password" className={ic}
                       value={personelForm.password}
-                      onChange={(e) => setPersonelForm({...personelForm, password: e.target.value})}
-                      placeholder="******"
-                    />
+                      onChange={(e) => setPersonelForm({ ...personelForm, password: e.target.value })}
+                      placeholder="******" />
                   </div>
                 </div>
 
+                {/* Yetki Ayarları — her yetki için açıklama ile */}
                 <div className="mb-6">
-                  <label className="block text-sm font-semibold text-slate-800 mb-3">Yetkilendirme Ayarlari</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {Object.entries(personelForm.yetkiler).map(([key, value]) => (
-                      <label key={key} className="flex items-center space-x-2 p-2 border border-slate-100 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-                        <input 
-                          type="checkbox" 
-                          className="w-4 h-4 accent-orange-500 rounded"
-                          checked={value as boolean}
+                  <label className="block text-sm font-semibold text-slate-800 mb-1">Yetkilendirme Ayarları</label>
+                  <p className="text-xs text-slate-400 mb-3">Personelin hangi bölümlere erişip işlem yapabileceğini seçin.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {Object.entries(yetkiTanimlar).map(([key, tanim]) => (
+                      <label key={key}
+                        className={'flex items-start gap-3 p-3 border rounded-xl cursor-pointer transition-colors ' +
+                          ((personelForm.yetkiler as any)[key] ? 'border-orange-300 bg-orange-50' : 'border-slate-100 hover:bg-slate-50')}
+                      >
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 accent-orange-500 mt-0.5 flex-shrink-0"
+                          checked={!!(personelForm.yetkiler as any)[key]}
                           onChange={() => setPersonelForm({
-                            ...personelForm, 
-                            yetkiler: { ...personelForm.yetkiler, [key]: !value }
+                            ...personelForm,
+                            yetkiler: { ...personelForm.yetkiler, [key]: !(personelForm.yetkiler as any)[key] }
                           })}
                         />
-                        <span className="text-slate-700 text-xs font-medium capitalize">
-                          {key.replace('_', ' ')}
-                        </span>
+                        <div>
+                          <p className="text-sm font-medium text-slate-700">{tanim.label}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{tanim.aciklama}</p>
+                        </div>
                       </label>
                     ))}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 accent-emerald-500 rounded"
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" className="w-4 h-4 accent-emerald-500"
                       checked={personelForm.aktif}
-                      onChange={() => setPersonelForm({...personelForm, aktif: !personelForm.aktif})}
-                    />
-                    <span className="text-slate-700 text-sm font-medium">Hesap Aktif</span>
+                      onChange={() => setPersonelForm({ ...personelForm, aktif: !personelForm.aktif })} />
+                    <span className="text-sm font-medium text-slate-700">Hesap Aktif</span>
                   </label>
-
-                  <div className="flex space-x-2">
-                    <button 
-                      onClick={() => { setIsPersonelFormOpen(false); setSeciliPersonel(null); }}
-                      className={btnS + " flex items-center"}
-                    >
-                      <X className="w-4 h-4 mr-1" /> Iptal
+                  <div className="flex gap-2">
+                    <button onClick={() => { setIsPersonelFormOpen(false); setSeciliPersonel(null); }} className={btnS + ' flex items-center'}>
+                      <X className="w-4 h-4 mr-1" /> İptal
                     </button>
-                    <button 
-                      onClick={personelKaydet}
-                      className={btnO + " flex items-center"}
-                    >
+                    <button onClick={personelKaydet} className={btnO + ' flex items-center'}>
                       <Save className="w-4 h-4 mr-1" /> Kaydet
                     </button>
                   </div>
@@ -517,10 +588,10 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
                     <th className="p-4 font-semibold">Personel</th>
-                    <th className="p-4 font-semibold">Iletisim</th>
+                    <th className="p-4 font-semibold">İletişim</th>
                     <th className="p-4 font-semibold">Yetkiler</th>
                     <th className="p-4 font-semibold text-center">Durum</th>
-                    <th className="p-4 font-semibold text-right">Islemler</th>
+                    <th className="p-4 font-semibold text-right">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -528,20 +599,21 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                     <tr key={personel.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-4">
                         <div className="font-semibold text-slate-700">{personel.full_name}</div>
-                        <div className="text-xs text-slate-400">Kayit: {new Date(personel.created_at).toLocaleDateString('tr-TR')}</div>
+                        <div className="text-xs text-slate-400">Kayıt: {new Date(personel.created_at).toLocaleDateString('tr-TR')}</div>
                       </td>
-                      <td className="p-4 text-slate-600">
-                        {personel.phone_number}
-                      </td>
+                      <td className="p-4 text-slate-600">{personel.phone_number}</td>
                       <td className="p-4">
                         <div className="flex flex-wrap gap-1">
-                          {personel.yetkiler && Object.entries(personel.yetkiler).map(([key, value]) => 
-                            value ? (
-                              <span key={key} className="bg-orange-50 text-orange-600 border border-orange-100 text-[10px] px-2 py-0.5 rounded-full capitalize font-medium">
-                                {key.replace('_', ' ')}
-                              </span>
-                            ) : null
-                          )}
+                          {personel.yetkiler && Object.entries(personel.yetkiler).length > 0
+                            ? Object.entries(personel.yetkiler).map(([key, value]) =>
+                                value ? (
+                                  <span key={key} className="bg-orange-50 text-orange-600 border border-orange-100 text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                    {yetkiTanimlar[key]?.label || key}
+                                  </span>
+                                ) : null
+                              )
+                            : <span className="text-xs text-slate-400 italic">Yetki yok</span>
+                          }
                         </div>
                       </td>
                       <td className="p-4 text-center">
@@ -556,18 +628,12 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                         )}
                       </td>
                       <td className="p-4 text-right">
-                        <button 
-                          onClick={() => personelDuzenleAc(personel)}
-                          className="p-1.5 text-slate-400 hover:text-orange-500 transition-colors inline-block"
-                          title="Duzenle"
-                        >
+                        <button onClick={() => personelDuzenleAc(personel)}
+                          className="p-1.5 text-slate-400 hover:text-orange-500 transition-colors inline-block" title="Düzenle">
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={() => kullaniciSil(personel.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-500 transition-colors inline-block ml-1"
-                          title="Sil"
-                        >
+                        <button onClick={() => kullaniciSil(personel.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-500 transition-colors inline-block ml-1" title="Sil">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
@@ -576,7 +642,7 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                   {kullanicilar.filter(u => u.type === 'admin').length === 0 && (
                     <tr>
                       <td colSpan={5} className="p-8 text-center text-slate-400 text-sm">
-                        Henuz personel eklenmemis.
+                        Henüz personel eklenmemiş.
                       </td>
                     </tr>
                   )}
@@ -584,18 +650,21 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
               </table>
             </div>
           </div>
+          ) : <YetkisizUyari sekme="Personel Yönetimi" />
         )}
 
+        {/* ─── İLANLAR ─── */}
         {!yukleniyor && aktifSekme === 'ilanlar' && (
+          !sekmeYetkiVarMi('ilanlar') ? <YetkisizUyari sekme="İlan Onay" /> : (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Ilan Veren</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">İlan Veren</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Kategori</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Tarih</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Durum</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Islemler</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">İşlemler</th>
                 </tr>
               </thead>
               <tbody>
@@ -616,22 +685,26 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                         <button onClick={() => ilanDurumDegistir(ilan.id, ilan.durum === 'aktif' ? 'pasif' : 'aktif')} className="text-xs text-orange-500 hover:text-orange-700 font-medium">
                           {ilan.durum === 'aktif' ? 'Pasif Yap' : 'Aktif Yap'}
                         </button>
-                        <button onClick={() => ilanSil(ilan.id)} className="text-red-400 hover:text-red-600">
-                          <Trash2 size={13} />
-                        </button>
+                        {/* İlan silme sadece ilan_sil veya superadmin */}
+                        {(isSuperAdmin || yetkiler.ilan_sil) && (
+                          <button onClick={() => ilanSil(ilan.id)} className="text-red-400 hover:text-red-600">
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {ilanlar.length === 0 && (
-              <div className="text-center py-12 text-slate-400 text-sm">Hic ilan yok</div>
-            )}
+            {ilanlar.length === 0 && <div className="text-center py-12 text-slate-400 text-sm">Hiç ilan yok</div>}
           </div>
+          )
         )}
 
+        {/* ─── KULLANICILAR ─── */}
         {!yukleniyor && aktifSekme === 'kullanicilar' && (
+          !sekmeYetkiVarMi('kullanicilar') ? <YetkisizUyari sekme="Kullanıcı Yönetimi" /> : (
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2 bg-white rounded-xl border border-slate-200 overflow-hidden">
               <table className="w-full text-sm">
@@ -641,22 +714,18 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Telefon</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Tip</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Durum</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Islem</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">İşlem</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {kullanicilar.map((u) => (
-                    <tr
-                      key={u.id}
-                      onClick={() => setSeciliKullanici(u)}
-                      className={'border-b border-slate-50 hover:bg-slate-50 transition cursor-pointer ' + (seciliKullanici?.id === u.id ? 'bg-orange-50' : '')}
-                    >
-                      <td className="px-4 py-3 text-slate-700 font-medium">{u.full_name || 'Isimsiz'}</td>
+                  {kullanicilar.filter(u => u.type !== 'admin').map((u) => (
+                    <tr key={u.id} onClick={() => setSeciliKullanici(u)}
+                      className={'border-b border-slate-50 hover:bg-slate-50 transition cursor-pointer ' + (seciliKullanici?.id === u.id ? 'bg-orange-50' : '')}>
+                      <td className="px-4 py-3 text-slate-700 font-medium">{u.full_name || 'İsimsiz'}</td>
                       <td className="px-4 py-3 text-slate-500 text-xs">{u.phone_number}</td>
                       <td className="px-4 py-3">
-                        <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' +
-                          (u.type === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500')}>
-                          {u.type || 'uye'}
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                          {u.type || 'üye'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -666,10 +735,7 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); kullaniciSil(u.id); }}
-                          className="text-red-400 hover:text-red-600"
-                        >
+                        <button onClick={(e) => { e.stopPropagation(); kullaniciSil(u.id); }} className="text-red-400 hover:text-red-600">
                           <Trash2 size={13} />
                         </button>
                       </td>
@@ -682,71 +748,58 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
             <div className="flex flex-col gap-4">
               {seciliKullanici && (
                 <div className="bg-white rounded-xl border border-slate-200 p-4">
-                  <p className="text-sm font-semibold text-slate-700 mb-3">Kullanici Duzenle</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-3">Kullanıcı Düzenle</p>
                   <input className={ic + ' mb-2'} value={seciliKullanici.full_name || ''}
-                    onChange={e => setSeciliKullanici({ ...seciliKullanici, full_name: e.target.value })}
-                    placeholder="Ad Soyad" />
+                    onChange={e => setSeciliKullanici({ ...seciliKullanici, full_name: e.target.value })} placeholder="Ad Soyad" />
                   <input className={ic + ' mb-2'} value={seciliKullanici.phone_number || ''}
-                    onChange={e => setSeciliKullanici({ ...seciliKullanici, phone_number: e.target.value })}
-                    placeholder="Telefon" />
-                  <input className={ic + ' mb-2'} value={yeniSifre}
-                    onChange={e => setYeniSifre(e.target.value)}
-                    placeholder="Yeni sifre (bos birakilabilir)" type="password" />
+                    onChange={e => setSeciliKullanici({ ...seciliKullanici, phone_number: e.target.value })} placeholder="Telefon" />
+                  <input className={ic + ' mb-2'} value={yeniSifre} type="password"
+                    onChange={e => setYeniSifre(e.target.value)} placeholder="Yeni şifre (boş bırakılabilir)" />
                   <div className="flex gap-2 mb-3">
-                    <button
-                      onClick={() => setSeciliKullanici({ ...seciliKullanici, aktif: true })}
+                    <button onClick={() => setSeciliKullanici({ ...seciliKullanici, aktif: true })}
                       className={'flex-1 text-xs py-1.5 rounded-lg border font-medium transition ' +
-                        (seciliKullanici.aktif !== false ? 'bg-green-500 text-white border-green-500' : 'text-slate-500 border-slate-200')}
-                    >
-                      Aktif
-                    </button>
-                    <button
-                      onClick={() => setSeciliKullanici({ ...seciliKullanici, aktif: false })}
+                        (seciliKullanici.aktif !== false ? 'bg-green-500 text-white border-green-500' : 'text-slate-500 border-slate-200')}>Aktif</button>
+                    <button onClick={() => setSeciliKullanici({ ...seciliKullanici, aktif: false })}
                       className={'flex-1 text-xs py-1.5 rounded-lg border font-medium transition ' +
-                        (seciliKullanici.aktif === false ? 'bg-red-500 text-white border-red-500' : 'text-slate-500 border-slate-200')}
-                    >
-                      Pasif
-                    </button>
+                        (seciliKullanici.aktif === false ? 'bg-red-500 text-white border-red-500' : 'text-slate-500 border-slate-200')}>Pasif</button>
                   </div>
                   <button onClick={kullaniciGuncelle} className={btnO + ' w-full'}>Kaydet</button>
                 </div>
               )}
               <div className="bg-white rounded-xl border border-slate-200 p-4">
                 <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
-                  <PlusCircle size={15} className="text-orange-500" />
-                  Yeni Kullanici
+                  <PlusCircle size={15} className="text-orange-500" /> Yeni Kullanıcı
                 </p>
                 <input className={ic + ' mb-2'} placeholder="Ad Soyad" value={yeniKullanici.full_name}
                   onChange={e => setYeniKullanici({ ...yeniKullanici, full_name: e.target.value })} />
                 <input className={ic + ' mb-2'} placeholder="Telefon" value={yeniKullanici.phone_number}
                   onChange={e => setYeniKullanici({ ...yeniKullanici, phone_number: e.target.value })} />
-                <input className={ic + ' mb-2'} placeholder="Sifre" type="password" value={yeniKullanici.password}
+                <input className={ic + ' mb-2'} placeholder="Şifre" type="password" value={yeniKullanici.password}
                   onChange={e => setYeniKullanici({ ...yeniKullanici, password: e.target.value })} />
                 <select className={ic + ' mb-3'} value={yeniKullanici.type}
                   onChange={e => setYeniKullanici({ ...yeniKullanici, type: e.target.value })}>
                   <option value="staff">Staff</option>
-                  <option value="admin">Admin</option>
-                  <option value="uye">Uye</option>
+                  <option value="uye">Üye</option>
                 </select>
-                <button onClick={kullaniciEkle} className={btnO + ' w-full'}>Kullanici Olustur</button>
+                <button onClick={kullaniciEkle} className={btnO + ' w-full'}>Kullanıcı Oluştur</button>
               </div>
             </div>
           </div>
+          )
         )}
 
+        {/* ─── REKLAMLAR ─── */}
         {!yukleniyor && aktifSekme === 'reklamlar' && (
+          !sekmeYetkiVarMi('reklamlar') ? <YetkisizUyari sekme="Reklam Yönetimi" /> : (
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2 flex flex-col gap-3">
               {reklamlar.map((r) => (
                 <div key={r.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4">
-                  <img
-                    src={r.resim_url}
-                    alt={r.baslik}
+                  <img src={r.resim_url} alt={r.baslik}
                     className="w-32 h-16 object-cover rounded-lg border border-slate-100 flex-shrink-0"
-                    onError={(e: any) => { e.target.style.display = 'none'; }}
-                  />
+                    onError={(e: any) => { e.target.style.display = 'none'; }} />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-700 text-sm">{r.baslik || 'Basliksiz'}</p>
+                    <p className="font-semibold text-slate-700 text-sm">{r.baslik || 'Başlıksız'}</p>
                     <p className="text-xs text-slate-400 truncate mt-0.5">{r.link_url || 'Link yok'}</p>
                     <span className={'text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ' +
                       (r.konum === 'header' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')}>
@@ -754,11 +807,9 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
-                      onClick={() => reklamToggle(r.id, r.aktif)}
+                    <button onClick={() => reklamToggle(r.id, r.aktif)}
                       className={'text-xs font-semibold px-3 py-1.5 rounded-lg border transition ' +
-                        (r.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}
-                    >
+                        (r.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}>
                       {r.aktif ? 'Aktif' : 'Pasif'}
                     </button>
                     <button onClick={() => reklamSil(r.id)} className="text-red-400 hover:text-red-600 p-1">
@@ -768,93 +819,66 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                 </div>
               ))}
               {reklamlar.length === 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">
-                  Hic reklam eklenmemis
-                </div>
+                <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">Hiç reklam eklenmemiş</div>
               )}
             </div>
-
             <div className="bg-white rounded-xl border border-slate-200 p-4 h-fit">
               <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
-                <PlusCircle size={15} className="text-orange-500" />
-                Yeni Reklam Ekle
+                <PlusCircle size={15} className="text-orange-500" /> Yeni Reklam Ekle
               </p>
-              <input className={ic + ' mb-2'} placeholder="Baslik (opsiyonel)"
-                value={yeniReklam.baslik}
+              <input className={ic + ' mb-2'} placeholder="Başlık (opsiyonel)" value={yeniReklam.baslik}
                 onChange={e => setYeniReklam({ ...yeniReklam, baslik: e.target.value })} />
-              <input className={ic + ' mb-2'} placeholder="Tiklama linki (opsiyonel)"
-                value={yeniReklam.link_url}
+              <input className={ic + ' mb-2'} placeholder="Tıklama linki" value={yeniReklam.link_url}
                 onChange={e => setYeniReklam({ ...yeniReklam, link_url: e.target.value })} />
               <select className={ic + ' mb-3'} value={yeniReklam.konum}
                 onChange={e => setYeniReklam({ ...yeniReklam, konum: e.target.value })}>
-                <option value="liste">Liste Arasi</option>
+                <option value="liste">Liste Arası</option>
                 <option value="header">Header</option>
               </select>
-
               {yeniReklam.resim_url ? (
                 <div className="mb-3 relative">
-                  <img
-                    src={yeniReklam.resim_url}
-                    className="w-full h-24 object-cover rounded-lg border border-slate-200"
-                  />
-                  <button
-                    onClick={() => setYeniReklam({ ...yeniReklam, resim_url: '' })}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold"
-                  >
-                    x
-                  </button>
-                  <p className="text-xs text-green-600 mt-1 font-medium">Resim yuklendi</p>
+                  <img src={yeniReklam.resim_url} className="w-full h-24 object-cover rounded-lg border border-slate-200" />
+                  <button onClick={() => setYeniReklam({ ...yeniReklam, resim_url: '' })}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">x</button>
+                  <p className="text-xs text-green-600 mt-1 font-medium">Resim yüklendi</p>
                 </div>
               ) : (
-                <div
-                  onDragOver={e => { e.preventDefault(); setSurukleAktif(true); }}
+                <div onDragOver={e => { e.preventDefault(); setSurukleAktif(true); }}
                   onDragLeave={() => setSurukleAktif(false)}
                   onDrop={surukBirak}
                   onClick={() => document.getElementById('reklam-dosya-input')?.click()}
-                  className={
-                    'mb-3 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ' +
-                    (surukleAktif ? 'border-orange-400 bg-orange-50' : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50')
-                  }
-                >
+                  className={'mb-3 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ' +
+                    (surukleAktif ? 'border-orange-400 bg-orange-50' : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50')}>
                   {reklamYukleniyor ? (
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                      <p className="text-xs text-slate-400">Yukleniyor...</p>
+                      <p className="text-xs text-slate-400">Yükleniyor...</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
                         <Image size={20} className="text-slate-400" />
                       </div>
-                      <p className="text-sm font-medium text-slate-600">Surukle birak veya tikla</p>
+                      <p className="text-sm font-medium text-slate-600">Sürükle bırak veya tıkla</p>
                       <p className="text-xs text-slate-400">PNG, JPG, GIF desteklenir</p>
                     </div>
                   )}
-                  <input
-                    id="reklam-dosya-input"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={e => {
-                      const dosya = e.target.files?.[0];
-                      if (dosya) dosyaYukle(dosya);
-                    }}
-                  />
+                  <input id="reklam-dosya-input" type="file" accept="image/*" className="hidden"
+                    onChange={e => { const d = e.target.files?.[0]; if (d) dosyaYukle(d); }} />
                 </div>
               )}
-
-              <button
-                onClick={reklamEkle}
-                disabled={!yeniReklam.resim_url || reklamYukleniyor}
-                className={btnO + ' w-full disabled:opacity-50 disabled:cursor-not-allowed'}
-              >
+              <button onClick={reklamEkle} disabled={!yeniReklam.resim_url || reklamYukleniyor}
+                className={btnO + ' w-full disabled:opacity-50 disabled:cursor-not-allowed'}>
                 Reklam Ekle
               </button>
             </div>
           </div>
+          )
         )}
 
+        {/* ─── DUYURULAR ─── */}
         {!yukleniyor && aktifSekme === 'duyurular' && (
+          !sekmeYetkiVarMi('duyurular') ? <YetkisizUyari sekme="Duyuru Yönetimi" /> : (
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2 flex flex-col gap-3">
               {duyurular.map((d) => (
@@ -863,14 +887,12 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                     <div>
                       <p className="font-semibold text-slate-700 text-sm">{d.baslik}</p>
                       <p className="text-xs text-slate-500 mt-1">{d.mesaj}</p>
-                      <p className="text-xs text-slate-400 mt-1">{d.saniye} saniye sonra goster</p>
+                      <p className="text-xs text-slate-400 mt-1">{d.saniye} saniye sonra göster</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                      <button
-                        onClick={() => duyuruToggle(d.id, d.aktif)}
+                      <button onClick={() => duyuruToggle(d.id, d.aktif)}
                         className={'text-xs font-semibold px-3 py-1.5 rounded-lg border transition ' +
-                          (d.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}
-                      >
+                          (d.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}>
                         {d.aktif ? 'Aktif' : 'Pasif'}
                       </button>
                       <button onClick={() => duyuruSil(d.id)} className="text-red-400 hover:text-red-600 p-1">
@@ -881,21 +903,17 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                 </div>
               ))}
               {duyurular.length === 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">
-                  Hic duyuru eklenmemis
-                </div>
+                <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">Hiç duyuru eklenmemiş</div>
               )}
             </div>
             <div className="bg-white rounded-xl border border-slate-200 p-4 h-fit">
               <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
-                <PlusCircle size={15} className="text-orange-500" />
-                Yeni Duyuru
+                <PlusCircle size={15} className="text-orange-500" /> Yeni Duyuru
               </p>
-              <input className={ic + ' mb-2'} placeholder="Baslik" value={yeniDuyuru.baslik}
+              <input className={ic + ' mb-2'} placeholder="Başlık" value={yeniDuyuru.baslik}
                 onChange={e => setYeniDuyuru({ ...yeniDuyuru, baslik: e.target.value })} />
               <textarea className={ic + ' mb-2 resize-none'} placeholder="Mesaj" rows={3}
-                value={yeniDuyuru.mesaj}
-                onChange={e => setYeniDuyuru({ ...yeniDuyuru, mesaj: e.target.value })} />
+                value={yeniDuyuru.mesaj} onChange={e => setYeniDuyuru({ ...yeniDuyuru, mesaj: e.target.value })} />
               <input className={ic + ' mb-2'} placeholder="Resim URL (opsiyonel)" value={yeniDuyuru.resim_url}
                 onChange={e => setYeniDuyuru({ ...yeniDuyuru, resim_url: e.target.value })} />
               <div className="flex items-center gap-2 mb-3">
@@ -906,18 +924,18 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
               <button onClick={duyuruEkle} className={btnO + ' w-full'}>Duyuru Ekle</button>
             </div>
           </div>
+          )
         )}
 
+        {/* ─── DESTEK ─── */}
         {!yukleniyor && aktifSekme === 'destek' && (
+          !sekmeYetkiVarMi('destek') ? <YetkisizUyari sekme="Destek Yönetimi" /> : (
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2 flex flex-col gap-3">
               {destekler.map((d) => (
-                <div
-                  key={d.id}
-                  onClick={() => { setSeciliDestek(d); setDestekCevap(d.cevap || ''); }}
+                <div key={d.id} onClick={() => { setSeciliDestek(d); setDestekCevap(d.cevap || ''); }}
                   className={'bg-white rounded-xl border p-4 cursor-pointer hover:border-orange-300 transition ' +
-                    (seciliDestek?.id === d.id ? 'border-orange-400' : 'border-slate-200')}
-                >
+                    (seciliDestek?.id === d.id ? 'border-orange-400' : 'border-slate-200')}>
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="font-semibold text-slate-700 text-sm">{d.konu}</p>
@@ -925,15 +943,13 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                     </div>
                     <span className={'ml-4 flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ' +
                       (d.durum === 'cevaplandi' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')}>
-                      {d.durum === 'cevaplandi' ? 'Cevaplandi' : 'Bekliyor'}
+                      {d.durum === 'cevaplandi' ? 'Cevaplandı' : 'Bekliyor'}
                     </span>
                   </div>
                 </div>
               ))}
               {destekler.length === 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">
-                  Hic destek talebi yok
-                </div>
+                <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">Hiç destek talebi yok</div>
               )}
             </div>
             <div className="bg-white rounded-xl border border-slate-200 p-4 h-fit">
@@ -941,20 +957,16 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                 <>
                   <p className="text-sm font-semibold text-slate-700 mb-1">{seciliDestek.konu}</p>
                   <p className="text-xs text-slate-500 mb-3">{seciliDestek.mesaj}</p>
-                  <textarea
-                    className={ic + ' mb-3 resize-none'}
-                    placeholder="Cevabin..."
-                    rows={5}
-                    value={destekCevap}
-                    onChange={e => setDestekCevap(e.target.value)}
-                  />
+                  <textarea className={ic + ' mb-3 resize-none'} placeholder="Cevabın..." rows={5}
+                    value={destekCevap} onChange={e => setDestekCevap(e.target.value)} />
                   <button onClick={destekCevapla} className={btnO + ' w-full'}>Cevapla</button>
                 </>
               ) : (
-                <p className="text-sm text-slate-400 text-center py-8">Cevaplamak icin bir talep sec</p>
+                <p className="text-sm text-slate-400 text-center py-8">Cevaplamak için bir talep seç</p>
               )}
             </div>
           </div>
+          )
         )}
 
       </main>
