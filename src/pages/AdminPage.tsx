@@ -91,7 +91,7 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
   const [yeniReklam, setYeniReklam]       = useState({ baslik: '', resim_url: '', link_url: '', konum: 'liste' });
   const [reklamYukleniyor, setReklamYukleniyor] = useState(false);
   const [surukleAktif, setSurukleAktif]   = useState(false);
-  const [yeniDuyuru, setYeniDuyuru]       = useState({ baslik: '', mesaj: '', resim_url: '', saniye: 2 });
+  const [yeniDuyuru, setYeniDuyuru]       = useState({ baslik: '', mesaj: '', resim_url: '', saniye: 2, goster_sure: 8 });
   const [duyuruYukleniyor, setDuyuruYukleniyor] = useState(false);
   const [duyuruSurukle, setDuyuruSurukle]       = useState(false);
   const [seciliDestek, setSeciliDestek]   = useState<any>(null);
@@ -639,7 +639,10 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold text-slate-700 text-sm">{d.baslik}</p>
                           <p className="text-xs text-slate-500 mt-1">{d.mesaj}</p>
-                          <p className="text-xs text-slate-400 mt-1">{d.saniye} sn. sonra göster</p>
+                          <div className="flex items-center gap-3 mt-1">
+                            <p className="text-xs text-slate-400">{d.saniye} sn. sonra açılır</p>
+                            <p className="text-xs text-slate-400">{d.goster_sure || 8} sn. görünür kalır</p>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           {!d.resim_url && (
@@ -709,15 +712,23 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 mb-3">
-                  <label className="text-xs text-slate-500 flex-shrink-0">Gecikme (sn):</label>
-                  <input className={ic} type="number" min={0} max={30} value={yeniDuyuru.saniye} onChange={e => setYeniDuyuru({ ...yeniDuyuru, saniye: Number(e.target.value) })} />
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Kaç sn. sonra açılsın</label>
+                    <input className={ic} type="number" min={0} max={60} value={yeniDuyuru.saniye}
+                      onChange={e => setYeniDuyuru({ ...yeniDuyuru, saniye: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Kaç sn. görünür kalsın</label>
+                    <input className={ic} type="number" min={2} max={120} value={yeniDuyuru.goster_sure}
+                      onChange={e => setYeniDuyuru({ ...yeniDuyuru, goster_sure: Number(e.target.value) })} />
+                  </div>
                 </div>
                 <button
                   onClick={async () => {
                     if (!yeniDuyuru.baslik || !yeniDuyuru.mesaj) return;
                     await supabase.from('duyurular').insert([{ ...yeniDuyuru, aktif: true }]);
-                    setYeniDuyuru({ baslik: '', mesaj: '', resim_url: '', saniye: 2 });
+                    setYeniDuyuru({ baslik: '', mesaj: '', resim_url: '', saniye: 2, goster_sure: 8 });
                     hepsiniYukle();
                   }}
                   disabled={duyuruYukleniyor || !yeniDuyuru.baslik || !yeniDuyuru.mesaj}
