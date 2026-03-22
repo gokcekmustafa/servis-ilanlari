@@ -24,7 +24,17 @@ type Page =
   | 'sss' | 'iletisim' | 'kullanim-kosullari'
   | 'kisisel-veriler' | 'kunye';
 
-const ADMIN_TELEFON = '05369500280';
+// Yetkiler tipi — AdminPage ile ortak kullanılır
+export type Yetkiler = {
+  ilan_onay?: boolean;
+  kullanici_yonetimi?: boolean;
+  destek_yonetimi?: boolean;
+  reklam_yonetimi?: boolean;
+  duyuru_yonetimi?: boolean;
+  ilan_sil?: boolean;
+};
+
+const SUPERADMIN_TELEFON = '05369500280';
 
 const validPages: Page[] = [
   'home', 'login', 'register', 'detay', 'ilan-ekle',
@@ -37,7 +47,14 @@ export default function App() {
   const [currentPage, setCurrentPageState] = useState<Page>('home');
   const [prevPage, setPrevPage] = useState<Page>('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Admin erişimi: superadmin veya type==='admin' olan personeller
   const [isAdmin, setIsAdmin] = useState(false);
+  // Superadmin mi? (tüm yetkilere sahip, personel yönetebilir)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  // Personelin aktif yetkileri
+  const [yetkiler, setYetkiler] = useState<Yetkiler>({});
+
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedIlan, setSelectedIlan] = useState<Ilan | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
@@ -50,6 +67,41 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
+  // Kullanıcı bilgilerinden rol/yetki state'lerini doldur
+  const kullaniciyiIsle = (user: any) => {
+    if (!user) return;
+    setIsLoggedIn(true);
+    setUserId(user.id);
+
+    const temiz = user.phone_number?.replace(/\s/g, '').replace(/[^0-9]/g, '');
+    const superTemiz = SUPERADMIN_TELEFON.replace(/\s/g, '').replace(/[^0-9]/g, '');
+
+    const superAdmin = temiz === superTemiz || user.type === 'superadmin';
+    const adminKullanici = superAdmin || user.type === 'admin';
+
+    setIsSuperAdmin(superAdmin);
+    setIsAdmin(adminKullanici);
+
+    // Superadmin'in tüm yetkileri var, personelin sadece atanan yetkileri
+    if (superAdmin) {
+      setYetkiler({
+        ilan_onay: true,
+        kullanici_yonetimi: true,
+        destek_yonetimi: true,
+        reklam_yonetimi: true,
+        duyuru_yonetimi: true,
+        ilan_sil: true,
+      });
+    } else if (user.type === 'admin') {
+      // Pasif personel admin paneline giremez
+      if (user.aktif === false) {
+        setIsAdmin(false);
+        return;
+      }
+      setYetkiler(user.yetkiler || {});
+    }
+  };
+
   useEffect(() => {
     const path = window.location.pathname.replace('/', '');
     if (path && validPages.includes(path as Page)) {
@@ -57,18 +109,12 @@ export default function App() {
     }
 
     const user = mevcutKullanici();
-    if (user) {
-      setIsLoggedIn(true);
-      setUserId(user.id);
-      const temiz = user.phone_number?.replace(/\s/g, '').replace(/[^0-9]/g, '');
-      const adminTemiz = ADMIN_TELEFON.replace(/\s/g, '').replace(/[^0-9]/g, '');
-      if (temiz === adminTemiz) setIsAdmin(true);
-    }
+    if (user) kullaniciyiIsle(user);
     setYukleniyor(false);
   }, []);
 
   useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
+    const handlePopState = () => {
       const path = window.location.pathname.replace('/', '');
       if (!path || path === 'home') {
         setCurrentPageState('home');
@@ -83,12 +129,14 @@ export default function App() {
   const handleLogin = () => {
     const user = mevcutKullanici();
     if (user) {
-      setIsLoggedIn(true);
-      setUserId(user.id);
+      kullaniciyiIsle(user);
+
       const temiz = user.phone_number?.replace(/\s/g, '').replace(/[^0-9]/g, '');
-      const adminTemiz = ADMIN_TELEFON.replace(/\s/g, '').replace(/[^0-9]/g, '');
-      if (temiz === adminTemiz) {
-        setIsAdmin(true);
+      const superTemiz = SUPERADMIN_TELEFON.replace(/\s/g, '').replace(/[^0-9]/g, '');
+      const superAdmin = temiz === superTemiz || user.type === 'superadmin';
+      const adminKullanici = superAdmin || (user.type === 'admin' && user.aktif !== false);
+
+      if (adminKullanici) {
         setCurrentPage('admin');
         return;
       }
@@ -100,6 +148,8 @@ export default function App() {
     await cikisYap();
     setIsLoggedIn(false);
     setIsAdmin(false);
+    setIsSuperAdmin(false);
+    setYetkiler({});
     setUserId(null);
     setCurrentPage('home');
   };
@@ -118,7 +168,7 @@ export default function App() {
   };
 
   const handleIlanSuccess = () => {
-    setSuccessMsg('İlanınız basariyla yayinlandi!');
+    setSuccessMsg('İlanınız başarıyla yayınlandı!');
     setCurrentPage('home');
     setTimeout(() => setSuccessMsg(''), 4000);
   };
@@ -146,7 +196,7 @@ export default function App() {
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-[#1a3c6e] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500 text-sm">Yukleniyor...</p>
+          <p className="text-gray-500 text-sm">Yükleniyor...</p>
         </div>
       </div>
     );
@@ -213,10 +263,17 @@ export default function App() {
   }
 
   if (currentPage === 'admin') {
+    // Admin yetkisi yoksa anasayfaya yönlendir
+    if (!isAdmin) {
+      setCurrentPage('home');
+      return null;
+    }
     return withLayout(
       <AdminPage
         onLogout={handleLogout}
         onIlanDetay={handleIlanDetay}
+        isSuperAdmin={isSuperAdmin}
+        yetkiler={yetkiler}
       />
     );
   }
