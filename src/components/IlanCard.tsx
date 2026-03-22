@@ -54,7 +54,7 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-slate-800 text-white">
+              <tr className="bg-slate-400 text-white">
                 <th className="px-3 py-2 text-left font-medium">Giris</th>
                 <th className="px-3 py-2 text-left font-medium">Nereden</th>
                 <th className="px-3 py-2 text-left font-medium">Nereye</th>
