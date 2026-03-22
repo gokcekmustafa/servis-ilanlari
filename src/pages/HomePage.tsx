@@ -49,7 +49,6 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   const [reklamlar, setReklamlar] = useState<any[]>([]);
   const [duyuru, setDuyuru] = useState<any>(null);
   const [popupAcik, setPopupAcik] = useState(false);
-  const [popupKapatildi, setPopupKapatildi] = useState(false); // oturumda kapatıldı mı
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   // Mobilde filtre paneli
   const [filtreAcik, setFiltreAcik] = useState(false);
@@ -81,6 +80,9 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   const duyuruYukle = async () => {
     const { data } = await supabase.from('duyurular').select('*').eq('aktif', true).limit(1).single();
     if (data) {
+      // Kullanıcı bu duyuruyu bu oturumda zaten kapattıysa bir daha gösterme
+      const kapatildi = sessionStorage.getItem('duyuru_kapatildi_' + data.id);
+      if (kapatildi) return;
       setDuyuru(data);
       // saniye: popup'ın kaç saniye sonra AÇILACAĞI (admin panelinden ayarlanır)
       setTimeout(() => setPopupAcik(true), (data.saniye || 2) * 1000);
@@ -94,8 +96,8 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
     const goruntuleSure = (duyuru.goster_sure || 8) * 1000;
     const timer = setTimeout(() => {
       setPopupAcik(false);
-      // Otomatik kapanmada oturumda tekrar gösterme
-      setPopupKapatildi(true);
+      // Otomatik kapandıysa da sessionStorage'a yaz — sayfa değişince tekrar çıkmasın
+      sessionStorage.setItem('duyuru_kapatildi_' + duyuru.id, '1');
     }, goruntuleSure);
     setOtomatikKapatTimer(timer);
     return () => clearTimeout(timer);
@@ -103,11 +105,13 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
 
   // Kullanıcı aktif olarak kapatırsa (× veya dışarı tıklama)
   const popupKapat = (kullaniciKapatti: boolean) => {
-    // Sayacı iptal et
     if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
     setPopupAcik(false);
-    // Kullanıcı kapattıysa oturumda bir daha gösterme
-    if (kullaniciKapatti) setPopupKapatildi(true);
+    // Her kapatmada (kullanıcı veya otomatik) sessionStorage'a yaz
+    // Böylece sayfa değişip geri gelince tekrar çıkmaz
+    if (kullaniciKapatti && duyuru) {
+      sessionStorage.setItem('duyuru_kapatildi_' + duyuru.id, '1');
+    }
   };
 
   const handleFilter = () => {
@@ -232,7 +236,7 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
       )}
 
       {/* DUYURU POPUP */}
-      {popupAcik && duyuru && !popupKapatildi && (
+      {popupAcik && duyuru && (
         // Dışarı tıklayınca kapat (kullanıcı kapattı = true)
         <div
           className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4"
@@ -259,15 +263,16 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
               <>
                 <img
                   src={duyuru.resim_url}
-                  alt={duyuru.baslik}
+                  alt={duyuru.baslik || 'Duyuru'}
                   className="w-full h-48 sm:h-56 object-cover"
                 />
+                {/* Başlık veya mesaj varsa alt kısım göster, ikisi de boşsa sadece resim + kapat butonu */}
                 <div className="p-4 sm:p-5">
-                  <h2 className="text-base font-bold text-slate-800 mb-1.5">{duyuru.baslik}</h2>
-                  <p className="text-sm text-slate-500 leading-relaxed">{duyuru.mesaj}</p>
+                  {duyuru.baslik && <h2 className="text-base font-bold text-slate-800 mb-1.5">{duyuru.baslik}</h2>}
+                  {duyuru.mesaj && <p className="text-sm text-slate-500 leading-relaxed">{duyuru.mesaj}</p>}
                   <button
                     onClick={() => popupKapat(true)}
-                    className="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition"
+                    className={`w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition ${duyuru.baslik || duyuru.mesaj ? 'mt-4' : ''}`}
                   >
                     Kapat
                   </button>
@@ -275,11 +280,11 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
               </>
             ) : (
               <div className="p-5 sm:p-6">
-                <h2 className="text-base font-bold text-slate-800 mb-2 pr-8">{duyuru.baslik}</h2>
-                <p className="text-sm text-slate-500 leading-relaxed">{duyuru.mesaj}</p>
+                {duyuru.baslik && <h2 className="text-base font-bold text-slate-800 mb-2 pr-8">{duyuru.baslik}</h2>}
+                {duyuru.mesaj && <p className="text-sm text-slate-500 leading-relaxed">{duyuru.mesaj}</p>}
                 <button
                   onClick={() => popupKapat(true)}
-                  className="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition"
+                  className={`w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition ${duyuru.baslik || duyuru.mesaj ? 'mt-4' : ''}`}
                 >
                   Kapat
                 </button>
