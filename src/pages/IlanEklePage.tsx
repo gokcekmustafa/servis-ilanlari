@@ -299,34 +299,37 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
     }
 
     const ilanGuzergahlar = ['hostesim_is', 'soforum_is'].includes(selectedKategori!) ? [{
-      giris_saati: konumGiris, kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah,
-      varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: konumCikis,
-    }] : guzergahlar;
+  giris_saati: konumGiris, kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah,
+  varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: konumCikis,
+}] : guzergahlar;
 
-    let ekAlanlar: any = {};
-    if (selectedKategori === 'isim_var_arac') ekAlanlar = isimVarArac;
-    else if (selectedKategori === 'aracim_var_is') ekAlanlar = aracimVarIs;
-    else if (selectedKategori === 'sofor_ariyorum') ekAlanlar = soforAriyorum;
-    else if (selectedKategori === 'hostes_ariyorum') ekAlanlar = hostesAriyorum;
-    else if (selectedKategori === 'hostesim_is') ekAlanlar = { ...hostesimIs, profil_resmi: resimUrl };
-    else if (selectedKategori === 'soforum_is') ekAlanlar = { ...soforumIs, profil_resmi: resimUrl };
-    else if (selectedKategori === 'plaka_satiyorum') ekAlanlar = plakaSatiyorum;
+let ekAlanlar: any = {};
+if (selectedKategori === 'isim_var_arac') ekAlanlar = isimVarArac;
+else if (selectedKategori === 'aracim_var_is') ekAlanlar = aracimVarIs;
+else if (selectedKategori === 'sofor_ariyorum') {
+  const { arac_secimi, ...soforAlanlari } = soforAriyorum;
+  ekAlanlar = soforAlanlari;
+}
+else if (selectedKategori === 'hostes_ariyorum') ekAlanlar = hostesAriyorum;
+else if (selectedKategori === 'hostesim_is') ekAlanlar = { ...hostesimIs, profil_resmi: resimUrl };
+else if (selectedKategori === 'soforum_is') ekAlanlar = { ...soforumIs, profil_resmi: resimUrl };
+else if (selectedKategori === 'plaka_satiyorum') ekAlanlar = plakaSatiyorum;
 
-    const { error } = await ilanEkle({
-      kategori: selectedKategori!,
-      servis_turu: isimVarArac.servis_turu,
-      aciklama,
-      ilan_veren: user?.full_name || user?.phone_number || '',
-      user_id: user?.id || userId,
-      guzergahlar: ilanGuzergahlar,
-      ...ekAlanlar,
-    } as any);
+const { error } = await ilanEkle({
+  kategori: selectedKategori!,
+  servis_turu: isimVarArac.servis_turu,
+  aciklama,
+  ilan_veren: user?.full_name || user?.phone_number || '',
+  user_id: user?.id || userId,
+  guzergahlar: ilanGuzergahlar,
+  ...ekAlanlar,
+} as any);
 
-    setYukleniyor(false);
-    if (error) { setHata('Hata: ' + error.message); return; }
-    sessionStorage.removeItem('ilan-ekle-adim');
-    sessionStorage.removeItem('ilan-ekle-kategori');
-    onSuccess();
+setYukleniyor(false);
+if (error) { setHata('Hata: ' + error.message); return; }
+sessionStorage.removeItem('ilan-ekle-adim');
+sessionStorage.removeItem('ilan-ekle-kategori');
+onSuccess();
   };
 
   const selectedKategoriLabel = kategoriler.find((k) => k.id === selectedKategori)?.label;
