@@ -16,13 +16,7 @@ type HeaderProps = {
 };
 
 export default function Header({
-  isLoggedIn,
-  isAdmin,
-  onGoLogin,
-  onLogout,
-  onIlanEkle,
-  onGoPanel,
-  onNavigate,
+  isLoggedIn, isAdmin, onGoLogin, onLogout, onIlanEkle, onGoPanel, onNavigate,
 }: HeaderProps) {
   const [sayi, setSayi] = useState<number | null>(null);
   const [okunmamis, setOkunmamis] = useState(0);
@@ -30,9 +24,7 @@ export default function Header({
   const [headerReklam, setHeaderReklam] = useState<any>(null);
 
   useEffect(() => {
-    kullaniciSayisi().then(({ count }) => {
-      if (count !== null) setSayi(count);
-    });
+    kullaniciSayisi().then(({ count }) => { if (count !== null) setSayi(count); });
     headerReklamYukle();
   }, []);
 
@@ -40,248 +32,221 @@ export default function Header({
     if (isLoggedIn) {
       const user = mevcutKullanici();
       if (user) {
-        okunmamisMesajSayisi(user.id).then(({ count }) => {
-          if (count) setOkunmamis(count);
-        });
+        okunmamisMesajSayisi(user.id).then(({ count }) => { if (count) setOkunmamis(count); });
       }
     }
   }, [isLoggedIn]);
 
+  // Menü açıkken sayfanın scroll'unu kilitle
+  useEffect(() => {
+    document.body.style.overflow = menuAcik ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuAcik]);
+
   const headerReklamYukle = async () => {
-    const { data } = await supabase
-      .from('reklamlar')
-      .select('*')
-      .eq('aktif', true)
-      .eq('konum', 'header')
-      .limit(1)
-      .single();
+    const { data } = await supabase.from('reklamlar').select('*').eq('aktif', true).eq('konum', 'header').limit(1).single();
     if (data) setHeaderReklam(data);
   };
 
   const navLinks = [
     { label: 'Anasayfa', page: 'home' },
-    { label: 'Hakkimizda', page: 'hakkimizda' },
-    { label: 'Nasil Isliyor', page: 'nasil-isliyor' },
+    { label: 'Hakkımızda', page: 'hakkimizda' },
+    { label: 'Nasıl İşliyor', page: 'nasil-isliyor' },
     { label: 'S.S.S', page: 'sss' },
-    { label: 'Iletisim', page: 'iletisim' },
+    { label: 'İletişim', page: 'iletisim' },
   ];
 
   return (
-    <header className="bg-slate-100 pt-3 px-4">
+    <header className="bg-slate-100 pt-3 px-3 sm:px-4">
       <div className="max-w-5xl mx-auto">
 
-        {/* 1. UST SERIT */}
-        <div className="bg-slate-600 rounded-t-lg px-4 py-1.5 flex items-center justify-between">
-          <span className="text-slate-300 text-xs">
-            Sistemde Kayitli Kisi Sayisi:{' '}
+        {/* 1. ÜST ŞERİT */}
+        <div className="bg-slate-600 rounded-t-lg px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2">
+          <span className="text-slate-300 text-xs truncate">
+            Kayıtlı Kişi:{' '}
             <span className="text-white font-bold">
               {sayi !== null ? sayi.toLocaleString('tr-TR') : '...'}
             </span>
           </span>
           <button
             onClick={onIlanEkle}
-            className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded transition"
+            className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded transition whitespace-nowrap flex-shrink-0"
           >
-            Ucretsiz Ilan Ver
+            Ücretsiz İlan Ver
           </button>
         </div>
 
-        {/* 2. LOGO + REKLAM ALANI */}
-        <div className="bg-white border-x border-slate-200 px-4 py-4">
-          <div className="flex items-center gap-4">
+        {/* 2. LOGO + REKLAM + BUTONLAR */}
+        <div className="bg-white border-x border-slate-200 px-3 sm:px-4 py-3">
+          <div className="flex items-center gap-2 sm:gap-4">
 
             {/* LOGO */}
             <div
-              className="flex items-center gap-2 cursor-pointer flex-shrink-0"
+              className="flex items-center gap-1.5 sm:gap-2 cursor-pointer flex-shrink-0"
               onClick={() => onNavigate('home')}
             >
-              <div className="bg-orange-500 rounded-lg p-2">
-                <Truck className="text-white" size={26} />
+              <div className="bg-orange-500 rounded-lg p-1.5 sm:p-2">
+                <Truck className="text-white" size={20} />
               </div>
               <div className="leading-tight">
-                <div className="text-slate-800 font-bold text-2xl tracking-tight">
+                <div className="text-slate-800 font-bold text-lg sm:text-2xl tracking-tight">
                   salonum<span className="text-orange-500">.site</span>
                 </div>
-                <div className="text-slate-400 text-xs">
-                  Servis Ilanlari Platformu
+                <div className="text-slate-400 text-[10px] sm:text-xs hidden sm:block">
+                  Servis İlanları Platformu
                 </div>
               </div>
             </div>
 
-            {/* REKLAM GORSELI - logo saginda kalan alani doldurur */}
-            <div className="flex-1 h-16 ml-2">
+            {/* REKLAM ALANI — sadece md+ */}
+            <div className="hidden sm:block flex-1 h-14 sm:h-16 ml-1 sm:ml-2">
               {headerReklam ? (
                 <div
                   onClick={() => headerReklam.link_url && window.open(headerReklam.link_url, '_blank')}
                   className="cursor-pointer w-full h-full rounded-lg overflow-hidden relative"
                 >
-                  <img
-                    src={headerReklam.resim_url}
-                    alt={headerReklam.baslik || 'Reklam'}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  <span className="absolute top-1 right-1 bg-black/40 text-white text-xs px-1.5 py-0.5 rounded text-[10px]">
-                    Reklam
-                  </span>
+                  <img src={headerReklam.resim_url} alt={headerReklam.baslik || 'Reklam'} className="w-full h-full object-cover rounded-lg" />
+                  <span className="absolute top-1 right-1 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">Reklam</span>
                 </div>
               ) : (
                 <div className="w-full h-full bg-slate-50 border border-dashed border-slate-200 rounded-lg flex items-center justify-center">
-                  <span className="text-slate-300 text-xs">Reklam Alani</span>
+                  <span className="text-slate-300 text-xs">Reklam Alanı</span>
                 </div>
               )}
             </div>
 
-            {/* SAG BUTONLAR */}
+            {/* SAĞ BUTONLAR — masaüstü */}
             <div className="hidden md:flex items-center gap-2 flex-shrink-0">
               {isLoggedIn ? (
                 <>
-                  <button
-                    onClick={onIlanEkle}
-                    className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-                  >
-                    Ilan Ver
+                  <button onClick={onIlanEkle} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+                    İlan Ver
                   </button>
-                  <button
-                    onClick={onGoPanel}
-                    className="relative p-2 text-slate-400 hover:text-slate-600 transition"
-                  >
+                  <button onClick={onGoPanel} className="relative p-2 text-slate-400 hover:text-slate-600 transition">
                     <Bell size={20} />
                     {okunmamis > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                        {okunmamis}
-                      </span>
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{okunmamis}</span>
                     )}
                   </button>
-                  <button
-                    onClick={onGoPanel}
-                    className="flex items-center gap-1.5 text-slate-600 hover:text-slate-800 border border-slate-200 hover:border-slate-300 text-sm font-medium px-3 py-2 rounded-lg transition"
-                  >
+                  <button onClick={onGoPanel} className="flex items-center gap-1.5 text-slate-600 hover:text-slate-800 border border-slate-200 hover:border-slate-300 text-sm font-medium px-3 py-2 rounded-lg transition">
                     <LayoutDashboard size={15} />
                     {isAdmin ? 'Admin' : 'Panelim'}
                   </button>
-                  <button
-                    onClick={onLogout}
-                    className="flex items-center gap-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 text-sm px-3 py-2 rounded-lg transition"
-                  >
-                    <LogOut size={15} />
-                    Cikis
+                  <button onClick={onLogout} className="flex items-center gap-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 text-sm px-3 py-2 rounded-lg transition">
+                    <LogOut size={15} />Çıkış
                   </button>
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={onGoLogin}
-                    className="text-slate-600 hover:text-slate-800 border border-slate-200 hover:border-slate-300 text-sm font-medium px-4 py-2 rounded-lg transition"
-                  >
-                    Giris Yap
+                  <button onClick={onGoLogin} className="text-slate-600 hover:text-slate-800 border border-slate-200 hover:border-slate-300 text-sm font-medium px-4 py-2 rounded-lg transition">
+                    Giriş Yap
                   </button>
-                  <button
-                    onClick={onIlanEkle}
-                    className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold px-4 py-2 rounded-lg transition"
-                  >
-                    Kayit Ol
+                  <button onClick={onIlanEkle} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
+                    Kayıt Ol
                   </button>
                 </>
               )}
             </div>
 
-            {/* MOBIL MENU BUTONU */}
-            <div className="flex md:hidden items-center gap-1 flex-shrink-0">
+            {/* MOBİL SAĞ — bildirim + hamburger */}
+            <div className="flex md:hidden items-center gap-1 flex-shrink-0 ml-auto">
               {isLoggedIn && (
                 <button onClick={onGoPanel} className="relative p-2 text-slate-400">
                   <Bell size={20} />
                   {okunmamis > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {okunmamis}
-                    </span>
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{okunmamis}</span>
                   )}
                 </button>
               )}
               <button
                 onClick={() => setMenuAcik(!menuAcik)}
-                className="p-2 text-slate-500"
+                className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition"
+                aria-label="Menü"
               >
                 {menuAcik ? <X size={22} /> : <Menu size={22} />}
               </button>
             </div>
-
           </div>
         </div>
 
-        {/* 3. NAV SERIDI */}
+        {/* 3. NAV — masaüstü */}
         <nav className="bg-slate-500 rounded-b-lg hidden md:flex items-center px-2">
           {navLinks.map((item) => (
-            <button
-              key={item.page}
-              onClick={() => onNavigate(item.page)}
-              className="text-slate-200 hover:text-white hover:bg-slate-400 text-sm font-medium px-4 py-2.5 rounded transition"
-            >
+            <button key={item.page} onClick={() => onNavigate(item.page)}
+              className="text-slate-200 hover:text-white hover:bg-slate-400 text-sm font-medium px-4 py-2.5 rounded transition">
               {item.label}
             </button>
           ))}
           {isLoggedIn && (
-            <button
-              onClick={onIlanEkle}
-              className="ml-auto text-orange-300 hover:text-orange-200 text-sm font-medium px-4 py-2.5 transition"
-            >
-              + Ilan Ver
+            <button onClick={onIlanEkle} className="ml-auto text-orange-300 hover:text-orange-200 text-sm font-medium px-4 py-2.5 transition">
+              + İlan Ver
             </button>
           )}
         </nav>
 
-        {/* MOBIL MENU */}
+        {/* MOBİL MENÜ — tam ekran overlay */}
         {menuAcik && (
-          <div className="md:hidden bg-white border-x border-b border-slate-200 rounded-b-lg px-4 py-3 flex flex-col gap-2">
-            <div className="flex flex-wrap gap-1 mb-1">
-              {navLinks.map((item) => (
-                <button
-                  key={item.page}
-                  onClick={() => { onNavigate(item.page); setMenuAcik(false); }}
-                  className="text-slate-500 text-sm py-1.5 px-3 rounded-lg hover:bg-slate-50 transition"
-                >
-                  {item.label}
-                </button>
-              ))}
+          <div className="md:hidden fixed inset-0 top-0 z-50 bg-white flex flex-col">
+            {/* Menü başlık */}
+            <div className="flex items-center justify-between px-4 py-4 border-b border-slate-100 bg-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="bg-orange-500 rounded-lg p-1.5">
+                  <Truck className="text-white" size={18} />
+                </div>
+                <span className="text-white font-bold text-base">salonum<span className="text-orange-400">.site</span></span>
+              </div>
+              <button onClick={() => setMenuAcik(false)} className="p-2 text-slate-300 hover:text-white">
+                <X size={22} />
+              </button>
             </div>
-            <div className="border-t border-slate-100 pt-2 flex flex-col gap-2">
-              {isLoggedIn ? (
-                <>
-                  <button
-                    onClick={() => { onIlanEkle(); setMenuAcik(false); }}
-                    className="w-full bg-orange-500 text-white py-2.5 rounded-lg font-semibold text-sm"
-                  >
-                    Ilan Ver
-                  </button>
-                  <button
-                    onClick={() => { onGoPanel(); setMenuAcik(false); }}
-                    className="w-full flex items-center justify-center gap-2 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm"
-                  >
-                    <LayoutDashboard size={15} />
-                    {isAdmin ? 'Admin Panel' : 'Panelim'}
-                  </button>
-                  <button
-                    onClick={() => { onLogout(); setMenuAcik(false); }}
-                    className="w-full flex items-center justify-center gap-2 text-red-500 border border-red-100 py-2.5 rounded-lg text-sm"
-                  >
-                    <LogOut size={15} /> Cikis Yap
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => { onGoLogin(); setMenuAcik(false); }}
-                    className="w-full border border-slate-200 text-slate-600 py-2.5 rounded-lg font-medium text-sm"
-                  >
-                    Giris Yap
-                  </button>
-                  <button
-                    onClick={() => { onIlanEkle(); setMenuAcik(false); }}
-                    className="w-full bg-orange-500 text-white py-2.5 rounded-lg font-semibold text-sm"
-                  >
-                    Ucretsiz Ilan Ver
-                  </button>
-                </>
-              )}
+
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              {/* Nav linkleri */}
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 px-1">Sayfalar</p>
+                <div className="flex flex-col gap-1">
+                  {navLinks.map((item) => (
+                    <button key={item.page}
+                      onClick={() => { onNavigate(item.page); setMenuAcik(false); }}
+                      className="w-full text-left text-slate-700 font-medium py-3 px-4 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition text-sm">
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Eylem butonları */}
+              <div className="border-t border-slate-100 pt-4">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 px-1">Hesap</p>
+                {isLoggedIn ? (
+                  <div className="flex flex-col gap-2">
+                    <button onClick={() => { onIlanEkle(); setMenuAcik(false); }}
+                      className="w-full bg-orange-500 text-white py-3.5 rounded-xl font-semibold text-sm active:bg-orange-600 transition">
+                      + Ücretsiz İlan Ver
+                    </button>
+                    <button onClick={() => { onGoPanel(); setMenuAcik(false); }}
+                      className="w-full flex items-center justify-center gap-2 border border-slate-200 text-slate-600 py-3.5 rounded-xl text-sm font-medium active:bg-slate-50 transition">
+                      <LayoutDashboard size={15} />
+                      {isAdmin ? 'Admin Panel' : 'Panelim'}
+                    </button>
+                    <button onClick={() => { onLogout(); setMenuAcik(false); }}
+                      className="w-full flex items-center justify-center gap-2 text-red-500 border border-red-100 bg-red-50 py-3.5 rounded-xl text-sm font-medium active:bg-red-100 transition">
+                      <LogOut size={15} /> Çıkış Yap
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <button onClick={() => { onGoLogin(); setMenuAcik(false); }}
+                      className="w-full border border-slate-200 text-slate-600 py-3.5 rounded-xl font-medium text-sm active:bg-slate-50 transition">
+                      Giriş Yap
+                    </button>
+                    <button onClick={() => { onIlanEkle(); setMenuAcik(false); }}
+                      className="w-full bg-orange-500 text-white py-3.5 rounded-xl font-semibold text-sm active:bg-orange-600 transition">
+                      Ücretsiz İlan Ver / Kayıt Ol
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
