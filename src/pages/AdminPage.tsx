@@ -670,8 +670,8 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
               <div className="bg-white rounded-xl border border-slate-200 p-4">
                 <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5"><PlusCircle size={15} className="text-orange-500" />Yeni Duyuru</p>
 
-                <input className={ic + ' mb-2'} placeholder="Başlık" value={yeniDuyuru.baslik} onChange={e => setYeniDuyuru({ ...yeniDuyuru, baslik: e.target.value })} />
-                <textarea className={ic + ' mb-3 resize-none'} placeholder="Mesaj" rows={3} value={yeniDuyuru.mesaj} onChange={e => setYeniDuyuru({ ...yeniDuyuru, mesaj: e.target.value })} />
+                <input className={ic + ' mb-2'} placeholder="Başlık (opsiyonel)" value={yeniDuyuru.baslik} onChange={e => setYeniDuyuru({ ...yeniDuyuru, baslik: e.target.value })} />
+                <textarea className={ic + ' mb-3 resize-none'} placeholder="Mesaj — resim eklemediyseniz zorunludur" rows={3} value={yeniDuyuru.mesaj} onChange={e => setYeniDuyuru({ ...yeniDuyuru, mesaj: e.target.value })} />
 
                 {/* Resim yükleme */}
                 <p className="text-xs font-medium text-slate-500 mb-1.5">Resim <span className="text-slate-400 font-normal">(opsiyonel)</span></p>
@@ -726,12 +726,14 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                 </div>
                 <button
                   onClick={async () => {
-                    if (!yeniDuyuru.baslik || !yeniDuyuru.mesaj) return;
+                    // Resim varsa başlık+mesaj zorunlu değil; resim yoksa mesaj zorunlu, başlık hiç zorunlu değil
+                    const eklenebilir = yeniDuyuru.resim_url || yeniDuyuru.mesaj;
+                    if (!eklenebilir) return;
                     await supabase.from('duyurular').insert([{ ...yeniDuyuru, aktif: true }]);
                     setYeniDuyuru({ baslik: '', mesaj: '', resim_url: '', saniye: 2, goster_sure: 8 });
                     hepsiniYukle();
                   }}
-                  disabled={duyuruYukleniyor || !yeniDuyuru.baslik || !yeniDuyuru.mesaj}
+                  disabled={duyuruYukleniyor || (!yeniDuyuru.resim_url && !yeniDuyuru.mesaj)}
                   className={btnO + ' w-full disabled:opacity-50 disabled:cursor-not-allowed'}
                 >
                   Duyuru Ekle
