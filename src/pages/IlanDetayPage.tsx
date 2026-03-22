@@ -3,6 +3,7 @@ import { Calendar, User, Bus, ArrowLeft, Heart, MessageSquare, MapPin, Clock } f
 import { Ilan, KategoriType } from '../types';
 import { favoriEkle, favoriKaldir, favoriKontrol, mesajGonder } from '../lib/ilanlar';
 import { mevcutKullanici } from '../lib/auth';
+import { supabase } from '../lib/supabase'; // <<<<<< Burayı ekledik
 
 type IlanDetayPageProps = {
   ilan: Ilan;
@@ -158,22 +159,7 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn }:
                 <p className="text-slate-600 text-sm leading-relaxed">{ilan.aciklama}</p>
               )}
             </div>
-
-            {/* Güzergah ve diğer içerikler aynen devam eder */}
           </div>
-
-          <div className="hidden lg:block w-72 flex-shrink-0">
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden sticky top-4">
-              <div className="bg-slate-800 px-4 py-2.5 flex items-center gap-2">
-                <MessageSquare size={14} className="text-orange-400" />
-                <span className="text-white text-xs font-semibold uppercase tracking-wider">İletişim</span>
-              </div>
-              <div className="p-4">
-                <IletisimIcerik />
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
