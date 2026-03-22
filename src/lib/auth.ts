@@ -39,7 +39,6 @@ export async function kayitOl(
       type,
       il,
       password_hash: hash,
-      sifre_acik: sifre,
       aktif: true,
       yetkiler: {
         ilan_verebilir: true,
