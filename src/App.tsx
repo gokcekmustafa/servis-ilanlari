@@ -134,14 +134,13 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    await cikisYap();
-    setIsLoggedIn(false);
-    setIsAdmin(false);
-    setIsSuperAdmin(false);
-    setYetkiler({});
-    setUserId(null);
-    setCurrentPage('home');
-  };
+  await cikisYap();
+  sessionStorage.clear();
+  setIsLoggedIn(false);
+  setIsAdmin(false);
+  setUserId(null);
+  setCurrentPage('home');
+};
 
   const handleIlanDetay = (ilan: Ilan) => {
     setSelectedIlan(ilan);
