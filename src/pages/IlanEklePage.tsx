@@ -208,7 +208,6 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
   const [aracFormAcik, setAracFormAcik] = useState(false);
 
   const [isimVarArac, setIsimVarArac] = useState({
-  arac_secimi: 'farketmez',
   arac_markasi: '', model: '', arac_yili: '', arac_kapasitesi: '',
   ucret: '', km: '', calisılacak_gun: '', servis_suresi: '',
   aracki_yolcu_sayisi: '', servis_turu: [] as string[],
@@ -245,7 +244,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
   });
 
   React.useEffect(() => {
-  if (selectedKategori === 'aracim_var_is' || selectedKategori === 'isim_var_arac') {
+  if (selectedKategori === 'aracim_var_is') {
     supabase.from('araclar').select('*').eq('user_id', userId).then(({ data }) => {
       if (data) setKullaniciaraclari(data);
     });
@@ -465,63 +464,16 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
   <div className="border border-slate-200 rounded-xl p-4 md:p-5">
     <h3 className="font-semibold text-slate-700 mb-4">Arac Bilgileri</h3>
 
-    {/* ARAC SECİMİ */}
-    <div className="mb-4">
-      <label className={lb + ' mb-2'}>Arac Tercihi</label>
-      <div className="border border-slate-200 rounded-xl overflow-hidden overflow-x-auto">
-        <table className="w-full text-sm min-w-max">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500"></th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">PLAKA</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">MARKA MODEL</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">KOLTUK</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              className={'border-b border-slate-50 hover:bg-slate-50 cursor-pointer ' +
-                (isimVarArac.arac_secimi === 'farketmez' ? 'bg-orange-50' : '')}
-              onClick={() => setIsimVarArac({ ...isimVarArac, arac_secimi: 'farketmez' })}
-            >
-              <td className="px-3 py-2">
-                <input type="radio"
-                  checked={isimVarArac.arac_secimi === 'farketmez'}
-                  onChange={() => setIsimVarArac({ ...isimVarArac, arac_secimi: 'farketmez' })}
-                  className="accent-orange-500" />
-              </td>
-              <td className="px-3 py-2 text-slate-400 italic text-xs" colSpan={3}>
-                Farketmez — Tum arac tipleri kabul edilir
-              </td>
-            </tr>
-            {kullaniciaraclari.map((arac) => (
-              <tr
-                key={arac.id}
-                className={'border-b border-slate-50 hover:bg-slate-50 cursor-pointer ' +
-                  (isimVarArac.arac_secimi === arac.plaka ? 'bg-orange-50' : '')}
-                onClick={() => setIsimVarArac({ ...isimVarArac, arac_secimi: arac.plaka })}
-              >
-                <td className="px-3 py-2">
-                  <input type="radio"
-                    checked={isimVarArac.arac_secimi === arac.plaka}
-                    onChange={() => setIsimVarArac({ ...isimVarArac, arac_secimi: arac.plaka })}
-                    className="accent-orange-500" />
-                </td>
-                <td className="px-3 py-2 font-medium text-slate-700">{arac.plaka}</td>
-                <td className="px-3 py-2 text-slate-600">{arac.yil} - {arac.marka} {arac.model}</td>
-                <td className="px-3 py-2 text-slate-600">{arac.koltuk_sayisi}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
+    {/* ISIM VAR ARAC */}
+{selectedKategori === 'isim_var_arac' && (
+  <div className="border border-slate-200 rounded-xl p-4 md:p-5">
+    <h3 className="font-semibold text-slate-700 mb-4">Arac Bilgileri</h3>
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
       <div>
         <label className={lb}>Arac Markasi</label>
         <select value={isimVarArac.arac_markasi} onChange={(e) => setIsimVarArac({ ...isimVarArac, arac_markasi: e.target.value })} className={ic}>
           <option value="">Secin</option>
+          <option value="farketmez">Farketmez</option>
           {['Mercedes', 'Ford', 'Volkswagen', 'Renault', 'Peugeot', 'Citroen', 'Iveco', 'Temsa', 'Isuzu'].map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
       </div>
@@ -529,6 +481,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
         <label className={lb}>Model</label>
         <select value={isimVarArac.model} onChange={(e) => setIsimVarArac({ ...isimVarArac, model: e.target.value })} className={ic}>
           <option value="">Secin</option>
+          <option value="farketmez">Farketmez</option>
           {['Sprinter', 'Transit', 'Crafter', 'Jumper', 'Boxer', 'Daily', 'Minibus'].map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
       </div>
@@ -536,6 +489,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
         <label className={lb}>Arac Yili</label>
         <select value={isimVarArac.arac_yili} onChange={(e) => setIsimVarArac({ ...isimVarArac, arac_yili: e.target.value })} className={ic}>
           <option value="">Secin</option>
+          <option value="farketmez">Farketmez</option>
           {Array.from({ length: 20 }, (_, i) => 2025 - i).map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
       </div>
@@ -543,6 +497,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
         <label className={lb}>Kapasite</label>
         <select value={isimVarArac.arac_kapasitesi} onChange={(e) => setIsimVarArac({ ...isimVarArac, arac_kapasitesi: e.target.value })} className={ic}>
           <option value="">Secin</option>
+          <option value="farketmez">Farketmez</option>
           {['4+1', '8+1', '14+1', '16+1', '27+1', '36+1', '45+1'].map((k) => <option key={k} value={k}>{k}</option>)}
         </select>
       </div>
