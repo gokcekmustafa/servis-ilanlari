@@ -7,52 +7,54 @@ import { supabase } from '../lib/supabase';
 
 const REKLAM_ARASI = 8;
 
-function IlanListesi({
-  ilanlar,
-  reklamlar,
-  onDetay,
-}: {
+type IlanListesiProps = {
   ilanlar: Ilan[];
   reklamlar: any[];
   onDetay: (ilan: Ilan) => void;
-}) {
+};
+
+function IlanListesi({ ilanlar, reklamlar, onDetay }: IlanListesiProps) {
   return (
     <div className="flex flex-col gap-3">
-      {ilanlar.map((ilan, index) => (
-        <React.Fragment key={ilan.id}>
-          <IlanCard ilan={ilan} onDetay={onDetay} />
-          {(index + 1) % REKLAM_ARASI === 0 && reklamlar.length > 0 && (
-            
-              href={reklamlar[Math.floor(index / REKLAM_ARASI) % reklamlar.length].link_url || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block rounded-xl overflow-hidden border border-slate-200 hover:border-orange-300 transition-all"
-            >
-              <div className="relative">
-                <img
-                  src={reklamlar[Math.floor(index / REKLAM_ARASI) % reklamlar.length].resim_url}
-                  alt={reklamlar[Math.floor(index / REKLAM_ARASI) % reklamlar.length].baslik || 'Reklam'}
-                  className="w-full h-[100px] object-cover"
-                />
-                <span className="absolute top-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded">
-                  Reklam
-                </span>
-              </div>
-            </a>
-          )}
-        </React.Fragment>
-      ))}
+      {ilanlar.map((ilan, index) => {
+        const reklamGoster = (index + 1) % REKLAM_ARASI === 0 && reklamlar.length > 0;
+        const reklamIndex = Math.floor(index / REKLAM_ARASI) % reklamlar.length;
+        const reklam = reklamlar[reklamIndex];
+        return (
+          <React.Fragment key={ilan.id}>
+            <IlanCard ilan={ilan} onDetay={onDetay} />
+            {reklamGoster && reklam && (
+              
+                href={reklam.link_url || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-xl overflow-hidden border border-slate-200 hover:border-orange-300 transition-all"
+              >
+                <div className="relative">
+                  <img
+                    src={reklam.resim_url}
+                    alt={reklam.baslik || 'Reklam'}
+                    className="w-full h-[100px] object-cover"
+                  />
+                  <span className="absolute top-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded">
+                    Reklam
+                  </span>
+                </div>
+              </a>
+            )}
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }
 
-export default function HomePage({
-  onGoLogin,
-  onIlanDetay,
-}: {
+type HomePageProps = {
   onGoLogin: () => void;
   onIlanDetay: (ilan: Ilan) => void;
-}) {
+};
+
+export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [selectedKategoriler, setSelectedKategoriler] = useState<KategoriType[]>([]);
