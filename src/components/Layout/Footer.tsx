@@ -1,63 +1,145 @@
 import React from 'react';
+import { Truck } from 'lucide-react';
 
-interface FooterProps {
+type FooterProps = {
   onNavigate: (page: any) => void;
-}
+};
 
 export default function Footer({ onNavigate }: FooterProps) {
   return (
-    <footer className="bg-gray-800 text-white mt-12">
-      <div className="max-w-7xl mx-auto px-4 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
-            <h3 className="font-bold text-orange-400 mb-4 uppercase text-sm">Arac Durumuna Gore</h3>
-            <ul className="space-y-2 text-sm text-gray-300">
-              <li><button onClick={() => onNavigate('home')} className="hover:text-white transition">İsime Arac Ariyorum</button></li>
-              <li><button onClick={() => onNavigate('home')} className="hover:text-white transition">Aracima İs Ariyorum</button></li>
-              <li><button onClick={() => onNavigate('home')} className="hover:text-white transition">Sofor Ariyorum</button></li>
-              <li><button onClick={() => onNavigate('home')} className="hover:text-white transition">Soforum İs Ariyorum</button></li>
-              <li><button onClick={() => onNavigate('home')} className="hover:text-white transition">Hostesim İs Ariyorum</button></li>
-              <li><button onClick={() => onNavigate('home')} className="hover:text-white transition">Hostes Ariyorum</button></li>
-            </ul>
-          </div>
+    <footer className="bg-slate-100 px-4 pb-4 mt-8">
+      <div className="max-w-5xl mx-auto">
 
-          <div>
-            <h3 className="font-bold text-orange-400 mb-4 uppercase text-sm">Hizmetlerimiz</h3>
-            <ul className="space-y-2 text-sm text-gray-300">
-              <li><button onClick={() => onNavigate('nasil-isliyor')} className="hover:text-white transition">Servis Aracina İs Arayanlar</button></li>
-              <li><button onClick={() => onNavigate('nasil-isliyor')} className="hover:text-white transition">Sofor Arayanlar</button></li>
-              <li><button onClick={() => onNavigate('nasil-isliyor')} className="hover:text-white transition">Otobus Arayan Firmalar</button></li>
-              <li><button onClick={() => onNavigate('nasil-isliyor')} className="hover:text-white transition">Servis Hostesi Arayanlar</button></li>
-              <li><button onClick={() => onNavigate('nasil-isliyor')} className="hover:text-white transition">Ogrenci Servisi Araclari</button></li>
-            </ul>
-          </div>
+        {/* ANA FOOTER */}
+        <div className="bg-slate-700 rounded-t-lg px-8 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
 
-          <div>
-            <h3 className="font-bold text-orange-400 mb-4 uppercase text-sm">Gizlilik ve Kullanim</h3>
-            <ul className="space-y-2 text-sm text-gray-300">
-              <li><button onClick={() => onNavigate('kullanim-kosullari')} className="hover:text-white transition">Sozlesmeler ve Kurallar</button></li>
-              <li><button onClick={() => onNavigate('kullanim-kosullari')} className="hover:text-white transition">Uyelik Sozlesmeleri</button></li>
-              <li><button onClick={() => onNavigate('kullanim-kosullari')} className="hover:text-white transition">Kullanim Kosullari</button></li>
-              <li><button onClick={() => onNavigate('kisisel-veriler')} className="hover:text-white transition">Kisisel Verilerin Korunmasi</button></li>
-              <li><button onClick={() => onNavigate('sss')} className="hover:text-white transition">Yardim</button></li>
-            </ul>
-          </div>
+            {/* LOGO + ACIKLAMA */}
+            <div className="md:col-span-1">
+              <div
+                className="flex items-center gap-2 cursor-pointer mb-3"
+                onClick={() => onNavigate('home')}
+              >
+                <div className="bg-orange-500 rounded-lg p-1.5">
+                  <Truck className="text-white" size={18} />
+                </div>
+                <span className="text-white font-bold text-base">
+                  salonum<span className="text-orange-400">.site</span>
+                </span>
+              </div>
+              <p className="text-slate-400 text-xs leading-relaxed">
+                Servis araci ve sofor ilanlari platformu. Turkiye genelinde
+                binlerce ilan ile hizmetinizdeyiz.
+              </p>
+            </div>
 
-          <div>
-            <h3 className="font-bold text-orange-400 mb-4 uppercase text-sm">Kurumsal</h3>
-            <ul className="space-y-2 text-sm text-gray-300">
-              <li><button onClick={() => onNavigate('hakkimizda')} className="hover:text-white transition">Hakkimizda</button></li>
-              <li><button onClick={() => onNavigate('nasil-isliyor')} className="hover:text-white transition">Nasil İsliyor</button></li>
-              <li><button onClick={() => onNavigate('sss')} className="hover:text-white transition">Sikca Sorulan Sorular</button></li>
-              <li><button onClick={() => onNavigate('iletisim')} className="hover:text-white transition">İletisim</button></li>
-              <li><button onClick={() => onNavigate('kunye')} className="hover:text-white transition">Kunye</button></li>
-            </ul>
+            {/* ARAC DURUMUNA GORE */}
+            <div>
+              <h3 className="text-orange-400 font-semibold text-xs uppercase tracking-wider mb-3">
+                Arac Durumuna Gore
+              </h3>
+              <ul className="space-y-2">
+                {[
+                  'Isime Arac Ariyorum',
+                  'Aracima Is Ariyorum',
+                  'Sofor Ariyorum',
+                  'Soforum Is Ariyorum',
+                  'Hostesim Is Ariyorum',
+                  'Hostes Ariyorum',
+                ].map((item) => (
+                  <li key={item}>
+                    <button
+                      onClick={() => onNavigate('home')}
+                      className="text-slate-400 hover:text-white text-xs transition"
+                    >
+                      {item}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* GIZLILIK */}
+            <div>
+              <h3 className="text-orange-400 font-semibold text-xs uppercase tracking-wider mb-3">
+                Gizlilik ve Kullanim
+              </h3>
+              <ul className="space-y-2">
+                {[
+                  { label: 'Sozlesmeler ve Kurallar', page: 'kullanim-kosullari' },
+                  { label: 'Uyelik Sozlesmeleri', page: 'kullanim-kosullari' },
+                  { label: 'Kullanim Kosullari', page: 'kullanim-kosullari' },
+                  { label: 'Kisisel Verilerin Korunmasi', page: 'kisisel-veriler' },
+                  { label: 'Yardim', page: 'sss' },
+                  { label: 'Hakkimizda', page: 'hakkimizda' },
+                ].map((item) => (
+                  <li key={item.label}>
+                    <button
+                      onClick={() => onNavigate(item.page)}
+                      className="text-slate-400 hover:text-white text-xs transition"
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* KURUMSAL */}
+            <div>
+              <h3 className="text-orange-400 font-semibold text-xs uppercase tracking-wider mb-3">
+                Kurumsal
+              </h3>
+              <ul className="space-y-2">
+                {[
+                  { label: 'Hakkimizda', page: 'hakkimizda' },
+                  { label: 'Nasil Isliyor', page: 'nasil-isliyor' },
+                  { label: 'Sikca Sorulan Sorular', page: 'sss' },
+                  { label: 'Iletisim', page: 'iletisim' },
+                  { label: 'Kunye', page: 'kunye' },
+                ].map((item) => (
+                  <li key={item.label}>
+                    <button
+                      onClick={() => onNavigate(item.page)}
+                      className="text-slate-400 hover:text-white text-xs transition"
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
           </div>
         </div>
 
-        <div className="border-t border-gray-600 mt-8 pt-6 text-center text-sm text-gray-400">
-          2026 Servis İlanları — Tum haklari saklidir.
+        {/* ALT SERIT */}
+        <div className="bg-slate-800 rounded-b-lg px-8 py-3 flex items-center justify-between">
+          <span className="text-slate-500 text-xs">
+            2026 salonum.site — Tum haklari saklidir
+          </span>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => onNavigate('kullanim-kosullari')}
+              className="text-slate-500 hover:text-slate-300 text-xs transition"
+            >
+              Kullanim Kosullari
+            </button>
+            <button
+              onClick={() => onNavigate('kisisel-veriler')}
+              className="text-slate-500 hover:text-slate-300 text-xs transition"
+            >
+              Gizlilik
+            </button>
+            <button
+              onClick={() => onNavigate('iletisim')}
+              className="text-slate-500 hover:text-slate-300 text-xs transition"
+            >
+              Iletisim
+            </button>
+          </div>
         </div>
+
       </div>
     </footer>
   );
