@@ -265,4 +265,16 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn }:
           <div className="bg-white rounded-t-2xl shadow-xl max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between px-4 py-4 border-b border-slate-100">
               <p className="font-semibold text-slate-800">İletişim</p>
-              <button onClick={() => setIletisimAcik(false)} className="p-1.5 text-slate-400 hover:text
+              <button onClick={() => setIletisimAcik(false)} className="p-1.5 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full">
+                ×
+              </button>
+            </div>
+            <div className="p-4">
+              <IletisimIcerik />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
