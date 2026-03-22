@@ -5,6 +5,47 @@ import { ilanlariGetir } from '../lib/ilanlar';
 import { KategoriType, Ilan } from '../types';
 import { supabase } from '../lib/supabase';
 
+const REKLAM_ARASI = 8;
+
+function IlanListesi({
+  ilanlar,
+  reklamlar,
+  onDetay,
+}: {
+  ilanlar: Ilan[];
+  reklamlar: any[];
+  onDetay: (ilan: Ilan) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      {ilanlar.map((ilan, index) => (
+        <React.Fragment key={ilan.id}>
+          <IlanCard ilan={ilan} onDetay={onDetay} />
+          {(index + 1) % REKLAM_ARASI === 0 && reklamlar.length > 0 && (
+            
+              href={reklamlar[Math.floor(index / REKLAM_ARASI) % reklamlar.length].link_url || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-xl overflow-hidden border border-slate-200 hover:border-orange-300 transition-all"
+            >
+              <div className="relative">
+                <img
+                  src={reklamlar[Math.floor(index / REKLAM_ARASI) % reklamlar.length].resim_url}
+                  alt={reklamlar[Math.floor(index / REKLAM_ARASI) % reklamlar.length].baslik || 'Reklam'}
+                  className="w-full h-[100px] object-cover"
+                />
+                <span className="absolute top-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded">
+                  Reklam
+                </span>
+              </div>
+            </a>
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
 export default function HomePage({
   onGoLogin,
   onIlanDetay,
@@ -75,49 +116,6 @@ export default function HomePage({
         : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
-  const REKLAM_ARASI = 8;
-
-  const buildIlanListesi = () => {
-    const items: React.ReactNode[] = [];
-
-    filtrelenmisIlanlar.forEach((ilan, index) => {
-      items.push(
-        <IlanCard key={ilan.id} ilan={ilan} onDetay={onIlanDetay} />
-      );
-
-      const sonrakiReklamIndex = Math.floor(index / REKLAM_ARASI);
-
-      if (
-        (index + 1) % REKLAM_ARASI === 0 &&
-        reklamlar.length > 0
-      ) {
-        const reklam = reklamlar[sonrakiReklamIndex % reklamlar.length];
-        items.push(
-          
-            key={'reklam-' + index}
-            href={reklam.link_url || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block rounded-xl overflow-hidden border border-slate-200 hover:border-orange-300 transition-all"
-          >
-            <div className="relative">
-              <img
-                src={reklam.resim_url}
-                alt={reklam.baslik || 'Reklam'}
-                className="w-full h-[100px] object-cover"
-              />
-              <span className="absolute top-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded">
-                Reklam
-              </span>
-            </div>
-          </a>
-        );
-      }
-    });
-
-    return items;
-  };
-
   return (
     <div className="bg-slate-100 min-h-screen">
       <div className="max-w-5xl mx-auto px-4 py-6">
@@ -164,9 +162,11 @@ export default function HomePage({
                 ))}
               </div>
             ) : filtrelenmisIlanlar.length > 0 ? (
-              <div className="flex flex-col gap-3">
-                {buildIlanListesi()}
-              </div>
+              <IlanListesi
+                ilanlar={filtrelenmisIlanlar}
+                reklamlar={reklamlar}
+                onDetay={onIlanDetay}
+              />
             ) : (
               <div className="text-center py-20 text-slate-400">
                 <div className="text-5xl mb-4">🚌</div>
@@ -186,7 +186,7 @@ export default function HomePage({
           <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6 relative shadow-xl">
             <button
               onClick={() => setPopupAcik(false)}
-              className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 text-lg leading-none"
+              className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 text-xl font-bold leading-none"
             >
               x
             </button>
