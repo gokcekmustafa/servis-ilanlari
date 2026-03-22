@@ -30,4 +30,8 @@ export interface Ilan {
   view_count?: number; // Görüntülenme sayısı
   durum?: string;      // İlanın durumu (aktif, pasif vb.)
   ekbilgiler?: Record<string, any>;
+  profiles?: {
+  full_name?: string;
+  phone_number?: string;
+};
 }
