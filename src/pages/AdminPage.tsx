@@ -1,7 +1,3 @@
-```tsx
-// 🔥 SADECE ÖNEMLİ: Bu senin kodunun birebir üstüne kurulmuş HALİDİR
-// (kısaltılmadı, sadece fix + ekleme yapıldı)
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Ilan } from '../types';
@@ -11,233 +7,953 @@ import {
   Shield, UserPlus, CheckCircle2, XCircle, Edit2, Save, X
 } from 'lucide-react';
 
-// 🔥 YENİ YETKİ MODELİ
-const defaultYetkiler = {
-  ilan_onay: false,
-  ilan_sil: false,
-  kullanici_yonetimi: false,
-  kullanici_sil: false,
-  destek_yonetimi: false,
-  reklam_yonetimi: false,
-  duyuru_yonetimi: false,
-  superadmin: false
+type AdminPageProps = {
+  onLogout: () => void;
+  onIlanDetay: (ilan: Ilan) => void;
 };
 
-export default function AdminPage({ onLogout, onIlanDetay }: any) {
+type Sekme =
+  | 'istatistik'
+  | 'ilanlar'
+  | 'kullanicilar'
+  | 'reklamlar'
+  | 'duyurular'
+  | 'destek'
+  | 'personel';
 
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const isSuperAdmin =
-    currentUser?.type === 'superadmin' ||
-    currentUser?.yetkiler?.superadmin ||
-    currentUser?.phone_number === '05369500280';
-
-  const [aktifSekme, setAktifSekme] = useState('istatistik');
-  const [kullanicilar, setKullanicilar] = useState<any[]>([]);
+export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
+  const [aktifSekme, setAktifSekme] = useState<Sekme>('istatistik');
   const [ilanlar, setIlanlar] = useState<any[]>([]);
+  const [kullanicilar, setKullanicilar] = useState<any[]>([]);
   const [reklamlar, setReklamlar] = useState<any[]>([]);
   const [duyurular, setDuyurular] = useState<any[]>([]);
   const [destekler, setDestekler] = useState<any[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
 
+  const [yeniReklam, setYeniReklam] = useState({ baslik: '', resim_url: '', link_url: '', konum: 'liste' });
+  const [reklamYukleniyor, setReklamYukleniyor] = useState(false);
+  const [surukleAktif, setSurukleAktif] = useState(false);
+
+  const [yeniDuyuru, setYeniDuyuru] = useState({ baslik: '', mesaj: '', resim_url: '', saniye: 2 });
+  const [yeniKullanici, setYeniKullanici] = useState({ full_name: '', phone_number: '', password: '', type: 'staff' });
   const [seciliKullanici, setSeciliKullanici] = useState<any>(null);
   const [yeniSifre, setYeniSifre] = useState('');
+  const [seciliDestek, setSeciliDestek] = useState<any>(null);
+  const [destekCevap, setDestekCevap] = useState('');
+
+  // --- PERSONEL YONETIMI STATELERI ---
+  const [isPersonelFormOpen, setIsPersonelFormOpen] = useState(false);
+  const [seciliPersonel, setSeciliPersonel] = useState<any>(null);
+  const [personelForm, setPersonelForm] = useState({
+    full_name: '',
+    phone_number: '',
+    password: '',
+    aktif: true,
+    yetkiler: {
+      ilan_onay: false,
+      kullanici_yonetimi: false,
+      destek_yonetimi: false,
+      reklam_yonetimi: false,
+      duyuru_yonetimi: false
+    }
+  });
+
+  // Superadmin kontrolu (Sadece 05369500280 numarali kisi veya type='superadmin' olanlar)
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const isSuperAdmin = currentUser?.phone_number === '05369500280' || currentUser?.type === 'superadmin';
 
   useEffect(() => {
-    yukle();
+    hepsiniYukle();
   }, []);
 
-  const yukle = async () => {
+  const hepsiniYukle = async () => {
     setYukleniyor(true);
-
     const [u, i, r, d, ds] = await Promise.all([
-      supabase.from('profiles').select('*'),
-      supabase.from('ilanlar').select('*'),
-      supabase.from('reklamlar').select('*'),
-      supabase.from('duyurular').select('*'),
-      supabase.from('destek').select('*')
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      supabase.from('ilanlar').select('*').order('created_at', { ascending: false }),
+      supabase.from('reklamlar').select('*').order('id', { ascending: false }),
+      supabase.from('duyurular').select('*').order('id', { ascending: false }),
+      supabase.from('destek').select('*').order('created_at', { ascending: false }),
     ]);
-
     setKullanicilar(u.data || []);
     setIlanlar(i.data || []);
     setReklamlar(r.data || []);
     setDuyurular(d.data || []);
     setDestekler(ds.data || []);
-
     setYukleniyor(false);
   };
 
   const hashPassword = async (pass: string) => {
-    const enc = new TextEncoder().encode(pass);
+    const enc = new TextEncoder().encode(pass + 'servis-ilanlari-salt');
     const hash = await crypto.subtle.digest('SHA-256', enc);
     return Array.from(new Uint8Array(hash))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
   };
 
-  // 🔥 KULLANICI GÜNCELLE (YETKİLİ)
-  const kullaniciGuncelle = async () => {
-    if (!isSuperAdmin && !currentUser?.yetkiler?.kullanici_yonetimi) {
-      alert('Yetkiniz yok');
+  const dosyaYukle = async (dosya: File) => {
+    if (!dosya.type.startsWith('image/')) {
+      alert('Sadece resim dosyasi yukleyebilirsiniz');
       return;
     }
+    setReklamYukleniyor(true);
+    const dosyaAdi = Date.now() + '-' + dosya.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const { error } = await supabase.storage
+      .from('reklamlar')
+      .upload(dosyaAdi, dosya, { contentType: dosya.type });
+    if (error) {
+      alert('Yuklerken hata olustu: ' + error.message);
+      setReklamYukleniyor(false);
+      return;
+    }
+    const { data: urlData } = supabase.storage
+      .from('reklamlar')
+      .getPublicUrl(dosyaAdi);
+    setYeniReklam(prev => ({ ...prev, resim_url: urlData.publicUrl }));
+    setReklamYukleniyor(false);
+  };
 
-    const update: any = {
+  const surukBirak = (e: React.DragEvent) => {
+    e.preventDefault();
+    setSurukleAktif(false);
+    const dosya = e.dataTransfer.files[0];
+    if (dosya) dosyaYukle(dosya);
+  };
+
+  const ilanSil = async (id: string) => {
+    if (!window.confirm('Bu ilani silmek istediginizden emin misiniz?')) return;
+    await supabase.from('ilanlar').delete().eq('id', id);
+    hepsiniYukle();
+  };
+
+  const ilanDurumDegistir = async (id: string, durum: string) => {
+    await supabase.from('ilanlar').update({ durum }).eq('id', id);
+    hepsiniYukle();
+  };
+
+  const kullaniciSil = async (id: string) => {
+    if (!window.confirm('Bu kullaniciyi silmek istediginizden emin misiniz?')) return;
+    await supabase.from('profiles').delete().eq('id', id);
+    hepsiniYukle();
+  };
+
+  const kullaniciGuncelle = async () => {
+    if (!seciliKullanici) return;
+    const guncelleme: any = {
       full_name: seciliKullanici.full_name,
       phone_number: seciliKullanici.phone_number,
       aktif: seciliKullanici.aktif,
-      yetkiler: seciliKullanici.yetkiler
     };
-
     if (yeniSifre) {
-      update.password_hash = await hashPassword(yeniSifre);
-      update.sifre_acik = yeniSifre;
+      guncelleme.password_hash = await hashPassword(yeniSifre);
+      guncelleme.sifre_acik = yeniSifre;
     }
-
-    await supabase.from('profiles').update(update).eq('id', seciliKullanici.id);
-
-    setSeciliKullanici(null);
+    await supabase.from('profiles').update(guncelleme).eq('id', seciliKullanici.id);
     setYeniSifre('');
-    yukle();
+    setSeciliKullanici(null);
+    hepsiniYukle();
   };
 
-  // 🔥 DUYURU GÜNCELLE
-  const duyuruGuncelle = async (id: string, data: any) => {
-    if (!isSuperAdmin && !currentUser?.yetkiler?.duyuru_yonetimi) {
-      alert('Yetkiniz yok');
+  const kullaniciEkle = async () => {
+    if (!yeniKullanici.full_name || !yeniKullanici.phone_number || !yeniKullanici.password) return;
+    const hash = await hashPassword(yeniKullanici.password);
+    await supabase.from('profiles').insert([{
+      full_name: yeniKullanici.full_name,
+      phone_number: yeniKullanici.phone_number,
+      type: yeniKullanici.type,
+      sifre_acik: yeniKullanici.password,
+      password_hash: hash,
+      aktif: true,
+      yetkiler: { ilan_sil: true, kullanici_sil: false },
+    }]);
+    setYeniKullanici({ full_name: '', phone_number: '', password: '', type: 'staff' });
+    hepsiniYukle();
+  };
+
+  // --- PERSONEL KAYDETME FONKSIYONU ---
+  const personelKaydet = async () => {
+    if (!personelForm.full_name || !personelForm.phone_number) {
+      alert('Lutfen ad soyad ve telefon numarasi giriniz.');
       return;
     }
 
-    await supabase.from('duyurular').update(data).eq('id', id);
-    yukle();
+    if (seciliPersonel) {
+      // Guncelleme
+      const guncelleme: any = {
+        full_name: personelForm.full_name,
+        phone_number: personelForm.phone_number,
+        aktif: personelForm.aktif,
+        yetkiler: personelForm.yetkiler
+      };
+      if (personelForm.password) {
+        guncelleme.password_hash = await hashPassword(personelForm.password);
+        guncelleme.sifre_acik = personelForm.password;
+      }
+      await supabase.from('profiles').update(guncelleme).eq('id', seciliPersonel.id);
+    } else {
+      // Yeni Ekleme
+      if (!personelForm.password) {
+        alert('Yeni personel icin sifre belirlemelisiniz.');
+        return;
+      }
+      const hash = await hashPassword(personelForm.password);
+      await supabase.from('profiles').insert([{
+        full_name: personelForm.full_name,
+        phone_number: personelForm.phone_number,
+        type: 'admin', // Personeller admin tipindedir
+        sifre_acik: personelForm.password,
+        password_hash: hash,
+        aktif: personelForm.aktif,
+        yetkiler: personelForm.yetkiler
+      }]);
+    }
+
+    // Formu temizle ve listeyi yenile
+    setSeciliPersonel(null);
+    setIsPersonelFormOpen(false);
+    setPersonelForm({
+      full_name: '', phone_number: '', password: '', aktif: true,
+      yetkiler: { ilan_onay: false, kullanici_yonetimi: false, destek_yonetimi: false, reklam_yonetimi: false, duyuru_yonetimi: false }
+    });
+    hepsiniYukle();
   };
 
-  // 🔥 REKLAM RESİM FALLBACK
-  const imageFallback = (e: any) => {
-    e.target.src = 'https://via.placeholder.com/300x150?text=Resim+Yok';
+  const personelDuzenleAc = (personel: any) => {
+    setSeciliPersonel(personel);
+    setPersonelForm({
+      full_name: personel.full_name,
+      phone_number: personel.phone_number,
+      password: '', // Sifre bos gelir, girilirse guncellenir
+      aktif: personel.aktif ?? true,
+      yetkiler: personel.yetkiler || {
+        ilan_onay: false, kullanici_yonetimi: false, destek_yonetimi: false, reklam_yonetimi: false, duyuru_yonetimi: false
+      }
+    });
+    setIsPersonelFormOpen(true);
   };
 
-  const ic = 'w-full border rounded px-2 py-1 text-sm mb-2';
+  const reklamEkle = async () => {
+    if (!yeniReklam.resim_url) return;
+    await supabase.from('reklamlar').insert([{ ...yeniReklam, aktif: true }]);
+    setYeniReklam({ baslik: '', resim_url: '', link_url: '', konum: 'liste' });
+    hepsiniYukle();
+  };
+
+  const reklamSil = async (id: string) => {
+    await supabase.from('reklamlar').delete().eq('id', id);
+    hepsiniYukle();
+  };
+
+  const reklamToggle = async (id: string, aktif: boolean) => {
+    await supabase.from('reklamlar').update({ aktif: !aktif }).eq('id', id);
+    hepsiniYukle();
+  };
+
+  const duyuruEkle = async () => {
+    if (!yeniDuyuru.baslik || !yeniDuyuru.mesaj) return;
+    await supabase.from('duyurular').insert([{ ...yeniDuyuru, aktif: true }]);
+    setYeniDuyuru({ baslik: '', mesaj: '', resim_url: '', saniye: 2 });
+    hepsiniYukle();
+  };
+
+  const duyuruSil = async (id: string) => {
+    await supabase.from('duyurular').delete().eq('id', id);
+    hepsiniYukle();
+  };
+
+  const duyuruToggle = async (id: string, aktif: boolean) => {
+    await supabase.from('duyurular').update({ aktif: !aktif }).eq('id', id);
+    hepsiniYukle();
+  };
+
+  const destekCevapla = async () => {
+    if (!seciliDestek || !destekCevap) return;
+    await supabase.from('destek').update({
+      cevap: destekCevap,
+      durum: 'cevaplandi',
+      cevap_tarihi: new Date().toISOString(),
+    }).eq('id', seciliDestek.id);
+    setDestekCevap('');
+    setSeciliDestek(null);
+    hepsiniYukle();
+  };
+
+  const menuItems: any[] = [
+    { id: 'istatistik', label: 'Istatistikler', icon: LayoutDashboard },
+    { id: 'ilanlar', label: 'Ilanlar', icon: FileText, sayi: ilanlar.length },
+    { id: 'kullanicilar', label: 'Kullanicilar', icon: Users, sayi: kullanicilar.length },
+    { id: 'reklamlar', label: 'Reklamlar', icon: Image, sayi: reklamlar.length },
+    { id: 'duyurular', label: 'Duyurular', icon: Megaphone, sayi: duyurular.length },
+    { id: 'destek', label: 'Destek', icon: HeadphonesIcon, sayi: destekler.filter(d => d.durum === 'bekliyor').length },
+  ];
+
+  // Sadece Superadmin ise Personel sekmesini menuye ekle
+  if (isSuperAdmin) {
+    menuItems.push({ 
+      id: 'personel', 
+      label: 'Personel', 
+      icon: Shield, 
+      sayi: kullanicilar.filter(u => u.type === 'admin').length 
+    });
+  }
+
+  const ic = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
+  const btnO = 'bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition';
+  const btnS = 'bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium px-4 py-2 rounded-lg transition';
 
   return (
     <div className="flex min-h-screen bg-slate-100">
 
-      {/* SIDEBAR */}
-      <aside className="w-56 bg-slate-800 text-white p-4">
-        <p className="font-bold mb-6">Admin Panel</p>
-
-        {['istatistik','ilanlar','kullanicilar','reklamlar','duyurular','destek'].map(x => (
-          <div key={x}
-            onClick={() => setAktifSekme(x)}
-            className="cursor-pointer p-2 hover:bg-slate-700">
-            {x}
-          </div>
-        ))}
-
-        <button onClick={onLogout} className="mt-5 text-red-400">
-          Çıkış
-        </button>
+      <aside className="w-56 bg-slate-800 flex-shrink-0 flex flex-col">
+        <div className="px-4 py-5 border-b border-slate-700">
+          <p className="text-white font-bold text-base">Admin Panel</p>
+          <p className="text-slate-400 text-xs mt-0.5">salonum.site</p>
+        </div>
+        <nav className="flex-1 py-3">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const aktif = aktifSekme === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setAktifSekme(item.id as Sekme)}
+                className={
+                  'w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium transition ' +
+                  (aktif ? 'bg-orange-500 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white')
+                }
+              >
+                <span className="flex items-center gap-2.5">
+                  <Icon size={16} />
+                  {item.label}
+                </span>
+                {item.sayi !== undefined && item.sayi > 0 && (
+                  <span className={'text-xs px-1.5 py-0.5 rounded-full font-bold ' + (aktif ? 'bg-white/20 text-white' : 'bg-slate-600 text-slate-300')}>
+                    {item.sayi}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="p-4 border-t border-slate-700">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-2 text-slate-400 hover:text-red-400 text-sm py-2 transition"
+          >
+            <LogOut size={15} />
+            Cikis Yap
+          </button>
+        </div>
       </aside>
 
-      {/* CONTENT */}
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 overflow-auto">
+        <div className="flex items-center justify-between mb-5">
+          <h1 className="text-slate-800 font-bold text-lg">
+            {menuItems.find(m => m.id === aktifSekme)?.label}
+          </h1>
+          <button onClick={hepsiniYukle} className={btnS + ' flex items-center gap-1.5'}>
+            <RefreshCw size={14} />
+            Yenile
+          </button>
+        </div>
 
-        {yukleniyor && <div>Yükleniyor...</div>}
+        {yukleniyor && (
+          <div className="text-center py-20 text-slate-400 text-sm">Yukleniyor...</div>
+        )}
 
-        {/* KULLANICILAR */}
-        {aktifSekme === 'kullanicilar' && (
-          <div className="grid grid-cols-3 gap-4">
-
-            <div className="col-span-2 bg-white p-3 rounded">
-              {kullanicilar.map(u => (
-                <div key={u.id}
-                  onClick={() => setSeciliKullanici(u)}
-                  className="p-2 border-b cursor-pointer">
-                  {u.full_name} - {u.phone_number}
+        {!yukleniyor && aktifSekme === 'istatistik' && (
+          <div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {[
+                { label: 'Toplam Ilan', value: ilanlar.length, renk: 'bg-blue-50 text-blue-700 border-blue-200' },
+                { label: 'Toplam Uye', value: kullanicilar.length, renk: 'bg-green-50 text-green-700 border-green-200' },
+                { label: 'Aktif Reklam', value: reklamlar.filter(r => r.aktif).length, renk: 'bg-orange-50 text-orange-700 border-orange-200' },
+                { label: 'Bekleyen Destek', value: destekler.filter(d => d.durum === 'bekliyor').length, renk: 'bg-red-50 text-red-700 border-red-200' },
+              ].map((stat) => (
+                <div key={stat.label} className={'rounded-xl border p-4 ' + stat.renk}>
+                  <p className="text-xs font-medium opacity-70 mb-1">{stat.label}</p>
+                  <p className="text-3xl font-bold">{stat.value}</p>
                 </div>
               ))}
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-xl border border-slate-200 p-4">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Son Ilanlar</p>
+                {ilanlar.slice(0, 5).map(i => (
+                  <div key={i.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                    <span className="text-sm text-slate-600 truncate">{i.ilan_veren || 'Anonim'}</span>
+                    <span className="text-xs text-slate-400">{new Date(i.created_at).toLocaleDateString('tr-TR')}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 p-4">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Son Uyeler</p>
+                {kullanicilar.slice(0, 5).map(u => (
+                  <div key={u.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                    <span className="text-sm text-slate-600">{u.full_name || 'Isimsiz'}</span>
+                    <span className="text-xs text-slate-400">{u.phone_number}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
-            {seciliKullanici && (
-              <div className="bg-white p-3 rounded">
-                <b>Detay</b>
+        {/* --- YENI EKLENEN PERSONEL SEKMESI --- */}
+        {!yukleniyor && aktifSekme === 'personel' && isSuperAdmin && (
+          <div className="max-w-5xl mx-auto">
+            <div className="flex justify-end mb-4">
+              {!isPersonelFormOpen && (
+                <button 
+                  onClick={() => {
+                    setSeciliPersonel(null);
+                    setPersonelForm({
+                      full_name: '', phone_number: '', password: '', aktif: true,
+                      yetkiler: { ilan_onay: false, kullanici_yonetimi: false, destek_yonetimi: false, reklam_yonetimi: false, duyuru_yonetimi: false }
+                    });
+                    setIsPersonelFormOpen(true);
+                  }}
+                  className={btnO + " flex items-center shadow-sm"}
+                >
+                  <UserPlus className="w-4 h-4 mr-2" /> Personel Ekle
+                </button>
+              )}
+            </div>
 
-                <input className={ic} value={seciliKullanici.full_name}
-                  onChange={e => setSeciliKullanici({...seciliKullanici, full_name:e.target.value})}
-                />
-
-                <input className={ic} value={seciliKullanici.phone_number}
-                  onChange={e => setSeciliKullanici({...seciliKullanici, phone_number:e.target.value})}
-                />
-
-                <input className={ic} value={seciliKullanici.sifre_acik || ''} readOnly />
-
-                <input className={ic} placeholder="Yeni şifre"
-                  value={yeniSifre}
-                  onChange={e => setYeniSifre(e.target.value)}
-                />
-
-                {/* 🔥 YETKİLER */}
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  {Object.keys(defaultYetkiler).map(key => (
-                    <label key={key}>
-                      <input
-                        type="checkbox"
-                        checked={seciliKullanici.yetkiler?.[key]}
-                        onChange={() =>
-                          setSeciliKullanici({
-                            ...seciliKullanici,
-                            yetkiler: {
-                              ...seciliKullanici.yetkiler,
-                              [key]: !seciliKullanici.yetkiler?.[key]
-                            }
-                          })
-                        }
-                      />
-                      {key}
+            {isPersonelFormOpen && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
+                  {seciliPersonel ? 'Personel Duzenle' : 'Yeni Personel Ekle'}
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label>
+                    <input 
+                      type="text" 
+                      className={ic}
+                      value={personelForm.full_name}
+                      onChange={(e) => setPersonelForm({...personelForm, full_name: e.target.value})}
+                      placeholder="Orn: Ahmet Yilmaz"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Telefon Numarasi</label>
+                    <input 
+                      type="text" 
+                      className={ic}
+                      value={personelForm.phone_number}
+                      onChange={(e) => setPersonelForm({...personelForm, phone_number: e.target.value})}
+                      placeholder="Orn: 05551234567"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">
+                      {seciliPersonel ? 'Yeni Sifre (Bos birakilabilir)' : 'Sifre Belirle'}
                     </label>
-                  ))}
+                    <input 
+                      type="password" 
+                      className={ic}
+                      value={personelForm.password}
+                      onChange={(e) => setPersonelForm({...personelForm, password: e.target.value})}
+                      placeholder="******"
+                    />
+                  </div>
                 </div>
 
-                <button onClick={kullaniciGuncelle}
-                  className="bg-orange-500 text-white w-full mt-2 p-2 rounded">
-                  Kaydet
-                </button>
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-slate-800 mb-3">Yetkilendirme Ayarlari</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {Object.entries(personelForm.yetkiler).map(([key, value]) => (
+                      <label key={key} className="flex items-center space-x-2 p-2 border border-slate-100 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 accent-orange-500 rounded"
+                          checked={value as boolean}
+                          onChange={() => setPersonelForm({
+                            ...personelForm, 
+                            yetkiler: { ...personelForm.yetkiler, [key]: !value }
+                          })}
+                        />
+                        <span className="text-slate-700 text-xs font-medium capitalize">
+                          {key.replace('_', ' ')}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 accent-emerald-500 rounded"
+                      checked={personelForm.aktif}
+                      onChange={() => setPersonelForm({...personelForm, aktif: !personelForm.aktif})}
+                    />
+                    <span className="text-slate-700 text-sm font-medium">Hesap Aktif</span>
+                  </label>
+
+                  <div className="flex space-x-2">
+                    <button 
+                      onClick={() => { setIsPersonelFormOpen(false); setSeciliPersonel(null); }}
+                      className={btnS + " flex items-center"}
+                    >
+                      <X className="w-4 h-4 mr-1" /> Iptal
+                    </button>
+                    <button 
+                      onClick={personelKaydet}
+                      className={btnO + " flex items-center"}
+                    >
+                      <Save className="w-4 h-4 mr-1" /> Kaydet
+                    </button>
+                  </div>
+                </div>
               </div>
+            )}
+
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+              <table className="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
+                    <th className="p-4 font-semibold">Personel</th>
+                    <th className="p-4 font-semibold">Iletisim</th>
+                    <th className="p-4 font-semibold">Yetkiler</th>
+                    <th className="p-4 font-semibold text-center">Durum</th>
+                    <th className="p-4 font-semibold text-right">Islemler</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {kullanicilar.filter(u => u.type === 'admin').map((personel) => (
+                    <tr key={personel.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-4">
+                        <div className="font-semibold text-slate-700">{personel.full_name}</div>
+                        <div className="text-xs text-slate-400">Kayit: {new Date(personel.created_at).toLocaleDateString('tr-TR')}</div>
+                      </td>
+                      <td className="p-4 text-slate-600">
+                        {personel.phone_number}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-wrap gap-1">
+                          {personel.yetkiler && Object.entries(personel.yetkiler).map(([key, value]) => 
+                            value ? (
+                              <span key={key} className="bg-orange-50 text-orange-600 border border-orange-100 text-[10px] px-2 py-0.5 rounded-full capitalize font-medium">
+                                {key.replace('_', ' ')}
+                              </span>
+                            ) : null
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4 text-center">
+                        {personel.aktif !== false ? (
+                          <span className="inline-flex items-center text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full text-xs font-semibold">
+                            <CheckCircle2 className="w-3 h-3 mr-1" /> Aktif
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full text-xs font-semibold">
+                            <XCircle className="w-3 h-3 mr-1" /> Pasif
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4 text-right">
+                        <button 
+                          onClick={() => personelDuzenleAc(personel)}
+                          className="p-1.5 text-slate-400 hover:text-orange-500 transition-colors inline-block"
+                          title="Duzenle"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => kullaniciSil(personel.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-500 transition-colors inline-block ml-1"
+                          title="Sil"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {kullanicilar.filter(u => u.type === 'admin').length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-slate-400 text-sm">
+                        Henuz personel eklenmemis.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {!yukleniyor && aktifSekme === 'ilanlar' && (
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Ilan Veren</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Kategori</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Tarih</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Durum</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Islemler</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ilanlar.map((ilan) => (
+                  <tr key={ilan.id} className="border-b border-slate-50 hover:bg-slate-50 transition">
+                    <td className="px-4 py-3 text-slate-700 font-medium">{ilan.ilan_veren || 'Anonim'}</td>
+                    <td className="px-4 py-3 text-slate-500 text-xs">{ilan.kategori}</td>
+                    <td className="px-4 py-3 text-slate-400 text-xs">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</td>
+                    <td className="px-4 py-3">
+                      <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' +
+                        (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : ilan.durum === 'pasif' ? 'bg-slate-100 text-slate-500' : 'bg-yellow-100 text-yellow-700')}>
+                        {ilan.durum || 'aktif'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => onIlanDetay(ilan)} className="text-xs text-blue-500 hover:text-blue-700 font-medium">Detay</button>
+                        <button onClick={() => ilanDurumDegistir(ilan.id, ilan.durum === 'aktif' ? 'pasif' : 'aktif')} className="text-xs text-orange-500 hover:text-orange-700 font-medium">
+                          {ilan.durum === 'aktif' ? 'Pasif Yap' : 'Aktif Yap'}
+                        </button>
+                        <button onClick={() => ilanSil(ilan.id)} className="text-red-400 hover:text-red-600">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {ilanlar.length === 0 && (
+              <div className="text-center py-12 text-slate-400 text-sm">Hic ilan yok</div>
             )}
           </div>
         )}
 
-        {/* REKLAMLAR */}
-        {aktifSekme === 'reklamlar' && (
-          <div>
-            {reklamlar.map(r => (
-              <div key={r.id} className="bg-white p-3 mb-2 flex gap-3">
-                <img
-                  src={r.resim_url}
-                  onError={imageFallback}
-                  className="w-32 h-16 object-cover"
-                />
-                <div>{r.baslik}</div>
+        {!yukleniyor && aktifSekme === 'kullanicilar' && (
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2 bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Ad Soyad</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Telefon</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Tip</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Durum</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Islem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {kullanicilar.map((u) => (
+                    <tr
+                      key={u.id}
+                      onClick={() => setSeciliKullanici(u)}
+                      className={'border-b border-slate-50 hover:bg-slate-50 transition cursor-pointer ' + (seciliKullanici?.id === u.id ? 'bg-orange-50' : '')}
+                    >
+                      <td className="px-4 py-3 text-slate-700 font-medium">{u.full_name || 'Isimsiz'}</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">{u.phone_number}</td>
+                      <td className="px-4 py-3">
+                        <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' +
+                          (u.type === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500')}>
+                          {u.type || 'uye'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' +
+                          (u.aktif !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600')}>
+                          {u.aktif !== false ? 'Aktif' : 'Pasif'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); kullaniciSil(u.id); }}
+                          className="text-red-400 hover:text-red-600"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              {seciliKullanici && (
+                <div className="bg-white rounded-xl border border-slate-200 p-4">
+                  <p className="text-sm font-semibold text-slate-700 mb-3">Kullanici Duzenle</p>
+                  <input className={ic + ' mb-2'} value={seciliKullanici.full_name || ''}
+                    onChange={e => setSeciliKullanici({ ...seciliKullanici, full_name: e.target.value })}
+                    placeholder="Ad Soyad" />
+                  <input className={ic + ' mb-2'} value={seciliKullanici.phone_number || ''}
+                    onChange={e => setSeciliKullanici({ ...seciliKullanici, phone_number: e.target.value })}
+                    placeholder="Telefon" />
+                  <input className={ic + ' mb-2'} value={yeniSifre}
+                    onChange={e => setYeniSifre(e.target.value)}
+                    placeholder="Yeni sifre (bos birakilabilir)" type="password" />
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={() => setSeciliKullanici({ ...seciliKullanici, aktif: true })}
+                      className={'flex-1 text-xs py-1.5 rounded-lg border font-medium transition ' +
+                        (seciliKullanici.aktif !== false ? 'bg-green-500 text-white border-green-500' : 'text-slate-500 border-slate-200')}
+                    >
+                      Aktif
+                    </button>
+                    <button
+                      onClick={() => setSeciliKullanici({ ...seciliKullanici, aktif: false })}
+                      className={'flex-1 text-xs py-1.5 rounded-lg border font-medium transition ' +
+                        (seciliKullanici.aktif === false ? 'bg-red-500 text-white border-red-500' : 'text-slate-500 border-slate-200')}
+                    >
+                      Pasif
+                    </button>
+                  </div>
+                  <button onClick={kullaniciGuncelle} className={btnO + ' w-full'}>Kaydet</button>
+                </div>
+              )}
+              <div className="bg-white rounded-xl border border-slate-200 p-4">
+                <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
+                  <PlusCircle size={15} className="text-orange-500" />
+                  Yeni Kullanici
+                </p>
+                <input className={ic + ' mb-2'} placeholder="Ad Soyad" value={yeniKullanici.full_name}
+                  onChange={e => setYeniKullanici({ ...yeniKullanici, full_name: e.target.value })} />
+                <input className={ic + ' mb-2'} placeholder="Telefon" value={yeniKullanici.phone_number}
+                  onChange={e => setYeniKullanici({ ...yeniKullanici, phone_number: e.target.value })} />
+                <input className={ic + ' mb-2'} placeholder="Sifre" type="password" value={yeniKullanici.password}
+                  onChange={e => setYeniKullanici({ ...yeniKullanici, password: e.target.value })} />
+                <select className={ic + ' mb-3'} value={yeniKullanici.type}
+                  onChange={e => setYeniKullanici({ ...yeniKullanici, type: e.target.value })}>
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                  <option value="uye">Uye</option>
+                </select>
+                <button onClick={kullaniciEkle} className={btnO + ' w-full'}>Kullanici Olustur</button>
               </div>
-            ))}
+            </div>
           </div>
         )}
 
-        {/* DUYURULAR */}
-        {aktifSekme === 'duyurular' && (
-          <div>
-            {duyurular.map(d => (
-              <div key={d.id} className="bg-white p-3 mb-2">
-                <input className={ic}
-                  value={d.baslik}
-                  onChange={e => duyuruGuncelle(d.id, { baslik: e.target.value })}
-                />
-                <textarea className={ic}
-                  value={d.mesaj}
-                  onChange={e => duyuruGuncelle(d.id, { mesaj: e.target.value })}
-                />
+        {!yukleniyor && aktifSekme === 'reklamlar' && (
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2 flex flex-col gap-3">
+              {reklamlar.map((r) => (
+                <div key={r.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4">
+                  <img
+                    src={r.resim_url}
+                    alt={r.baslik}
+                    className="w-32 h-16 object-cover rounded-lg border border-slate-100 flex-shrink-0"
+                    onError={(e: any) => { e.target.style.display = 'none'; }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-700 text-sm">{r.baslik || 'Basliksiz'}</p>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">{r.link_url || 'Link yok'}</p>
+                    <span className={'text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ' +
+                      (r.konum === 'header' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')}>
+                      {r.konum === 'header' ? 'Header' : 'Liste'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => reklamToggle(r.id, r.aktif)}
+                      className={'text-xs font-semibold px-3 py-1.5 rounded-lg border transition ' +
+                        (r.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}
+                    >
+                      {r.aktif ? 'Aktif' : 'Pasif'}
+                    </button>
+                    <button onClick={() => reklamSil(r.id)} className="text-red-400 hover:text-red-600 p-1">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {reklamlar.length === 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">
+                  Hic reklam eklenmemis
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 p-4 h-fit">
+              <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
+                <PlusCircle size={15} className="text-orange-500" />
+                Yeni Reklam Ekle
+              </p>
+              <input className={ic + ' mb-2'} placeholder="Baslik (opsiyonel)"
+                value={yeniReklam.baslik}
+                onChange={e => setYeniReklam({ ...yeniReklam, baslik: e.target.value })} />
+              <input className={ic + ' mb-2'} placeholder="Tiklama linki (opsiyonel)"
+                value={yeniReklam.link_url}
+                onChange={e => setYeniReklam({ ...yeniReklam, link_url: e.target.value })} />
+              <select className={ic + ' mb-3'} value={yeniReklam.konum}
+                onChange={e => setYeniReklam({ ...yeniReklam, konum: e.target.value })}>
+                <option value="liste">Liste Arasi</option>
+                <option value="header">Header</option>
+              </select>
+
+              {yeniReklam.resim_url ? (
+                <div className="mb-3 relative">
+                  <img
+                    src={yeniReklam.resim_url}
+                    className="w-full h-24 object-cover rounded-lg border border-slate-200"
+                  />
+                  <button
+                    onClick={() => setYeniReklam({ ...yeniReklam, resim_url: '' })}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold"
+                  >
+                    x
+                  </button>
+                  <p className="text-xs text-green-600 mt-1 font-medium">Resim yuklendi</p>
+                </div>
+              ) : (
+                <div
+                  onDragOver={e => { e.preventDefault(); setSurukleAktif(true); }}
+                  onDragLeave={() => setSurukleAktif(false)}
+                  onDrop={surukBirak}
+                  onClick={() => document.getElementById('reklam-dosya-input')?.click()}
+                  className={
+                    'mb-3 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ' +
+                    (surukleAktif ? 'border-orange-400 bg-orange-50' : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50')
+                  }
+                >
+                  {reklamYukleniyor ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-xs text-slate-400">Yukleniyor...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                        <Image size={20} className="text-slate-400" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-600">Surukle birak veya tikla</p>
+                      <p className="text-xs text-slate-400">PNG, JPG, GIF desteklenir</p>
+                    </div>
+                  )}
+                  <input
+                    id="reklam-dosya-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const dosya = e.target.files?.[0];
+                      if (dosya) dosyaYukle(dosya);
+                    }}
+                  />
+                </div>
+              )}
+
+              <button
+                onClick={reklamEkle}
+                disabled={!yeniReklam.resim_url || reklamYukleniyor}
+                className={btnO + ' w-full disabled:opacity-50 disabled:cursor-not-allowed'}
+              >
+                Reklam Ekle
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!yukleniyor && aktifSekme === 'duyurular' && (
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2 flex flex-col gap-3">
+              {duyurular.map((d) => (
+                <div key={d.id} className="bg-white rounded-xl border border-slate-200 p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-700 text-sm">{d.baslik}</p>
+                      <p className="text-xs text-slate-500 mt-1">{d.mesaj}</p>
+                      <p className="text-xs text-slate-400 mt-1">{d.saniye} saniye sonra goster</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                      <button
+                        onClick={() => duyuruToggle(d.id, d.aktif)}
+                        className={'text-xs font-semibold px-3 py-1.5 rounded-lg border transition ' +
+                          (d.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}
+                      >
+                        {d.aktif ? 'Aktif' : 'Pasif'}
+                      </button>
+                      <button onClick={() => duyuruSil(d.id)} className="text-red-400 hover:text-red-600 p-1">
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {duyurular.length === 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">
+                  Hic duyuru eklenmemis
+                </div>
+              )}
+            </div>
+            <div className="bg-white rounded-xl border border-slate-200 p-4 h-fit">
+              <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
+                <PlusCircle size={15} className="text-orange-500" />
+                Yeni Duyuru
+              </p>
+              <input className={ic + ' mb-2'} placeholder="Baslik" value={yeniDuyuru.baslik}
+                onChange={e => setYeniDuyuru({ ...yeniDuyuru, baslik: e.target.value })} />
+              <textarea className={ic + ' mb-2 resize-none'} placeholder="Mesaj" rows={3}
+                value={yeniDuyuru.mesaj}
+                onChange={e => setYeniDuyuru({ ...yeniDuyuru, mesaj: e.target.value })} />
+              <input className={ic + ' mb-2'} placeholder="Resim URL (opsiyonel)" value={yeniDuyuru.resim_url}
+                onChange={e => setYeniDuyuru({ ...yeniDuyuru, resim_url: e.target.value })} />
+              <div className="flex items-center gap-2 mb-3">
+                <label className="text-xs text-slate-500 flex-shrink-0">Gecikme (sn):</label>
+                <input className={ic} type="number" min={0} max={30} value={yeniDuyuru.saniye}
+                  onChange={e => setYeniDuyuru({ ...yeniDuyuru, saniye: Number(e.target.value) })} />
               </div>
-            ))}
+              <button onClick={duyuruEkle} className={btnO + ' w-full'}>Duyuru Ekle</button>
+            </div>
+          </div>
+        )}
+
+        {!yukleniyor && aktifSekme === 'destek' && (
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2 flex flex-col gap-3">
+              {destekler.map((d) => (
+                <div
+                  key={d.id}
+                  onClick={() => { setSeciliDestek(d); setDestekCevap(d.cevap || ''); }}
+                  className={'bg-white rounded-xl border p-4 cursor-pointer hover:border-orange-300 transition ' +
+                    (seciliDestek?.id === d.id ? 'border-orange-400' : 'border-slate-200')}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-700 text-sm">{d.konu}</p>
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">{d.mesaj}</p>
+                    </div>
+                    <span className={'ml-4 flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ' +
+                      (d.durum === 'cevaplandi' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')}>
+                      {d.durum === 'cevaplandi' ? 'Cevaplandi' : 'Bekliyor'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {destekler.length === 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">
+                  Hic destek talebi yok
+                </div>
+              )}
+            </div>
+            <div className="bg-white rounded-xl border border-slate-200 p-4 h-fit">
+              {seciliDestek ? (
+                <>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">{seciliDestek.konu}</p>
+                  <p className="text-xs text-slate-500 mb-3">{seciliDestek.mesaj}</p>
+                  <textarea
+                    className={ic + ' mb-3 resize-none'}
+                    placeholder="Cevabin..."
+                    rows={5}
+                    value={destekCevap}
+                    onChange={e => setDestekCevap(e.target.value)}
+                  />
+                  <button onClick={destekCevapla} className={btnO + ' w-full'}>Cevapla</button>
+                </>
+              ) : (
+                <p className="text-sm text-slate-400 text-center py-8">Cevaplamak icin bir talep sec</p>
+              )}
+            </div>
           </div>
         )}
 
@@ -245,4 +961,3 @@ export default function AdminPage({ onLogout, onIlanDetay }: any) {
     </div>
   );
 }
-```
