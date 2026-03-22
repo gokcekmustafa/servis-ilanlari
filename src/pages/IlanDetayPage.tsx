@@ -121,9 +121,16 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
       ) : (
         <div className="flex flex-col gap-3">
           <div className="bg-slate-50 rounded-xl p-3 text-center">
-            <p className="text-xs text-slate-400 mb-0.5">Ilan Veren</p>
-            <p className="text-sm font-semibold text-slate-700">{ilan.ilan_veren}</p>
-          </div>
+  <p className="text-xs text-slate-400 mb-0.5">Ilan Veren</p>
+  <p className="text-sm font-semibold text-slate-700">
+    {ilan.profiles?.full_name || ilan.ilan_veren}
+  </p>
+  {ilan.profiles?.phone_number && (
+    <p className="text-sm font-bold text-orange-600 mt-1">
+      {ilan.profiles.phone_number}
+    </p>
+  )}
+</div>
           <button
             onClick={() => setMesajFormuAcik(true)}
             className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
@@ -224,7 +231,7 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
             {/* GUZERGAH - plaka satiyorum'da gosterme */}
             {!plakaSatiyormu && (
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="bg-slate-800 px-4 py-2.5 flex items-center gap-2">
+                <div className="bg-slate-400 px-4 py-2.5 flex items-center gap-2">
                   <MapPin size={14} className="text-orange-400" />
                   <span className="text-white text-xs font-semibold uppercase tracking-wider">
                     Guzergah Bilgileri
