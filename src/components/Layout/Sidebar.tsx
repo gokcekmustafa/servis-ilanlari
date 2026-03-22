@@ -1,32 +1,23 @@
 import React from 'react';
 import { KategoriType } from '../../types';
 
-interface SidebarProps {
+type SidebarProps = {
   selectedKategoriler: KategoriType[];
   onKategoriChange: (kategoriler: KategoriType[]) => void;
   onFilter: () => void;
   onClear: () => void;
   siralama: string;
   onSiralamaChange: (value: string) => void;
-}
-
-const hizliButonlar = [
-  { kategori: 'isim_var_arac' as KategoriType, label: 'Isim Var Arac Ariyorum', color: 'bg-blue-600 hover:bg-blue-700' },
-  { kategori: 'aracim_var_is' as KategoriType, label: 'Aracim Var Is Ariyorum', color: 'bg-green-600 hover:bg-green-700' },
-  { kategori: 'sofor_ariyorum' as KategoriType, label: 'Sofor Ariyorum', color: 'bg-orange-500 hover:bg-orange-600' },
-  { kategori: 'hostes_ariyorum' as KategoriType, label: 'Hostes Ariyorum', color: 'bg-purple-600 hover:bg-purple-700' },
-  { kategori: 'hostesim_is' as KategoriType, label: 'Hostesim Is Ariyorum', color: 'bg-pink-600 hover:bg-pink-700' },
-  { kategori: 'soforum_is' as KategoriType, label: 'Soforum Is Ariyorum', color: 'bg-yellow-600 hover:bg-yellow-700' },
-];
+};
 
 const tumKategoriler = [
-  { kategori: 'isim_var_arac' as KategoriType, label: 'Isim Var Arac Ariyorum' },
-  { kategori: 'aracim_var_is' as KategoriType, label: 'Aracim Var Is Ariyorum' },
-  { kategori: 'sofor_ariyorum' as KategoriType, label: 'Sofor Ariyorum' },
-  { kategori: 'hostes_ariyorum' as KategoriType, label: 'Hostes Ariyorum' },
-  { kategori: 'hostesim_is' as KategoriType, label: 'Hostesim Is Ariyorum' },
-  { kategori: 'soforum_is' as KategoriType, label: 'Soforum Is Ariyorum' },
-  { kategori: 'plaka_satiyorum' as KategoriType, label: 'Plakam Satiyorum' },
+  { kategori: 'isim_var_arac' as KategoriType, label: 'Isim Var Arac Ariyorum', sayi: 84 },
+  { kategori: 'aracim_var_is' as KategoriType, label: 'Aracim Var Is Ariyorum', sayi: 41 },
+  { kategori: 'sofor_ariyorum' as KategoriType, label: 'Sofor Ariyorum', sayi: 22 },
+  { kategori: 'hostes_ariyorum' as KategoriType, label: 'Hostes Ariyorum', sayi: 8 },
+  { kategori: 'hostesim_is' as KategoriType, label: 'Hostesim Is Ariyorum', sayi: 5 },
+  { kategori: 'soforum_is' as KategoriType, label: 'Soforum Is Ariyorum', sayi: 12 },
+  { kategori: 'plaka_satiyorum' as KategoriType, label: 'Plakam Satiyorum', sayi: 3 },
 ];
 
 export default function Sidebar({
@@ -37,11 +28,6 @@ export default function Sidebar({
   siralama,
   onSiralamaChange,
 }: SidebarProps) {
-  const handleHizliButon = (kategori: KategoriType) => {
-    onKategoriChange([kategori]);
-    onFilter();
-  };
-
   const handleCheckbox = (kategori: KategoriType) => {
     if (selectedKategoriler.includes(kategori)) {
       onKategoriChange(selectedKategoriler.filter((k) => k !== kategori));
@@ -50,83 +36,123 @@ export default function Sidebar({
     }
   };
 
-  return (
-    <aside className="w-full">
+  const handleHizliTik = (kategori: KategoriType) => {
+    onKategoriChange([kategori]);
+    onFilter();
+  };
 
-      {/* Hizli Filtre Butonlari */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-4">
-        <div className="bg-slate-800 px-4 py-2.5">
-          <h3 className="text-white text-xs font-semibold uppercase tracking-wider">
-            Hizli Arama
-          </h3>
-        </div>
-        <div className="p-3 flex flex-col gap-2">
-          {hizliButonlar.map((btn) => (
+  return (
+    <aside className="w-full flex flex-col gap-3">
+
+      {/* KATEGORİ FİLTRE */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <span className="text-sm font-semibold text-gray-800">Ilan Kategorisi</span>
+          {selectedKategoriler.length > 0 && (
             <button
-              key={btn.kategori}
-              onClick={() => handleHizliButon(btn.kategori)}
-              className={`${btn.color} text-white text-xs font-medium py-2 px-3 rounded-lg text-left transition`}
+              onClick={onClear}
+              className="text-xs text-orange-500 hover:text-orange-600 font-medium transition"
             >
-              {btn.label}
+              Temizle
+            </button>
+          )}
+        </div>
+        <div className="py-1">
+          {tumKategoriler.map((item) => (
+            <label
+              key={item.kategori}
+              className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-50 transition group"
+            >
+              <div className="flex items-center gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={selectedKategoriler.includes(item.kategori)}
+                  onChange={() => handleCheckbox(item.kategori)}
+                  className="accent-orange-500 w-3.5 h-3.5"
+                />
+                <span className={
+                  'text-xs transition ' +
+                  (selectedKategoriler.includes(item.kategori)
+                    ? 'text-orange-600 font-semibold'
+                    : 'text-gray-600 group-hover:text-gray-800')
+                }>
+                  {item.label}
+                </span>
+              </div>
+              <span className="text-xs text-gray-400">{item.sayi}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* SIRALAMA */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100">
+          <span className="text-sm font-semibold text-gray-800">Siralama</span>
+        </div>
+        <div className="py-1">
+          {[
+            { val: 'yeni', label: 'Once En Yeni' },
+            { val: 'eski', label: 'Once En Eski' },
+          ].map((item) => (
+            <label
+              key={item.val}
+              className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition"
+            >
+              <input
+                type="radio"
+                name="siralama"
+                checked={siralama === item.val}
+                onChange={() => onSiralamaChange(item.val)}
+                className="accent-orange-500 w-3.5 h-3.5"
+              />
+              <span className={
+                'text-xs transition ' +
+                (siralama === item.val ? 'text-orange-600 font-semibold' : 'text-gray-600')
+              }>
+                {item.label}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* HIZLI ARAMA BUTONLARI */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100">
+          <span className="text-sm font-semibold text-gray-800">Hizli Filtre</span>
+        </div>
+        <div className="p-3 flex flex-col gap-1.5">
+          {tumKategoriler.map((item) => (
+            <button
+              key={item.kategori}
+              onClick={() => handleHizliTik(item.kategori)}
+              className={
+                'w-full text-left text-xs px-3 py-2 rounded-md transition font-medium ' +
+                (selectedKategoriler.length === 1 && selectedKategoriler[0] === item.kategori
+                  ? 'bg-orange-500 text-white'
+                  : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600')
+              }
+            >
+              {item.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Detayli Arama */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-4">
-        <div className="bg-slate-800 px-4 py-2.5">
-          <h3 className="text-white text-xs font-semibold uppercase tracking-wider">
-            Detayli Arama
-          </h3>
-        </div>
-        <div className="p-4">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-            Ilan Kategorisi
-          </p>
-          <div className="flex flex-col gap-2.5 mb-5">
-            {tumKategoriler.map((item) => (
-              <label
-                key={item.kategori}
-                className="flex items-center gap-2.5 text-sm text-slate-600 cursor-pointer hover:text-slate-800 transition"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedKategoriler.includes(item.kategori)}
-                  onChange={() => handleCheckbox(item.kategori)}
-                  className="accent-orange-500 w-4 h-4 rounded"
-                />
-                {item.label}
-              </label>
-            ))}
-          </div>
-
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
-            Siralama
-          </p>
-          <select
-            value={siralama}
-            onChange={(e) => onSiralamaChange(e.target.value)}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 mb-4 bg-white"
-          >
-            <option value="yeni">Once En Yeni</option>
-            <option value="eski">Once En Eski</option>
-          </select>
-
-          <button
-            onClick={onFilter}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg font-semibold text-sm transition mb-2"
-          >
-            Uygun Ilanlari Goster
-          </button>
-          <button
-            onClick={onClear}
-            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 rounded-lg font-medium text-sm transition"
-          >
-            Aramay Temizle
-          </button>
-        </div>
-      </div>
+      {/* FİLTRELE BUTONU */}
+      <button
+        onClick={onFilter}
+        className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg font-semibold text-sm transition"
+      >
+        Filtrele
+      </button>
+      <button
+        onClick={onClear}
+        className="w-full bg-white hover:bg-gray-50 text-gray-500 border border-gray-200 py-2 rounded-lg font-medium text-sm transition"
+      >
+        Filtreleri Temizle
+      </button>
 
     </aside>
   );
