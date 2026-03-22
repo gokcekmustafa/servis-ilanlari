@@ -994,7 +994,7 @@ const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(()
                 )}
 
                 {/* GUZERGAH */}
-                {selectedKategori !== 'plaka_satiyorum' && selectedKategori !== 'hostesim_is' && selectedKategori !== 'soforum_is' && (
+                {selectedKategori !== 'hostesim_is' && selectedKategori !== 'soforum_is' && (
                   <div className="border border-slate-200 rounded-xl p-4 md:p-5">
                     <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
                       <div>
