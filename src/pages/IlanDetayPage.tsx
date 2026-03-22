@@ -185,15 +185,15 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
 
             {/* FIYAT - varsa goster */}
             {ucret && (
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-center justify-between">
-                <span className="text-sm text-orange-700 font-medium flex items-center gap-2">
-                  <Tag size={15} /> Fiyat
-                </span>
-                <span className="text-xl font-bold text-orange-600">
-                  {Number(ucret).toLocaleString('tr-TR')} TL
-                </span>
-              </div>
-            )}
+  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+    <span className="text-sm text-blue-700 font-medium flex items-center gap-2">
+      <Tag size={15} /> Fiyat
+    </span>
+    <span className="text-xl font-bold text-blue-600">
+      {Number(ucret).toLocaleString('tr-TR')} TL
+    </span>
+  </div>
+)}
 
             {/* PLAKA BILGISI - sadece plaka satiyorum */}
             {plakaSatiyormu && ilan.ekbilgiler?.plaka_il && (
