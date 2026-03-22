@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase';
 import { Ilan } from '../types';
 import {
   LayoutDashboard, Users, FileText, Megaphone,
-  Image, HeadphonesIcon, LogOut, Trash2, PlusCircle, RefreshCw
+  Image, HeadphonesIcon, LogOut, Trash2, PlusCircle, RefreshCw,
+  Shield, UserPlus, CheckCircle2, XCircle, Edit2, Save, X
 } from 'lucide-react';
 
 type AdminPageProps = {
@@ -17,7 +18,8 @@ type Sekme =
   | 'kullanicilar'
   | 'reklamlar'
   | 'duyurular'
-  | 'destek';
+  | 'destek'
+  | 'personel';
 
 export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
   const [aktifSekme, setAktifSekme] = useState<Sekme>('istatistik');
@@ -38,6 +40,27 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
   const [yeniSifre, setYeniSifre] = useState('');
   const [seciliDestek, setSeciliDestek] = useState<any>(null);
   const [destekCevap, setDestekCevap] = useState('');
+
+  // --- PERSONEL YONETIMI STATELERI ---
+  const [isPersonelFormOpen, setIsPersonelFormOpen] = useState(false);
+  const [seciliPersonel, setSeciliPersonel] = useState<any>(null);
+  const [personelForm, setPersonelForm] = useState({
+    full_name: '',
+    phone_number: '',
+    password: '',
+    aktif: true,
+    yetkiler: {
+      ilan_onay: false,
+      kullanici_yonetimi: false,
+      destek_yonetimi: false,
+      reklam_yonetimi: false,
+      duyuru_yonetimi: false
+    }
+  });
+
+  // Superadmin kontrolu (Sadece 05369500280 numarali kisi veya type='superadmin' olanlar)
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const isSuperAdmin = currentUser?.phone_number === '05369500280' || currentUser?.type === 'superadmin';
 
   useEffect(() => {
     hepsiniYukle();
@@ -109,7 +132,7 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
   };
 
   const kullaniciSil = async (id: string) => {
-    if (!window.confirm('Bu kullaniciy silmek istediginizden emin misiniz?')) return;
+    if (!window.confirm('Bu kullaniciyi silmek istediginizden emin misiniz?')) return;
     await supabase.from('profiles').delete().eq('id', id);
     hepsiniYukle();
   };
@@ -145,6 +168,68 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
     }]);
     setYeniKullanici({ full_name: '', phone_number: '', password: '', type: 'staff' });
     hepsiniYukle();
+  };
+
+  // --- PERSONEL KAYDETME FONKSIYONU ---
+  const personelKaydet = async () => {
+    if (!personelForm.full_name || !personelForm.phone_number) {
+      alert('Lutfen ad soyad ve telefon numarasi giriniz.');
+      return;
+    }
+
+    if (seciliPersonel) {
+      // Guncelleme
+      const guncelleme: any = {
+        full_name: personelForm.full_name,
+        phone_number: personelForm.phone_number,
+        aktif: personelForm.aktif,
+        yetkiler: personelForm.yetkiler
+      };
+      if (personelForm.password) {
+        guncelleme.password_hash = await hashPassword(personelForm.password);
+        guncelleme.sifre_acik = personelForm.password;
+      }
+      await supabase.from('profiles').update(guncelleme).eq('id', seciliPersonel.id);
+    } else {
+      // Yeni Ekleme
+      if (!personelForm.password) {
+        alert('Yeni personel icin sifre belirlemelisiniz.');
+        return;
+      }
+      const hash = await hashPassword(personelForm.password);
+      await supabase.from('profiles').insert([{
+        full_name: personelForm.full_name,
+        phone_number: personelForm.phone_number,
+        type: 'admin', // Personeller admin tipindedir
+        sifre_acik: personelForm.password,
+        password_hash: hash,
+        aktif: personelForm.aktif,
+        yetkiler: personelForm.yetkiler
+      }]);
+    }
+
+    // Formu temizle ve listeyi yenile
+    setSeciliPersonel(null);
+    setIsPersonelFormOpen(false);
+    setPersonelForm({
+      full_name: '', phone_number: '', password: '', aktif: true,
+      yetkiler: { ilan_onay: false, kullanici_yonetimi: false, destek_yonetimi: false, reklam_yonetimi: false, duyuru_yonetimi: false }
+    });
+    hepsiniYukle();
+  };
+
+  const personelDuzenleAc = (personel: any) => {
+    setSeciliPersonel(personel);
+    setPersonelForm({
+      full_name: personel.full_name,
+      phone_number: personel.phone_number,
+      password: '', // Sifre bos gelir, girilirse guncellenir
+      aktif: personel.aktif ?? true,
+      yetkiler: personel.yetkiler || {
+        ilan_onay: false, kullanici_yonetimi: false, destek_yonetimi: false, reklam_yonetimi: false, duyuru_yonetimi: false
+      }
+    });
+    setIsPersonelFormOpen(true);
   };
 
   const reklamEkle = async () => {
@@ -193,7 +278,7 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
     hepsiniYukle();
   };
 
-  const menuItems = [
+  const menuItems: any[] = [
     { id: 'istatistik', label: 'Istatistikler', icon: LayoutDashboard },
     { id: 'ilanlar', label: 'Ilanlar', icon: FileText, sayi: ilanlar.length },
     { id: 'kullanicilar', label: 'Kullanicilar', icon: Users, sayi: kullanicilar.length },
@@ -201,6 +286,16 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
     { id: 'duyurular', label: 'Duyurular', icon: Megaphone, sayi: duyurular.length },
     { id: 'destek', label: 'Destek', icon: HeadphonesIcon, sayi: destekler.filter(d => d.durum === 'bekliyor').length },
   ];
+
+  // Sadece Superadmin ise Personel sekmesini menuye ekle
+  if (isSuperAdmin) {
+    menuItems.push({ 
+      id: 'personel', 
+      label: 'Personel', 
+      icon: Shield, 
+      sayi: kullanicilar.filter(u => u.type === 'admin').length 
+    });
+  }
 
   const ic = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
   const btnO = 'bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition';
@@ -300,6 +395,193 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- YENI EKLENEN PERSONEL SEKMESI --- */}
+        {!yukleniyor && aktifSekme === 'personel' && isSuperAdmin && (
+          <div className="max-w-5xl mx-auto">
+            <div className="flex justify-end mb-4">
+              {!isPersonelFormOpen && (
+                <button 
+                  onClick={() => {
+                    setSeciliPersonel(null);
+                    setPersonelForm({
+                      full_name: '', phone_number: '', password: '', aktif: true,
+                      yetkiler: { ilan_onay: false, kullanici_yonetimi: false, destek_yonetimi: false, reklam_yonetimi: false, duyuru_yonetimi: false }
+                    });
+                    setIsPersonelFormOpen(true);
+                  }}
+                  className={btnO + " flex items-center shadow-sm"}
+                >
+                  <UserPlus className="w-4 h-4 mr-2" /> Personel Ekle
+                </button>
+              )}
+            </div>
+
+            {isPersonelFormOpen && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
+                  {seciliPersonel ? 'Personel Duzenle' : 'Yeni Personel Ekle'}
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label>
+                    <input 
+                      type="text" 
+                      className={ic}
+                      value={personelForm.full_name}
+                      onChange={(e) => setPersonelForm({...personelForm, full_name: e.target.value})}
+                      placeholder="Orn: Ahmet Yilmaz"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Telefon Numarasi</label>
+                    <input 
+                      type="text" 
+                      className={ic}
+                      value={personelForm.phone_number}
+                      onChange={(e) => setPersonelForm({...personelForm, phone_number: e.target.value})}
+                      placeholder="Orn: 05551234567"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">
+                      {seciliPersonel ? 'Yeni Sifre (Bos birakilabilir)' : 'Sifre Belirle'}
+                    </label>
+                    <input 
+                      type="password" 
+                      className={ic}
+                      value={personelForm.password}
+                      onChange={(e) => setPersonelForm({...personelForm, password: e.target.value})}
+                      placeholder="******"
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-slate-800 mb-3">Yetkilendirme Ayarlari</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {Object.entries(personelForm.yetkiler).map(([key, value]) => (
+                      <label key={key} className="flex items-center space-x-2 p-2 border border-slate-100 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 accent-orange-500 rounded"
+                          checked={value as boolean}
+                          onChange={() => setPersonelForm({
+                            ...personelForm, 
+                            yetkiler: { ...personelForm.yetkiler, [key]: !value }
+                          })}
+                        />
+                        <span className="text-slate-700 text-xs font-medium capitalize">
+                          {key.replace('_', ' ')}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 accent-emerald-500 rounded"
+                      checked={personelForm.aktif}
+                      onChange={() => setPersonelForm({...personelForm, aktif: !personelForm.aktif})}
+                    />
+                    <span className="text-slate-700 text-sm font-medium">Hesap Aktif</span>
+                  </label>
+
+                  <div className="flex space-x-2">
+                    <button 
+                      onClick={() => { setIsPersonelFormOpen(false); setSeciliPersonel(null); }}
+                      className={btnS + " flex items-center"}
+                    >
+                      <X className="w-4 h-4 mr-1" /> Iptal
+                    </button>
+                    <button 
+                      onClick={personelKaydet}
+                      className={btnO + " flex items-center"}
+                    >
+                      <Save className="w-4 h-4 mr-1" /> Kaydet
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+              <table className="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
+                    <th className="p-4 font-semibold">Personel</th>
+                    <th className="p-4 font-semibold">Iletisim</th>
+                    <th className="p-4 font-semibold">Yetkiler</th>
+                    <th className="p-4 font-semibold text-center">Durum</th>
+                    <th className="p-4 font-semibold text-right">Islemler</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {kullanicilar.filter(u => u.type === 'admin').map((personel) => (
+                    <tr key={personel.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-4">
+                        <div className="font-semibold text-slate-700">{personel.full_name}</div>
+                        <div className="text-xs text-slate-400">Kayit: {new Date(personel.created_at).toLocaleDateString('tr-TR')}</div>
+                      </td>
+                      <td className="p-4 text-slate-600">
+                        {personel.phone_number}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-wrap gap-1">
+                          {personel.yetkiler && Object.entries(personel.yetkiler).map(([key, value]) => 
+                            value ? (
+                              <span key={key} className="bg-orange-50 text-orange-600 border border-orange-100 text-[10px] px-2 py-0.5 rounded-full capitalize font-medium">
+                                {key.replace('_', ' ')}
+                              </span>
+                            ) : null
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4 text-center">
+                        {personel.aktif !== false ? (
+                          <span className="inline-flex items-center text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full text-xs font-semibold">
+                            <CheckCircle2 className="w-3 h-3 mr-1" /> Aktif
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full text-xs font-semibold">
+                            <XCircle className="w-3 h-3 mr-1" /> Pasif
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4 text-right">
+                        <button 
+                          onClick={() => personelDuzenleAc(personel)}
+                          className="p-1.5 text-slate-400 hover:text-orange-500 transition-colors inline-block"
+                          title="Duzenle"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => kullaniciSil(personel.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-500 transition-colors inline-block ml-1"
+                          title="Sil"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {kullanicilar.filter(u => u.type === 'admin').length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-slate-400 text-sm">
+                        Henuz personel eklenmemis.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -464,7 +746,7 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                     onError={(e: any) => { e.target.style.display = 'none'; }}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-700 text-sm">{r.baslik || 'Baslıksız'}</p>
+                    <p className="font-semibold text-slate-700 text-sm">{r.baslik || 'Basliksiz'}</p>
                     <p className="text-xs text-slate-400 truncate mt-0.5">{r.link_url || 'Link yok'}</p>
                     <span className={'text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ' +
                       (r.konum === 'header' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')}>
