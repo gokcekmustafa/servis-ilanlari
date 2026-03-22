@@ -208,24 +208,46 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
       {/* DUYURU POPUP */}
       {popupAcik && duyuru && (
         <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md p-5 sm:p-6 relative shadow-xl">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md relative shadow-xl overflow-hidden">
+            {/* Kapatma butonu */}
             <button
               onClick={() => setPopupAcik(false)}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full text-lg font-bold"
+              className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center bg-black/30 hover:bg-black/50 text-white rounded-full text-lg font-bold transition"
             >
               ×
             </button>
-            {duyuru.resim_url && (
-              <img src={duyuru.resim_url} className="w-full h-40 object-cover rounded-lg mb-4" />
+
+            {/* Resim varsa tam genişlik göster */}
+            {duyuru.resim_url ? (
+              <>
+                <img
+                  src={duyuru.resim_url}
+                  alt={duyuru.baslik}
+                  className="w-full h-48 sm:h-56 object-cover"
+                />
+                <div className="p-4 sm:p-5">
+                  <h2 className="text-base font-bold text-slate-800 mb-1.5">{duyuru.baslik}</h2>
+                  <p className="text-sm text-slate-500 leading-relaxed">{duyuru.mesaj}</p>
+                  <button
+                    onClick={() => setPopupAcik(false)}
+                    className="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition"
+                  >
+                    Kapat
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="p-5 sm:p-6">
+                <h2 className="text-base font-bold text-slate-800 mb-2 pr-8">{duyuru.baslik}</h2>
+                <p className="text-sm text-slate-500 leading-relaxed">{duyuru.mesaj}</p>
+                <button
+                  onClick={() => setPopupAcik(false)}
+                  className="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition"
+                >
+                  Kapat
+                </button>
+              </div>
             )}
-            <h2 className="text-base font-bold text-slate-800 mb-2">{duyuru.baslik}</h2>
-            <p className="text-sm text-slate-500">{duyuru.mesaj}</p>
-            <button
-              onClick={() => setPopupAcik(false)}
-              className="mt-4 w-full bg-orange-500 text-white py-2.5 rounded-xl font-semibold text-sm"
-            >
-              Kapat
-            </button>
           </div>
         </div>
       )}
