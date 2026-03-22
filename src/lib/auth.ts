@@ -31,23 +31,23 @@ export async function kayitOl(
   const hash = await hashPassword(sifre);
 
   const { data, error } = await supabase
-    .from('profiles')
-    .insert([{
-      id: crypto.randomUUID(),
-      phone_number: temiz,
-      full_name: fullName,
-      type,
-      il,
-      password_hash: hash,
-      aktif: true,
-      yetkiler: {
-        ilan_verebilir: true,
-        mesaj_gonderebilir: true,
-        favori_ekleyebilir: true,
-      },
-    }])
-    .select()
-    .single();
+  .from('profiles')
+  .insert([{
+    id: crypto.randomUUID(),
+    phone_number: temiz,
+    full_name: fullName,
+    type,
+    il,
+    password_hash: hash,
+    aktif: true,
+    yetkiler: {
+      ilan_verebilir: true,
+      mesaj_gonderebilir: true,
+      favori_ekleyebilir: true,
+    },
+  }])
+  .select()
+  .single();
 
   if (!error && data) {
     localStorage.setItem('user', JSON.stringify(data));
