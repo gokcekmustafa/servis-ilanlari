@@ -10,7 +10,7 @@ type IlanDetayPageProps = {
   onGoBack: () => void;
   onGoLogin: () => void;
   isLoggedIn: boolean;
-  tumIlanlar: Ilan[]; // tüm ilanlar, filtreleme için
+  tumIlanlar?: Ilan[]; // opsiyonel yaptık
 };
 
 const kategoriBadge: Record<KategoriType, { label: string; color: string }> = {
