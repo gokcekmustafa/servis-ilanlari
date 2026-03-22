@@ -180,13 +180,23 @@ type IlanEklePageProps = {
 
 export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePageProps) {
   const [adim, setAdim] = useState<number>(() => {
-    const saved = sessionStorage.getItem('ilan-ekle-adim');
-    return saved ? parseInt(saved) : 1;
-  });
-  const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(() => {
-    const saved = sessionStorage.getItem('ilan-ekle-kategori');
-    return saved as KategoriType | null;
-  });
+  const savedUserId = sessionStorage.getItem('ilan-ekle-userId');
+  if (savedUserId !== userId) {
+    sessionStorage.removeItem('ilan-ekle-adim');
+    sessionStorage.removeItem('ilan-ekle-kategori');
+    sessionStorage.removeItem('ilan-ekle-userId');
+    return 1;
+  }
+  const saved = sessionStorage.getItem('ilan-ekle-adim');
+  return saved ? parseInt(saved) : 1;
+});
+
+const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(() => {
+  const savedUserId = sessionStorage.getItem('ilan-ekle-userId');
+  if (savedUserId !== userId) return null;
+  const saved = sessionStorage.getItem('ilan-ekle-kategori');
+  return saved as KategoriType | null;
+});
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
   const [guzergahlar, setGuzergahlar] = useState<Guzergah[]>([bosGuzergah()]);
@@ -268,9 +278,10 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
   };
 
   const setAdimVeKaydet = (yeniAdim: number) => {
-    setAdim(yeniAdim);
-    sessionStorage.setItem('ilan-ekle-adim', String(yeniAdim));
-  };
+  setAdim(yeniAdim);
+  sessionStorage.setItem('ilan-ekle-adim', String(yeniAdim));
+  sessionStorage.setItem('ilan-ekle-userId', userId);
+};
 
   const handleAdim1 = () => {
     if (!selectedKategori) { setHata('Lutfen bir kategori secin.'); return; }
