@@ -37,7 +37,7 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
           {badge.label}
         </span>
         {ucret && (
-          <span className="flex items-center gap-1 text-orange-600 font-bold text-sm whitespace-nowrap flex-shrink-0">
+          <span className="flex items-center gap-1 text-blue-600 font-bold text-sm whitespace-nowrap flex-shrink-0">
             <Tag size={12} />
             {Number(ucret).toLocaleString('tr-TR')} TL
           </span>
@@ -96,9 +96,9 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
             {new Date(ilan.created_at).toLocaleDateString('tr-TR')}
           </span>
           <span className="flex items-center gap-1">
-            <User size={11} />
-            {ilan.ilan_veren}
-          </span>
+  <User size={11} />
+  {ilan.profiles?.full_name || ilan.ilan_veren}
+</span>
           {ilan.servis_turu && ilan.servis_turu.length > 0 && (
             <span className="flex items-center gap-1">
               <Bus size={11} />
