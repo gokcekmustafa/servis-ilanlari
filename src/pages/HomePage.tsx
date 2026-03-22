@@ -7,6 +7,31 @@ import { supabase } from '../lib/supabase';
 
 const REKLAM_ARASI = 8;
 
+type ReklamKartiProps = {
+  reklam: any;
+};
+
+function ReklamKarti({ reklam }: ReklamKartiProps) {
+  const url = reklam.link_url || '#';
+  return (
+    <div
+      onClick={() => window.open(url, '_blank')}
+      className="cursor-pointer rounded-xl overflow-hidden border border-slate-200 hover:border-orange-300 transition-all"
+    >
+      <div className="relative">
+        <img
+          src={reklam.resim_url}
+          alt={reklam.baslik || 'Reklam'}
+          className="w-full h-24 object-cover"
+        />
+        <span className="absolute top-2 right-2 bg-black/40 text-white text-xs px-2 py-0.5 rounded">
+          Reklam
+        </span>
+      </div>
+    </div>
+  );
+}
+
 type IlanListesiProps = {
   ilanlar: Ilan[];
   reklamlar: any[];
@@ -14,37 +39,31 @@ type IlanListesiProps = {
 };
 
 function IlanListesi({ ilanlar, reklamlar, onDetay }: IlanListesiProps) {
+  const elemanlar: React.ReactNode[] = [];
+
+  ilanlar.forEach((ilan, index) => {
+    elemanlar.push(
+      <IlanCard key={'ilan-' + ilan.id} ilan={ilan} onDetay={onDetay} />
+    );
+
+    const sonrakiAdim = index + 1;
+    const reklamVar = reklamlar.length > 0;
+    const zamanGeldi = sonrakiAdim % REKLAM_ARASI === 0;
+
+    if (zamanGeldi && reklamVar) {
+      const reklamIndex = Math.floor(index / REKLAM_ARASI) % reklamlar.length;
+      elemanlar.push(
+        <ReklamKarti
+          key={'reklam-' + index}
+          reklam={reklamlar[reklamIndex]}
+        />
+      );
+    }
+  });
+
   return (
     <div className="flex flex-col gap-3">
-      {ilanlar.map((ilan, index) => {
-        const reklamGoster = (index + 1) % REKLAM_ARASI === 0 && reklamlar.length > 0;
-        const reklamIndex = Math.floor(index / REKLAM_ARASI) % reklamlar.length;
-        const reklam = reklamlar[reklamIndex];
-        return (
-          <React.Fragment key={ilan.id}>
-            <IlanCard ilan={ilan} onDetay={onDetay} />
-            {reklamGoster && reklam && (
-              
-                href={reklam.link_url || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block rounded-xl overflow-hidden border border-slate-200 hover:border-orange-300 transition-all"
-              >
-                <div className="relative">
-                  <img
-                    src={reklam.resim_url}
-                    alt={reklam.baslik || 'Reklam'}
-                    className="w-full h-[100px] object-cover"
-                  />
-                  <span className="absolute top-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded">
-                    Reklam
-                  </span>
-                </div>
-              </a>
-            )}
-          </React.Fragment>
-        );
-      })}
+      {elemanlar}
     </div>
   );
 }
