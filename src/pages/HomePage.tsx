@@ -22,19 +22,19 @@ export default function HomePage({
   const [popupAcik, setPopupAcik] = useState(false);
 
   useEffect(() => {
-    ilanlarıYukle();
-    reklamlarıYukle();
+    ilanlarYukle();
+    reklamlariYukle();
     duyuruYukle();
   }, []);
 
-  const ilanlarıYukle = async () => {
+  const ilanlarYukle = async () => {
     setYukleniyor(true);
     const { data, error } = await ilanlariGetir();
     if (!error && data) setIlanlar(data as Ilan[]);
     setYukleniyor(false);
   };
 
-  const reklamlarıYukle = async () => {
+  const reklamlariYukle = async () => {
     const { data } = await supabase
       .from('reklamlar')
       .select('*')
@@ -57,6 +57,7 @@ export default function HomePage({
   };
 
   const handleFilter = () => setAktifKategoriler(selectedKategoriler);
+
   const handleClear = () => {
     setSelectedKategoriler([]);
     setAktifKategoriler([]);
@@ -74,23 +75,26 @@ export default function HomePage({
         : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
-  // Reklam: her N ilandan sonra 1 reklam goster
   const REKLAM_ARASI = 8;
-  const renderIlanListesi = () => {
+
+  const buildIlanListesi = () => {
     const items: React.ReactNode[] = [];
+
     filtrelenmisIlanlar.forEach((ilan, index) => {
       items.push(
         <IlanCard key={ilan.id} ilan={ilan} onDetay={onIlanDetay} />
       );
-      // Her 8 ilandan sonra reklam ekle
+
+      const sonrakiReklamIndex = Math.floor(index / REKLAM_ARASI);
+
       if (
         (index + 1) % REKLAM_ARASI === 0 &&
         reklamlar.length > 0
       ) {
-        const reklam = reklamlar[Math.floor((index + 1) / REKLAM_ARASI - 1) % reklamlar.length];
+        const reklam = reklamlar[sonrakiReklamIndex % reklamlar.length];
         items.push(
           
-            key={`reklam-${index}`}
+            key={'reklam-' + index}
             href={reklam.link_url || '#'}
             target="_blank"
             rel="noopener noreferrer"
@@ -110,6 +114,7 @@ export default function HomePage({
         );
       }
     });
+
     return items;
   };
 
@@ -118,7 +123,6 @@ export default function HomePage({
       <div className="max-w-5xl mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
 
-          {/* Sidebar */}
           <div className="w-full lg:w-56 flex-shrink-0">
             <Sidebar
               selectedKategoriler={selectedKategoriler}
@@ -130,10 +134,7 @@ export default function HomePage({
             />
           </div>
 
-          {/* Ilan Listesi */}
           <div className="flex-1 min-w-0">
-
-            {/* Sonuc Bari */}
             <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 mb-4 flex items-center justify-between">
               <span className="text-sm text-slate-500">
                 Toplam{' '}
@@ -164,7 +165,7 @@ export default function HomePage({
               </div>
             ) : filtrelenmisIlanlar.length > 0 ? (
               <div className="flex flex-col gap-3">
-                {renderIlanListesi()}
+                {buildIlanListesi()}
               </div>
             ) : (
               <div className="text-center py-20 text-slate-400">
@@ -176,10 +177,10 @@ export default function HomePage({
               </div>
             )}
           </div>
+
         </div>
       </div>
 
-      {/* Popup Duyuru */}
       {popupAcik && duyuru && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6 relative shadow-xl">
@@ -187,7 +188,7 @@ export default function HomePage({
               onClick={() => setPopupAcik(false)}
               className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 text-lg leading-none"
             >
-              ×
+              x
             </button>
             {duyuru.resim_url && (
               <img
