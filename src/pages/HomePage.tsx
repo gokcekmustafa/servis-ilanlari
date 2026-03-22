@@ -4,7 +4,7 @@ import IlanCard from '../components/IlanCard';
 import { ilanlariGetir } from '../lib/ilanlar';
 import { KategoriType, Ilan } from '../types';
 import { supabase } from '../lib/supabase';
-import { SlidersHorizontal, X, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal, X } from 'lucide-react';
 
 const REKLAM_ARASI = 2;
 
@@ -18,9 +18,27 @@ const kategoriLabel: Record<KategoriType, string> = {
   plaka_satiyorum: 'Plakam Satiyorum',
 };
 
-type ReklamKartiProps = {
-  reklam: any;
-};
+const ANADOLU_ILCELERI = [
+  'adalar', 'atasehir', 'beykoz', 'cekmekoy', 'kadikoy',
+  'kartal', 'maltepe', 'pendik', 'sancaktepe', 'sile',
+  'sultanbeyli', 'tuzla', 'umraniye', 'uskudar',
+];
+
+function normalizeStr(str: string): string {
+  return str.toLowerCase()
+    .replace(/i/g, 'i').replace(/ı/g, 'i')
+    .replace(/ö/g, 'o').replace(/ü/g, 'u')
+    .replace(/ş/g, 's').replace(/ç/g, 'c')
+    .replace(/ğ/g, 'g');
+}
+
+function ilceYakasi(ilce: string): string {
+  const n = normalizeStr(ilce);
+  if (ANADOLU_ILCELERI.includes(n)) return 'anadolu';
+  return 'avrupa';
+}
+
+type ReklamKartiProps = { reklam: any };
 
 function ReklamKarti({ reklam }: ReklamKartiProps) {
   return (
@@ -29,12 +47,8 @@ function ReklamKarti({ reklam }: ReklamKartiProps) {
       className="cursor-pointer rounded-lg overflow-hidden border border-gray-200 hover:border-orange-300 transition-all"
     >
       <div className="relative">
-        <img
-          src={reklam.resim_url}
-          alt={reklam.baslik || 'Reklam'}
-          className="w-full h-20 object-cover"
-        />
-        <span className="absolute top-1.5 right-1.5 bg-black/40 text-white text-xs px-1.5 py-0.5 rounded text-[10px]">
+        <img src={reklam.resim_url} alt={reklam.baslik || 'Reklam'} className="w-full h-20 object-cover" />
+        <span className="absolute top-1.5 right-1.5 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">
           Reklam
         </span>
       </div>
@@ -42,24 +56,15 @@ function ReklamKarti({ reklam }: ReklamKartiProps) {
   );
 }
 
-type IlanListesiProps = {
-  ilanlar: Ilan[];
-  reklamlar: any[];
-  onDetay: (ilan: Ilan) => void;
-};
+type IlanListesiProps = { ilanlar: Ilan[]; reklamlar: any[]; onDetay: (ilan: Ilan) => void };
 
 function IlanListesi({ ilanlar, reklamlar, onDetay }: IlanListesiProps) {
   const elemanlar: React.ReactNode[] = [];
   ilanlar.forEach((ilan, index) => {
-    elemanlar.push(
-      <IlanCard key={'ilan-' + ilan.id} ilan={ilan} onDetay={onDetay} />
-    );
-    const sonrakiAdim = index + 1;
-    if (sonrakiAdim % REKLAM_ARASI === 0 && reklamlar.length > 0) {
-      const reklamIndex = Math.floor(index / REKLAM_ARASI) % reklamlar.length;
-      elemanlar.push(
-        <ReklamKarti key={'reklam-' + index} reklam={reklamlar[reklamIndex]} />
-      );
+    elemanlar.push(<IlanCard key={'ilan-' + ilan.id} ilan={ilan} onDetay={onDetay} />);
+    if ((index + 1) % REKLAM_ARASI === 0 && reklamlar.length > 0) {
+      const ri = Math.floor(index / REKLAM_ARASI) % reklamlar.length;
+      elemanlar.push(<ReklamKarti key={'reklam-' + index} reklam={reklamlar[ri]} />);
     }
   });
   return <div className="flex flex-col gap-2">{elemanlar}</div>;
@@ -81,7 +86,13 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   const [popupAcik, setPopupAcik] = useState(false);
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
-  const [siralamaAcik, setSiralamaAcik] = useState(false);
+
+  const [selectedSehir, setSelectedSehir] = useState('');
+  const [aktifSehir, setAktifSehir] = useState('');
+  const [selectedIlce, setSelectedIlce] = useState('');
+  const [aktifIlce, setAktifIlce] = useState('');
+  const [selectedYaka, setSelectedYaka] = useState('');
+  const [aktifYaka, setAktifYaka] = useState('');
 
   useEffect(() => {
     ilanlarYukle();
@@ -102,21 +113,12 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   };
 
   const reklamlariYukle = async () => {
-    const { data } = await supabase
-      .from('reklamlar')
-      .select('*')
-      .eq('aktif', true)
-      .order('id', { ascending: false });
+    const { data } = await supabase.from('reklamlar').select('*').eq('aktif', true).order('id', { ascending: false });
     if (data) setReklamlar(data);
   };
 
   const duyuruYukle = async () => {
-    const { data } = await supabase
-      .from('duyurular')
-      .select('*')
-      .eq('aktif', true)
-      .limit(1)
-      .single();
+    const { data } = await supabase.from('duyurular').select('*').eq('aktif', true).limit(1).single();
     if (data) {
       const kapatildi = sessionStorage.getItem('duyuru_kapatildi_' + data.id);
       if (kapatildi) return;
@@ -127,11 +129,11 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
 
   useEffect(() => {
     if (!popupAcik || !duyuru) return;
-    const goruntuleSure = (duyuru.goster_sure || 8) * 1000;
+    const sure = (duyuru.goster_sure || 8) * 1000;
     const timer = setTimeout(() => {
       setPopupAcik(false);
       sessionStorage.setItem('duyuru_kapatildi_' + duyuru.id, '1');
-    }, goruntuleSure);
+    }, sure);
     setOtomatikKapatTimer(timer);
     return () => clearTimeout(timer);
   }, [popupAcik, duyuru]);
@@ -146,12 +148,21 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
 
   const handleFilter = () => {
     setAktifKategoriler(selectedKategoriler);
+    setAktifSehir(selectedSehir);
+    setAktifIlce(selectedIlce);
+    setAktifYaka(selectedYaka);
     setFiltreAcik(false);
   };
 
   const handleClear = () => {
     setSelectedKategoriler([]);
     setAktifKategoriler([]);
+    setSelectedSehir('');
+    setAktifSehir('');
+    setSelectedIlce('');
+    setAktifIlce('');
+    setSelectedYaka('');
+    setAktifYaka('');
     setSiralama('yeni');
     setFiltreAcik(false);
   };
@@ -163,14 +174,54 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   };
 
   const filtrelenmisIlanlar = ilanlar
-    .filter((ilan) =>
-      aktifKategoriler.length === 0 || aktifKategoriler.includes(ilan.kategori)
-    )
+    .filter((ilan) => {
+      if (aktifKategoriler.length > 0 && !aktifKategoriler.includes(ilan.kategori)) return false;
+      if (aktifSehir) {
+        const sehirVar = ilan.guzergahlar.some((g) => g.kalkis_il === aktifSehir);
+        if (!sehirVar) return false;
+      }
+      if (aktifIlce) {
+        const ilceVar = ilan.guzergahlar.some((g) => g.kalkis_ilce === aktifIlce);
+        if (!ilceVar) return false;
+      }
+      if (aktifYaka && aktifSehir === 'Istanbul') {
+        const yakaVar = ilan.guzergahlar.some((g) =>
+          g.kalkis_il === 'Istanbul' &&
+          g.kalkis_ilce &&
+          ilceYakasi(g.kalkis_ilce) === aktifYaka
+        );
+        if (!yakaVar) return false;
+      }
+      return true;
+    })
     .sort((a, b) =>
       siralama === 'yeni'
         ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
+
+  const aktifEtiketler = [
+    ...aktifKategoriler.map((k) => ({ tip: 'kategori' as const, deger: k, label: kategoriLabel[k] })),
+    ...(aktifYaka ? [{ tip: 'yaka' as const, deger: aktifYaka, label: aktifYaka === 'anadolu' ? 'Anadolu Yakasi' : 'Avrupa Yakasi' }] : []),
+    ...(aktifIlce ? [{ tip: 'ilce' as const, deger: aktifIlce, label: aktifIlce }] : []),
+    ...(aktifSehir && !aktifIlce && !aktifYaka ? [{ tip: 'sehir' as const, deger: aktifSehir, label: aktifSehir }] : []),
+  ];
+
+  const sidebarProps = {
+    selectedKategoriler,
+    onKategoriChange: setSelectedKategoriler,
+    onFilter: handleFilter,
+    onClear: handleClear,
+    siralama,
+    onSiralamaChange: setSiralama,
+    ilanlar,
+    selectedSehir,
+    onSehirChange: setSelectedSehir,
+    selectedIlce,
+    onIlceChange: setSelectedIlce,
+    selectedYaka,
+    onYakaChange: setSelectedYaka,
+  };
 
   return (
     <div className="bg-gray-100 min-h-screen">
@@ -184,13 +235,13 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
           >
             <SlidersHorizontal size={15} />
             Filtrele
-            {aktifKategoriler.length > 0 && (
+            {aktifEtiketler.length > 0 && (
               <span className="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
-                {aktifKategoriler.length}
+                {aktifEtiketler.length}
               </span>
             )}
           </button>
-          {aktifKategoriler.length > 0 && (
+          {aktifEtiketler.length > 0 && (
             <button
               onClick={handleClear}
               className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 px-2 py-1 rounded-lg transition"
@@ -202,34 +253,29 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
 
         <div className="flex flex-col lg:flex-row gap-4">
 
-          {/* MASAÜSTÜ SIDEBAR */}
           <div className="hidden lg:block w-52 flex-shrink-0">
-  <Sidebar
-    selectedKategoriler={selectedKategoriler}
-    onKategoriChange={setSelectedKategoriler}
-    onFilter={handleFilter}
-    onClear={handleClear}
-    siralama={siralama}
-    onSiralamaChange={setSiralama}
-    ilanlar={ilanlar}
-  />
-</div>
+            <Sidebar {...sidebarProps} />
+          </div>
 
-          {/* SAĞ İÇERİK */}
           <div className="flex-1 min-w-0">
 
-            {/* AKTİF FİLTRE ETİKETLERİ */}
-            {aktifKategoriler.length > 0 && (
+            {/* AKTİF ETİKETLER */}
+            {aktifEtiketler.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap mb-2">
                 <span className="text-xs text-gray-500">Filtreler:</span>
-                {aktifKategoriler.map((k) => (
+                {aktifEtiketler.map((etiket) => (
                   <div
-                    key={k}
+                    key={etiket.tip + etiket.deger}
                     className="flex items-center gap-1 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-medium px-2.5 py-1 rounded-full"
                   >
-                    {kategoriLabel[k]}
+                    {etiket.label}
                     <button
-                      onClick={() => handleKategoriKaldir(k)}
+                      onClick={() => {
+                        if (etiket.tip === 'kategori') handleKategoriKaldir(etiket.deger as KategoriType);
+                        if (etiket.tip === 'sehir') { setAktifSehir(''); setSelectedSehir(''); setAktifIlce(''); setSelectedIlce(''); setAktifYaka(''); setSelectedYaka(''); }
+                        if (etiket.tip === 'ilce') { setAktifIlce(''); setSelectedIlce(''); }
+                        if (etiket.tip === 'yaka') { setAktifYaka(''); setSelectedYaka(''); setAktifIlce(''); setSelectedIlce(''); }
+                      }}
                       className="text-orange-500 hover:text-orange-700 ml-0.5 font-bold leading-none"
                     >
                       x
@@ -245,17 +291,14 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
               </div>
             )}
 
-            {/* SIRALAMA BARI - sahibinden stili */}
+            {/* SIRALAMA BARI */}
             <div className="bg-white border border-gray-200 rounded-lg mb-3 flex items-center overflow-hidden">
               <div className="px-4 py-2.5 border-r border-gray-100 flex-shrink-0">
                 <span className="text-xs text-gray-500">
-                  <span className="text-gray-900 font-bold text-sm">
-                    {filtrelenmisIlanlar.length}
-                  </span>{' '}
+                  <span className="text-gray-900 font-bold text-sm">{filtrelenmisIlanlar.length}</span>{' '}
                   ilan bulundu
                 </span>
               </div>
-
               <div className="flex items-center flex-1">
                 {[
                   { val: 'yeni', label: 'Once En Yeni' },
@@ -281,10 +324,7 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
             {yukleniyor ? (
               <div className="flex flex-col gap-2">
                 {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse"
-                  >
+                  <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
                     <div className="h-3 bg-gray-200 rounded w-1/4 mb-3"></div>
                     <div className="h-3 bg-gray-200 rounded w-3/4 mb-2"></div>
                     <div className="h-3 bg-gray-200 rounded w-1/2"></div>
@@ -292,11 +332,7 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
                 ))}
               </div>
             ) : filtrelenmisIlanlar.length > 0 ? (
-              <IlanListesi
-                ilanlar={filtrelenmisIlanlar}
-                reklamlar={reklamlar}
-                onDetay={onIlanDetay}
-              />
+              <IlanListesi ilanlar={filtrelenmisIlanlar} reklamlar={reklamlar} onDetay={onIlanDetay} />
             ) : (
               <div className="text-center py-20 text-gray-400">
                 <div className="text-5xl mb-4">🚌</div>
@@ -308,30 +344,19 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
         </div>
       </div>
 
-      {/* MOBİL FİLTRE DRAWER */}
+      {/* MOBİL DRAWER */}
       {filtreAcik && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col">
           <div className="flex-1 bg-black/50" onClick={() => setFiltreAcik(false)} />
           <div className="bg-white rounded-t-2xl shadow-xl max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
               <p className="font-semibold text-gray-800">Filtrele</p>
-              <button
-                onClick={() => setFiltreAcik(false)}
-                className="p-1.5 text-gray-400 hover:text-gray-600"
-              >
+              <button onClick={() => setFiltreAcik(false)} className="p-1.5 text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
             <div className="px-4 py-4">
-              <Sidebar
-  selectedKategoriler={selectedKategoriler}
-  onKategoriChange={setSelectedKategoriler}
-  onFilter={handleFilter}
-  onClear={handleClear}
-  siralama={siralama}
-  onSiralamaChange={setSiralama}
-  ilanlar={ilanlar}
-/>
+              <Sidebar {...sidebarProps} />
             </div>
           </div>
         </div>
@@ -356,38 +381,20 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
             </button>
             {duyuru.resim_url ? (
               <>
-                <img
-                  src={duyuru.resim_url}
-                  alt={duyuru.baslik || 'Duyuru'}
-                  className="w-full h-48 sm:h-56 object-cover"
-                />
+                <img src={duyuru.resim_url} alt={duyuru.baslik || 'Duyuru'} className="w-full h-48 sm:h-56 object-cover" />
                 <div className="p-4 sm:p-5">
-                  {duyuru.baslik && (
-                    <h2 className="text-base font-bold text-gray-800 mb-1.5">{duyuru.baslik}</h2>
-                  )}
-                  {duyuru.mesaj && (
-                    <p className="text-sm text-gray-500 leading-relaxed">{duyuru.mesaj}</p>
-                  )}
-                  <button
-                    onClick={() => popupKapat(true)}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition mt-4"
-                  >
+                  {duyuru.baslik && <h2 className="text-base font-bold text-gray-800 mb-1.5">{duyuru.baslik}</h2>}
+                  {duyuru.mesaj && <p className="text-sm text-gray-500 leading-relaxed">{duyuru.mesaj}</p>}
+                  <button onClick={() => popupKapat(true)} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition mt-4">
                     Kapat
                   </button>
                 </div>
               </>
             ) : (
               <div className="p-5 sm:p-6">
-                {duyuru.baslik && (
-                  <h2 className="text-base font-bold text-gray-800 mb-2 pr-8">{duyuru.baslik}</h2>
-                )}
-                {duyuru.mesaj && (
-                  <p className="text-sm text-gray-500 leading-relaxed">{duyuru.mesaj}</p>
-                )}
-                <button
-                  onClick={() => popupKapat(true)}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition mt-4"
-                >
+                {duyuru.baslik && <h2 className="text-base font-bold text-gray-800 mb-2 pr-8">{duyuru.baslik}</h2>}
+                {duyuru.mesaj && <p className="text-sm text-gray-500 leading-relaxed">{duyuru.mesaj}</p>}
+                <button onClick={() => popupKapat(true)} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition mt-4">
                   Kapat
                 </button>
               </div>
@@ -399,13 +406,10 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   );
 }
 
-type OtomatikKapatCubuguProps = {
-  sure: number;
-};
+type OtomatikKapatCubuguProps = { sure: number };
 
 function OtomatikKapatCubugu({ sure }: OtomatikKapatCubuguProps) {
   const [kalan, setKalan] = React.useState(sure);
-
   React.useEffect(() => {
     setKalan(sure);
     const interval = setInterval(() => {
@@ -416,15 +420,10 @@ function OtomatikKapatCubugu({ sure }: OtomatikKapatCubuguProps) {
     }, 100);
     return () => clearInterval(interval);
   }, [sure]);
-
   const yuzde = Math.round((kalan / sure) * 100);
-
   return (
     <div className="absolute top-0 left-0 right-0 h-1 bg-black/10 z-20">
-      <div
-        className="h-full bg-orange-500"
-        style={{ width: yuzde + '%', transition: 'width 0.1s linear' }}
-      />
+      <div className="h-full bg-orange-500" style={{ width: yuzde + '%', transition: 'width 0.1s linear' }} />
     </div>
   );
 }
