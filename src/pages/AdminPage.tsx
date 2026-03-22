@@ -92,6 +92,8 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
   const [reklamYukleniyor, setReklamYukleniyor] = useState(false);
   const [surukleAktif, setSurukleAktif]   = useState(false);
   const [yeniDuyuru, setYeniDuyuru]       = useState({ baslik: '', mesaj: '', resim_url: '', saniye: 2 });
+  const [duyuruYukleniyor, setDuyuruYukleniyor] = useState(false);
+  const [duyuruSurukle, setDuyuruSurukle]       = useState(false);
   const [seciliDestek, setSeciliDestek]   = useState<any>(null);
   const [destekCevap, setDestekCevap]     = useState('');
 
@@ -207,7 +209,18 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
     setReklamYukleniyor(false);
   };
 
-  // ─── PERSONEL ───────────────────────────────────────────────────────────────
+  const duyuruResimYukle = async (dosya: File) => {
+    if (!dosya.type.startsWith('image/')) { alert('Sadece resim dosyası yükleyebilirsiniz'); return; }
+    setDuyuruYukleniyor(true);
+    const ad = 'duyuru-' + Date.now() + '-' + dosya.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const { error } = await supabase.storage.from('reklamlar').upload(ad, dosya, { contentType: dosya.type });
+    if (error) { alert('Yüklerken hata: ' + error.message); setDuyuruYukleniyor(false); return; }
+    const { data: u } = supabase.storage.from('reklamlar').getPublicUrl(ad);
+    setYeniDuyuru(p => ({ ...p, resim_url: u.publicUrl }));
+    setDuyuruYukleniyor(false);
+  };
+
+  // ─── PERSONEL ────────────────────
 
   const personelKaydet = async () => {
     if (!personelForm.full_name || !personelForm.phone_number) { alert('Ad soyad ve telefon zorunludur.'); return; }
@@ -611,20 +624,41 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2 flex flex-col gap-3">
                 {duyurular.map(d => (
-                  <div key={d.id} className="bg-white rounded-xl border border-slate-200 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-700 text-sm">{d.baslik}</p>
-                        <p className="text-xs text-slate-500 mt-1">{d.mesaj}</p>
-                        <p className="text-xs text-slate-400 mt-1">{d.saniye} sn. sonra göster</p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <button onClick={async () => { await supabase.from('duyurular').update({ aktif: !d.aktif }).eq('id', d.id); hepsiniYukle(); }}
-                          className={'text-xs font-semibold px-3 py-1.5 rounded-lg border transition whitespace-nowrap ' + (d.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}>
+                  <div key={d.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    {/* Resim varsa göster */}
+                    {d.resim_url && (
+                      <div className="relative">
+                        <img src={d.resim_url} alt={d.baslik} className="w-full h-36 object-cover" />
+                        <span className={`absolute top-2 left-2 text-xs font-semibold px-2 py-0.5 rounded-full ${d.aktif ? 'bg-green-500 text-white' : 'bg-slate-500 text-white'}`}>
                           {d.aktif ? 'Aktif' : 'Pasif'}
-                        </button>
-                        <button onClick={async () => { await supabase.from('duyurular').delete().eq('id', d.id); hepsiniYukle(); }} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={15} /></button>
+                        </span>
                       </div>
+                    )}
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-slate-700 text-sm">{d.baslik}</p>
+                          <p className="text-xs text-slate-500 mt-1">{d.mesaj}</p>
+                          <p className="text-xs text-slate-400 mt-1">{d.saniye} sn. sonra göster</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {!d.resim_url && (
+                            <button onClick={async () => { await supabase.from('duyurular').update({ aktif: !d.aktif }).eq('id', d.id); hepsiniYukle(); }}
+                              className={'text-xs font-semibold px-3 py-1.5 rounded-lg border transition whitespace-nowrap ' + (d.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}>
+                              {d.aktif ? 'Aktif' : 'Pasif'}
+                            </button>
+                          )}
+                          <button onClick={async () => { await supabase.from('duyurular').delete().eq('id', d.id); hepsiniYukle(); }} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={15} /></button>
+                        </div>
+                      </div>
+                      {d.resim_url && (
+                        <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
+                          <button onClick={async () => { await supabase.from('duyurular').update({ aktif: !d.aktif }).eq('id', d.id); hepsiniYukle(); }}
+                            className={'flex-1 text-xs font-semibold py-1.5 rounded-lg border transition ' + (d.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}>
+                            {d.aktif ? 'Aktif' : 'Pasif'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -632,14 +666,65 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-4">
                 <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5"><PlusCircle size={15} className="text-orange-500" />Yeni Duyuru</p>
+
                 <input className={ic + ' mb-2'} placeholder="Başlık" value={yeniDuyuru.baslik} onChange={e => setYeniDuyuru({ ...yeniDuyuru, baslik: e.target.value })} />
-                <textarea className={ic + ' mb-2 resize-none'} placeholder="Mesaj" rows={3} value={yeniDuyuru.mesaj} onChange={e => setYeniDuyuru({ ...yeniDuyuru, mesaj: e.target.value })} />
-                <input className={ic + ' mb-2'} placeholder="Resim URL (opsiyonel)" value={yeniDuyuru.resim_url} onChange={e => setYeniDuyuru({ ...yeniDuyuru, resim_url: e.target.value })} />
+                <textarea className={ic + ' mb-3 resize-none'} placeholder="Mesaj" rows={3} value={yeniDuyuru.mesaj} onChange={e => setYeniDuyuru({ ...yeniDuyuru, mesaj: e.target.value })} />
+
+                {/* Resim yükleme */}
+                <p className="text-xs font-medium text-slate-500 mb-1.5">Resim <span className="text-slate-400 font-normal">(opsiyonel)</span></p>
+                {yeniDuyuru.resim_url ? (
+                  <div className="mb-3 relative rounded-xl overflow-hidden border border-slate-200">
+                    <img src={yeniDuyuru.resim_url} className="w-full h-32 object-cover" alt="Önizleme" />
+                    <button
+                      onClick={() => setYeniDuyuru({ ...yeniDuyuru, resim_url: '' })}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold shadow-md hover:bg-red-600 transition"
+                    >×</button>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-3 py-2">
+                      <p className="text-white text-xs font-medium">✓ Resim yüklendi</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onDragOver={e => { e.preventDefault(); setDuyuruSurukle(true); }}
+                    onDragLeave={() => setDuyuruSurukle(false)}
+                    onDrop={e => { e.preventDefault(); setDuyuruSurukle(false); const f = e.dataTransfer.files[0]; if (f) duyuruResimYukle(f); }}
+                    onClick={() => document.getElementById('duyuru-resim-input')?.click()}
+                    className={'mb-3 border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition ' +
+                      (duyuruSurukle ? 'border-orange-400 bg-orange-50' : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50')}
+                  >
+                    {duyuruYukleniyor ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-xs text-slate-400">Yükleniyor...</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1.5">
+                        <Image size={22} className="text-slate-300" />
+                        <p className="text-sm text-slate-500 font-medium">Sürükle bırak veya tıkla</p>
+                        <p className="text-xs text-slate-400">PNG, JPG, GIF · Maks 5MB</p>
+                      </div>
+                    )}
+                    <input id="duyuru-resim-input" type="file" accept="image/*" className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) duyuruResimYukle(f); e.target.value = ''; }} />
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 mb-3">
                   <label className="text-xs text-slate-500 flex-shrink-0">Gecikme (sn):</label>
                   <input className={ic} type="number" min={0} max={30} value={yeniDuyuru.saniye} onChange={e => setYeniDuyuru({ ...yeniDuyuru, saniye: Number(e.target.value) })} />
                 </div>
-                <button onClick={async () => { if (!yeniDuyuru.baslik || !yeniDuyuru.mesaj) return; await supabase.from('duyurular').insert([{ ...yeniDuyuru, aktif: true }]); setYeniDuyuru({ baslik: '', mesaj: '', resim_url: '', saniye: 2 }); hepsiniYukle(); }} className={btnO + ' w-full'}>Duyuru Ekle</button>
+                <button
+                  onClick={async () => {
+                    if (!yeniDuyuru.baslik || !yeniDuyuru.mesaj) return;
+                    await supabase.from('duyurular').insert([{ ...yeniDuyuru, aktif: true }]);
+                    setYeniDuyuru({ baslik: '', mesaj: '', resim_url: '', saniye: 2 });
+                    hepsiniYukle();
+                  }}
+                  disabled={duyuruYukleniyor || !yeniDuyuru.baslik || !yeniDuyuru.mesaj}
+                  className={btnO + ' w-full disabled:opacity-50 disabled:cursor-not-allowed'}
+                >
+                  Duyuru Ekle
+                </button>
               </div>
             </div>
             )
