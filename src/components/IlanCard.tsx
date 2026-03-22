@@ -23,7 +23,7 @@ const badges: Record<KategoriType, BadgeInfo> = {
   },
   sofor_ariyorum: {
     label: 'SOFOR ARIYORUM',
-    color: 'bg-orange-100 text-orange-800',
+    color: 'bg-orange-100 text-orange-900',
   },
   hostes_ariyorum: {
     label: 'HOSTES ARIYORUM',
@@ -47,40 +47,50 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
   const badge = badges[ilan.kategori];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition p-4">
-      <div className="mb-3">
+    <div className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all overflow-hidden">
+      <div className="px-4 pt-4 pb-2">
         <span
           className={
-            badge.color + ' text-xs font-bold px-3 py-1 rounded-full uppercase'
+            badge.color +
+            ' text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide'
           }
         >
           {badge.label}
         </span>
       </div>
-      <p className="text-sm text-gray-600 mb-3">{ilan.aciklama}</p>
-      <div className="overflow-x-auto mb-3">
-        <table className="w-full text-xs border border-gray-200">
+
+      {ilan.aciklama && (
+        <p className="text-sm text-slate-500 px-4 pb-3 leading-relaxed line-clamp-2">
+          {ilan.aciklama}
+        </p>
+      )}
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
           <thead>
-            <tr className="bg-[#1a3c6e] text-white">
-              <th className="px-2 py-1 text-left">Giris</th>
-              <th className="px-2 py-1 text-left">Nereden</th>
-              <th className="px-2 py-1 text-left">Nereye</th>
-              <th className="px-2 py-1 text-left">Cikis</th>
+            <tr className="bg-slate-800 text-white">
+              <th className="px-3 py-2 text-left font-medium">Giris</th>
+              <th className="px-3 py-2 text-left font-medium">Nereden</th>
+              <th className="px-3 py-2 text-left font-medium">Nereye</th>
+              <th className="px-3 py-2 text-left font-medium">Cikis</th>
             </tr>
           </thead>
           <tbody>
             {ilan.guzergahlar.map((g, i) => (
-              <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="px-2 py-1 text-[#1a3c6e] font-medium">
+              <tr
+                key={i}
+                className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}
+              >
+                <td className="px-3 py-2 text-orange-600 font-bold">
                   {g.giris_saati}
                 </td>
-                <td className="px-2 py-1">
+                <td className="px-3 py-2 text-slate-600">
                   {g.kalkis_mah} {g.kalkis_ilce}
                 </td>
-                <td className="px-2 py-1">
+                <td className="px-3 py-2 text-slate-600">
                   {g.varis_mah} {g.varis_ilce}
                 </td>
-                <td className="px-2 py-1 text-[#1a3c6e] font-medium">
+                <td className="px-3 py-2 text-orange-600 font-bold">
                   {g.cikis_saati}
                 </td>
               </tr>
@@ -88,24 +98,27 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
           </tbody>
         </table>
       </div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 text-xs text-gray-500">
+
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-t border-slate-100">
+        <div className="flex items-center gap-3 text-xs text-slate-400">
           <span className="flex items-center gap-1">
-            <Calendar size={12} />
-            {ilan.created_at}
+            <Calendar size={11} />
+            {new Date(ilan.created_at).toLocaleDateString('tr-TR')}
           </span>
           <span className="flex items-center gap-1">
-            <User size={12} />
+            <User size={11} />
             {ilan.ilan_veren}
           </span>
-          <span className="flex items-center gap-1">
-            <Bus size={12} />
-            {ilan.servis_turu.join(', ')}
-          </span>
+          {ilan.servis_turu?.length > 0 && (
+            <span className="flex items-center gap-1">
+              <Bus size={11} />
+              {ilan.servis_turu.join(', ')}
+            </span>
+          )}
         </div>
         <button
           onClick={() => onDetay(ilan)}
-          className="text-xs font-medium text-[#f97316] hover:text-orange-600 transition"
+          className="text-xs font-semibold text-orange-600 bg-orange-50 hover:bg-orange-100 border border-orange-200 px-3 py-1.5 rounded-lg transition"
         >
           Ilan Detayi
         </button>
