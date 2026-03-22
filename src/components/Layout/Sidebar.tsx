@@ -1,5 +1,5 @@
 import React from 'react';
-import { KategoriType } from '../../types';
+import { KategoriType, Ilan } from '../../types';
 
 type SidebarProps = {
   selectedKategoriler: KategoriType[];
@@ -8,16 +8,17 @@ type SidebarProps = {
   onClear: () => void;
   siralama: string;
   onSiralamaChange: (value: string) => void;
+  ilanlar: Ilan[];
 };
 
 const tumKategoriler = [
-  { kategori: 'isim_var_arac' as KategoriType, label: 'Isim Var Arac Ariyorum', sayi: 84 },
-  { kategori: 'aracim_var_is' as KategoriType, label: 'Aracim Var Is Ariyorum', sayi: 41 },
-  { kategori: 'sofor_ariyorum' as KategoriType, label: 'Sofor Ariyorum', sayi: 22 },
-  { kategori: 'hostes_ariyorum' as KategoriType, label: 'Hostes Ariyorum', sayi: 8 },
-  { kategori: 'hostesim_is' as KategoriType, label: 'Hostesim Is Ariyorum', sayi: 5 },
-  { kategori: 'soforum_is' as KategoriType, label: 'Soforum Is Ariyorum', sayi: 12 },
-  { kategori: 'plaka_satiyorum' as KategoriType, label: 'Plakam Satiyorum', sayi: 3 },
+  { kategori: 'isim_var_arac' as KategoriType, label: 'Isim Var Arac Ariyorum' },
+  { kategori: 'aracim_var_is' as KategoriType, label: 'Aracim Var Is Ariyorum' },
+  { kategori: 'sofor_ariyorum' as KategoriType, label: 'Sofor Ariyorum' },
+  { kategori: 'hostes_ariyorum' as KategoriType, label: 'Hostes Ariyorum' },
+  { kategori: 'hostesim_is' as KategoriType, label: 'Hostesim Is Ariyorum' },
+  { kategori: 'soforum_is' as KategoriType, label: 'Soforum Is Ariyorum' },
+  { kategori: 'plaka_satiyorum' as KategoriType, label: 'Plakam Satiyorum' },
 ];
 
 export default function Sidebar({
@@ -27,6 +28,7 @@ export default function Sidebar({
   onClear,
   siralama,
   onSiralamaChange,
+  ilanlar,
 }: SidebarProps) {
   const handleCheckbox = (kategori: KategoriType) => {
     if (selectedKategoriler.includes(kategori)) {
@@ -36,10 +38,8 @@ export default function Sidebar({
     }
   };
 
-  const handleHizliTik = (kategori: KategoriType) => {
-    onKategoriChange([kategori]);
-    onFilter();
-  };
+  const kategoriSayisi = (kategori: KategoriType) =>
+    ilanlar.filter((i) => i.kategori === kategori).length;
 
   return (
     <aside className="w-full flex flex-col gap-3">
@@ -58,30 +58,33 @@ export default function Sidebar({
           )}
         </div>
         <div className="py-1">
-          {tumKategoriler.map((item) => (
-            <label
-              key={item.kategori}
-              className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-50 transition group"
-            >
-              <div className="flex items-center gap-2.5">
-                <input
-                  type="checkbox"
-                  checked={selectedKategoriler.includes(item.kategori)}
-                  onChange={() => handleCheckbox(item.kategori)}
-                  className="accent-orange-500 w-3.5 h-3.5"
-                />
-                <span className={
-                  'text-xs transition ' +
-                  (selectedKategoriler.includes(item.kategori)
-                    ? 'text-orange-600 font-semibold'
-                    : 'text-gray-600 group-hover:text-gray-800')
-                }>
-                  {item.label}
-                </span>
-              </div>
-              <span className="text-xs text-gray-400">{item.sayi}</span>
-            </label>
-          ))}
+          {tumKategoriler.map((item) => {
+            const sayi = kategoriSayisi(item.kategori);
+            return (
+              <label
+                key={item.kategori}
+                className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-50 transition group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={selectedKategoriler.includes(item.kategori)}
+                    onChange={() => handleCheckbox(item.kategori)}
+                    className="accent-orange-500 w-3.5 h-3.5"
+                  />
+                  <span className={
+                    'text-xs transition ' +
+                    (selectedKategoriler.includes(item.kategori)
+                      ? 'text-orange-600 font-semibold'
+                      : 'text-gray-600 group-hover:text-gray-800')
+                  }>
+                    {item.label}
+                  </span>
+                </div>
+                <span className="text-xs text-gray-400">{sayi}</span>
+              </label>
+            );
+          })}
         </div>
       </div>
 
@@ -108,7 +111,9 @@ export default function Sidebar({
               />
               <span className={
                 'text-xs transition ' +
-                (siralama === item.val ? 'text-orange-600 font-semibold' : 'text-gray-600')
+                (siralama === item.val
+                  ? 'text-orange-600 font-semibold'
+                  : 'text-gray-600')
               }>
                 {item.label}
               </span>
@@ -117,30 +122,7 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* HIZLI ARAMA BUTONLARI */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100">
-          <span className="text-sm font-semibold text-gray-800">Hizli Filtre</span>
-        </div>
-        <div className="p-3 flex flex-col gap-1.5">
-          {tumKategoriler.map((item) => (
-            <button
-              key={item.kategori}
-              onClick={() => handleHizliTik(item.kategori)}
-              className={
-                'w-full text-left text-xs px-3 py-2 rounded-md transition font-medium ' +
-                (selectedKategoriler.length === 1 && selectedKategoriler[0] === item.kategori
-                  ? 'bg-orange-500 text-white'
-                  : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600')
-              }
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* FİLTRELE BUTONU */}
+      {/* BUTONLAR */}
       <button
         onClick={onFilter}
         className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg font-semibold text-sm transition"
