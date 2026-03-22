@@ -204,15 +204,16 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
 
           {/* MASAÜSTÜ SIDEBAR */}
           <div className="hidden lg:block w-52 flex-shrink-0">
-            <Sidebar
-              selectedKategoriler={selectedKategoriler}
-              onKategoriChange={setSelectedKategoriler}
-              onFilter={handleFilter}
-              onClear={handleClear}
-              siralama={siralama}
-              onSiralamaChange={setSiralama}
-            />
-          </div>
+  <Sidebar
+    selectedKategoriler={selectedKategoriler}
+    onKategoriChange={setSelectedKategoriler}
+    onFilter={handleFilter}
+    onClear={handleClear}
+    siralama={siralama}
+    onSiralamaChange={setSiralama}
+    ilanlar={ilanlar}
+  />
+</div>
 
           {/* SAĞ İÇERİK */}
           <div className="flex-1 min-w-0">
@@ -323,13 +324,14 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
             </div>
             <div className="px-4 py-4">
               <Sidebar
-                selectedKategoriler={selectedKategoriler}
-                onKategoriChange={setSelectedKategoriler}
-                onFilter={handleFilter}
-                onClear={handleClear}
-                siralama={siralama}
-                onSiralamaChange={setSiralama}
-              />
+  selectedKategoriler={selectedKategoriler}
+  onKategoriChange={setSelectedKategoriler}
+  onFilter={handleFilter}
+  onClear={handleClear}
+  siralama={siralama}
+  onSiralamaChange={setSiralama}
+  ilanlar={ilanlar}
+/>
             </div>
           </div>
         </div>
