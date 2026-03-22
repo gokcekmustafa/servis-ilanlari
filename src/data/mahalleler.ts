@@ -151,13 +151,13 @@ export const mahalleler: Record<string, string[]> = {
 
   Esenyurt: [
     'Akçaburgaz', 'Ardıçlı', 'Arıklar', 'Atatürk',
-    'Bahçeşehir', 'Balaban', 'Barış', 'Birlik',
+    'Bahçeşehir', 'Balaban', 'Barbaros Hayrettin Paşa', 'Barış', 'Birlik',
     'Bülbüldere', 'Cumhuriyet', 'Çakmaklı', 'Çilek',
     'Fatih', 'Güzelyurt', 'Haramidere', 'Kapadokya',
     'Kaptanpaşa', 'Karaburgaztepe', 'Kınalı', 'Kıraç',
     'Marmara', 'Merkez', 'Meşrutiyet', 'Mimaroba',
     'Müştemilat', 'Nişantepe', 'Orhantepe', 'Pınar',
-    'Pınarca', 'Saadet', 'Selimpaşa', 'Seyrantepe',
+    'Pınarca', 'Saadetdere', 'Selimpaşa', 'Seyrantepe',
     'Sultanmurat', 'Şehit Kubilaytepe', 'Talatpaşa',
     'Turgut Özal', 'Ulus', 'Üçevler', 'Yeşildere',
     'Yeşilkent', 'Yıldız', 'Yirmiüçnisan', 'Zafer',
