@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 export async function ilanlariGetir(kategori?: string) {
   let query = supabase
     .from('ilanlar')
-    .select('*')
+    .select('*, profiles(full_name, phone_number)')
     .eq('durum', 'aktif')
     .order('created_at', { ascending: false });
 
@@ -22,6 +22,7 @@ export async function ilanEkle(ilan: {
   ilan_veren: string;
   guzergahlar: any[];
   user_id: string;
+  ekbilgiler?: any;
 }) {
   const { data, error } = await supabase
     .from('ilanlar')
@@ -41,7 +42,7 @@ export async function ilanSil(id: string) {
 export async function kullaniciIlanlari(userId: string) {
   const { data, error } = await supabase
     .from('ilanlar')
-    .select('*')
+    .select('*, profiles(full_name, phone_number)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   return { data, error };
