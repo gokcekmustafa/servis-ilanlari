@@ -3,6 +3,7 @@ import { Calendar, User, Bus, ArrowLeft, Heart, MessageSquare, MapPin, Clock } f
 import { Ilan, KategoriType } from '../types';
 import { favoriEkle, favoriKaldir, favoriKontrol, mesajGonder } from '../lib/ilanlar';
 import { mevcutKullanici } from '../lib/auth';
+import { supabase } from '../lib/supabase'; // Supabase import
 
 type IlanDetayPageProps = {
   ilan: Ilan;
@@ -29,8 +30,8 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn }:
   const [mesajGonderildi, setMesajGonderildi] = useState(false);
   const [mesajFormuAcik, setMesajFormuAcik] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(false);
-  // Mobilde iletişim paneli için bottom sheet
   const [iletisimAcik, setIletisimAcik] = useState(false);
+  const [viewCount, setViewCount] = useState<number>(ilan.view_count || 0); // Yeni state
 
   useEffect(() => {
     if (isLoggedIn && user) {
@@ -42,6 +43,20 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn }:
     document.body.style.overflow = iletisimAcik ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [iletisimAcik]);
+
+  // **View count artışı**
+  useEffect(() => {
+    async function incrementView() {
+      const { error, data } = await supabase
+        .from('ilanlar')
+        .update({ view_count: supabase.raw('view_count + 1') })
+        .eq('id', ilan.id)
+        .select()
+        .single();
+      if (!error && data) setViewCount(data.view_count); // state güncelle
+    }
+    incrementView();
+  }, [ilan.id]);
 
   const handleFavori = async () => {
     if (!isLoggedIn) { onGoLogin(); return; }
@@ -57,7 +72,6 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn }:
     if (!error) { setMesajGonderildi(true); setMesajMetni(''); setMesajFormuAcik(false); setIletisimAcik(false); }
   };
 
-  // İletişim içeriği (hem sidebar hem bottom sheet'te kullanılır)
   const IletisimIcerik = () => (
     <>
       {!isLoggedIn ? (
@@ -136,7 +150,6 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn }:
                 <span className={badge.color + ' text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide'}>
                   {badge.label}
                 </span>
-                {/* Masaüstünde favori butonu burada */}
                 <button onClick={handleFavori}
                   className={'hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex-shrink-0 ' +
                     (isFavori ? 'bg-red-50 border-red-200 text-red-500' : 'bg-white border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-400')}>
@@ -147,6 +160,8 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn }:
               {ilan.aciklama && (
                 <p className="text-slate-600 text-sm leading-relaxed">{ilan.aciklama}</p>
               )}
+              {/* Görüntülenme sayısı */}
+              <p className="text-xs text-slate-400 mt-2">Görüntülenme: {viewCount}</p>
             </div>
 
             {/* GÜZERGAH TABLOSU */}
@@ -155,7 +170,6 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn }:
                 <MapPin size={14} className="text-orange-400" />
                 <span className="text-white text-xs font-semibold uppercase tracking-wider">Güzergah Bilgileri</span>
               </div>
-              {/* Mobilde yatay scroll */}
               <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
                 <table className="w-full text-sm min-w-[480px]">
                   <thead>
@@ -196,7 +210,7 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn }:
             {/* İLAN BİLGİLERİ */}
             <div className="bg-white rounded-xl border border-slate-200 p-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                {[
+                {[ 
                   { icon: <Calendar size={15} className="text-slate-500" />, label: 'İlan Tarihi', value: new Date(ilan.created_at).toLocaleDateString('tr-TR') },
                   { icon: <User size={15} className="text-slate-500" />, label: 'İlan Veren', value: ilan.ilan_veren },
                   { icon: <Bus size={15} className="text-slate-500" />, label: 'Servis Türü', value: ilan.servis_turu?.join(', ') || '-' },
@@ -216,7 +230,7 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn }:
 
           </div>
 
-          {/* SAĞ — İLETİŞİM (sadece masaüstü) */}
+          {/* SAĞ — İLETİŞİM (masaüstü) */}
           <div className="hidden lg:block w-72 flex-shrink-0">
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden sticky top-4">
               <div className="bg-slate-800 px-4 py-2.5 flex items-center gap-2">
@@ -246,7 +260,6 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn }:
           {mesajGonderildi ? 'Mesaj Gönderildi ✓' : 'İletişime Geç'}
         </button>
       </div>
-      {/* Alt çubuk için boşluk bırak */}
       <div className="lg:hidden h-20" />
 
       {/* MOBİL İLETİŞİM BOTTOM SHEET */}
