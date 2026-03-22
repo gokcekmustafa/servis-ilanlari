@@ -460,14 +460,9 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
               <div className="flex flex-col gap-5">
 
                 {/* ISIM VAR ARAC */}
-{selectedKategori === 'isim_var_arac' && (
-  <div className="border border-slate-200 rounded-xl p-4 md:p-5">
-    <h3 className="font-semibold text-slate-700 mb-4">Arac Bilgileri</h3>
-
-    {/* ISIM VAR ARAC */}
-{selectedKategori === 'isim_var_arac' && (
-  <div className="border border-slate-200 rounded-xl p-4 md:p-5">
-    <h3 className="font-semibold text-slate-700 mb-4">Arac Bilgileri</h3>
+                {selectedKategori === 'isim_var_arac' && (
+                  <div className="border border-slate-200 rounded-xl p-4 md:p-5">
+                    <h3 className="font-semibold text-slate-700 mb-4">Arac Bilgileri</h3>
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
       <div>
         <label className={lb}>Arac Markasi</label>
