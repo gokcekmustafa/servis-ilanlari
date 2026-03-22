@@ -3,6 +3,7 @@ import Sidebar from '../components/Layout/Sidebar';
 import IlanCard from '../components/IlanCard';
 import { ilanlariGetir } from '../lib/ilanlar';
 import { KategoriType, Ilan } from '../types';
+import { supabase } from '../lib/supabase';
 
 export default function HomePage({
   onGoLogin,
@@ -19,9 +20,30 @@ export default function HomePage({
   const [aktifKategoriler, setAktifKategoriler] = useState<KategoriType[]>([]);
   const [siralama, setSiralama] = useState('yeni');
 
+  // 🔹 YENİ STATE'LER
+  const [reklamlar, setReklamlar] = useState<any[]>([]);
+  const [aktifSlide, setAktifSlide] = useState(0);
+  const [duyuru, setDuyuru] = useState<any>(null);
+  const [popupAcik, setPopupAcik] = useState(false);
+
   useEffect(() => {
     ilanlarıYukle();
+    reklamlarıYukle();
+    duyuruYukle();
   }, []);
+
+  // 🔹 SLIDER AUTO PLAY
+  useEffect(() => {
+    if (reklamlar.length === 0) return;
+
+    const interval = setInterval(() => {
+      setAktifSlide((prev) =>
+        prev === reklamlar.length - 1 ? 0 : prev + 1
+      );
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [reklamlar]);
 
   const ilanlarıYukle = async () => {
     setYukleniyor(true);
@@ -30,6 +52,35 @@ export default function HomePage({
       setIlanlar(data as Ilan[]);
     }
     setYukleniyor(false);
+  };
+
+  // 🔹 REKLAMLAR
+  const reklamlarıYukle = async () => {
+    const { data } = await supabase
+      .from('reklamlar')
+      .select('*')
+      .eq('aktif', true)
+      .order('id', { ascending: false });
+
+    if (data) setReklamlar(data);
+  };
+
+  // 🔹 DUYURU
+  const duyuruYukle = async () => {
+    const { data } = await supabase
+      .from('duyurular')
+      .select('*')
+      .eq('aktif', true)
+      .limit(1)
+      .single();
+
+    if (data) {
+      setDuyuru(data);
+
+      setTimeout(() => {
+        setPopupAcik(true);
+      }, (data.saniye || 2) * 1000);
+    }
   };
 
   const handleFilter = () => {
@@ -60,6 +111,49 @@ export default function HomePage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+
+      {/* 🔥 BANNER SLIDER */}
+      {reklamlar.length > 0 && (
+        <div className="relative mb-6 overflow-hidden rounded-xl shadow-lg">
+          {reklamlar.map((item, index) => (
+            <div
+              key={item.id}
+              className={`transition-all duration-700 ${
+                index === aktifSlide ? 'block' : 'hidden'
+              }`}
+            >
+              <a href={item.link_url || '#'} target="_blank">
+                <img
+                  src={item.resim_url}
+                  className="w-full h-[220px] object-cover"
+                />
+                <div className="absolute inset-0 bg-black/40 flex flex-col justify-center px-8">
+                  <h2 className="text-white text-2xl font-bold">
+                    {item.baslik}
+                  </h2>
+                  <p className="text-gray-200 text-sm mt-1">
+                    {item.alt_baslik}
+                  </p>
+                </div>
+              </a>
+            </div>
+          ))}
+
+          {/* DOTS */}
+          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
+            {reklamlar.map((_, i) => (
+              <div
+                key={i}
+                onClick={() => setAktifSlide(i)}
+                className={`w-2 h-2 rounded-full cursor-pointer ${
+                  i === aktifSlide ? 'bg-white' : 'bg-white/40'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="w-full lg:w-64 flex-shrink-0">
           <Sidebar
@@ -118,6 +212,30 @@ export default function HomePage({
           )}
         </div>
       </div>
+
+      {/* 🔥 POPUP DUYURU */}
+      {popupAcik && duyuru && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 relative">
+            <button
+              onClick={() => setPopupAcik(false)}
+              className="absolute top-2 right-2 text-gray-500"
+            >
+              ✕
+            </button>
+
+            {duyuru.resim_url && (
+              <img
+                src={duyuru.resim_url}
+                className="w-full h-40 object-cover rounded mb-3"
+              />
+            )}
+
+            <h2 className="text-lg font-bold mb-2">{duyuru.baslik}</h2>
+            <p className="text-sm text-gray-600">{duyuru.mesaj}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
