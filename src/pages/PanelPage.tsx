@@ -1,37 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { kullaniciIlanlari, ilanSil, araclarGetir, aracEkle, aracSil, favorileriGetir, favoriKaldir, gelenMesajlar, okunmamisMesajSayisi, mesajOkunduIsaretle, destekGonder } from '../lib/ilanlar';
+import {
+  kullaniciIlanlari, ilanSil, araclarGetir, aracEkle, aracSil,
+  favorileriGetir, favoriKaldir, gelenMesajlar, okunmamisMesajSayisi,
+  mesajOkunduIsaretle, destekGonder
+} from '../lib/ilanlar';
 import { Ilan } from '../types';
 import { ilceler } from '../data/ilceler';
 import { mevcutKullanici } from '../lib/auth';
 import { supabase } from '../lib/supabase';
-import { Eye, Trash2, Plus, Bell, Heart, Car, MessageSquare, HelpCircle, User } from 'lucide-react';
+import {
+  Eye, Trash2, Plus, Heart, Car, MessageSquare,
+  HelpCircle, User, LogOut, Bell
+} from 'lucide-react';
 
-const menuItems = [
-  { id: 'Profilim', icon: User },
-  { id: 'İlanlarım', icon: Eye },
-  { id: 'Araçlarım', icon: Car },
-  { id: 'İlan Mesajları', icon: MessageSquare },
-  { id: 'Favori İlanlarım', icon: Heart },
-  { id: 'Destek', icon: HelpCircle },
-];
+type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'favoriler' | 'destek';
 
-const iller = Object.keys(ilceler).sort();
-
-const aracTipleri = ['Minibus 16+1', 'Midibus 27+1', 'Otobüs 45+1', 'Sedan', 'Van'];
-const markalar = ['Mercedes', 'Ford', 'Volkswagen', 'Renault', 'Peugeot', 'Citroen', 'Iveco', 'Temsa', 'Isuzu'];
-
-export default function PanelPage({
-  onLogout,
-  onIlanEkle,
-  onIlanDetay,
-  userId,
-}: {
+type PanelPageProps = {
   onLogout: () => void;
   onIlanEkle: () => void;
   onIlanDetay: (ilan: Ilan) => void;
   userId: string;
-}) {
-  const [activeMenu, setActiveMenu] = useState('Profilim');
+};
+
+const iller = Object.keys(ilceler).sort();
+const aracTipleri = ['Minibus 16+1', 'Midibus 27+1', 'Otobüs 45+1', 'Sedan', 'Van'];
+const markalar = ['Mercedes', 'Ford', 'Volkswagen', 'Renault', 'Peugeot', 'Citroen', 'Iveco', 'Temsa', 'Isuzu'];
+
+export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }: PanelPageProps) {
+  const [aktifSekme, setAktifSekme] = useState<Sekme>('profil');
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [araclar, setAraclar] = useState<any[]>([]);
   const [favoriler, setFavoriler] = useState<any[]>([]);
@@ -40,12 +36,12 @@ export default function PanelPage({
   const [yukleniyor, setYukleniyor] = useState(false);
   const [basari, setBasari] = useState('');
   const [hata, setHata] = useState('');
+  const [aracFormAcik, setAracFormAcik] = useState(false);
+  const [destekGonderildi, setDestekGonderildi] = useState(false);
+  const [destekForm, setDestekForm] = useState({ konu: '', mesaj: '' });
   const [aracForm, setAracForm] = useState({
     marka: '', model: '', yil: '', plaka: '', koltuk_sayisi: '', arac_tipi: ''
   });
-  const [aracFormAcik, setAracFormAcik] = useState(false);
-  const [destekForm, setDestekForm] = useState({ konu: '', mesaj: '' });
-  const [destekGonderildi, setDestekGonderildi] = useState(false);
 
   const user = mevcutKullanici();
   const [profil, setProfil] = useState({
@@ -64,11 +60,11 @@ export default function PanelPage({
   }, [userId]);
 
   useEffect(() => {
-    if (activeMenu === 'İlanlarım') ilanlariYukle();
-    if (activeMenu === 'Araçlarım') araclarimYukle();
-    if (activeMenu === 'Favori İlanlarım') favorileriYukle();
-    if (activeMenu === 'İlan Mesajları') mesajlariYukle();
-  }, [activeMenu]);
+    if (aktifSekme === 'ilanlar') ilanlariYukle();
+    if (aktifSekme === 'araclar') araclarimYukle();
+    if (aktifSekme === 'favoriler') favorileriYukle();
+    if (aktifSekme === 'mesajlar') mesajlariYukle();
+  }, [aktifSekme]);
 
   const ilanlariYukle = async () => {
     setYukleniyor(true);
@@ -126,7 +122,7 @@ export default function PanelPage({
     if (!error) setAraclar(araclar.filter((a) => a.id !== id));
   };
 
-  const handleFavoriKaldir = async (userId: string, ilanId: string) => {
+  const handleFavoriKaldir = async (ilanId: string) => {
     await favoriKaldir(userId, ilanId);
     setFavoriler(favoriler.filter((f) => f.ilan_id !== ilanId));
   };
@@ -147,8 +143,8 @@ export default function PanelPage({
       ilce: profil.ilce,
     };
     if (profil.yeniSifre) {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(profil.yeniSifre + 'servis-ilanlari-salt');
+      const enc = new TextEncoder();
+      const data = enc.encode(profil.yeniSifre + 'servis-ilanlari-salt');
       const hash = await crypto.subtle.digest('SHA-256', data);
       updates.password_hash = Array.from(new Uint8Array(hash))
         .map(b => b.toString(16).padStart(2, '0'))
@@ -190,450 +186,470 @@ export default function PanelPage({
 
   const ilceleri = profil.il ? (ilceler[profil.il] || []) : [];
 
+  const ic = 'w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
+  const btnO = 'bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition';
+  const btnS = 'bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium px-4 py-2.5 rounded-lg transition';
+
+  const menuItems = [
+    { id: 'profil', label: 'Profilim', icon: User },
+    { id: 'ilanlar', label: 'Ilanlarim', icon: Eye },
+    { id: 'araclar', label: 'Araclarim', icon: Car },
+    { id: 'mesajlar', label: 'Mesajlar', icon: MessageSquare, badge: okunmamisSayi },
+    { id: 'favoriler', label: 'Favorilerim', icon: Heart },
+    { id: 'destek', label: 'Destek', icon: HelpCircle },
+  ];
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      <div className="flex flex-wrap gap-2 mb-6">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveMenu(item.id)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition border relative ${
-              activeMenu === item.id
-                ? 'bg-[#f97316] text-white border-[#f97316]'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
-            }`}
-          >
-            <item.icon size={14} />
-            {item.id}
-            {item.id === 'İlan Mesajları' && okunmamisSayi > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                {okunmamisSayi}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+    <div className="bg-slate-100 min-h-screen">
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        <div className="flex flex-col lg:flex-row gap-5">
 
-      {activeMenu === 'Profilim' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h2 className="font-bold text-gray-800 text-lg mb-6">Profil Bilgileriniz</h2>
-          {basari && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">{basari}</div>}
-          {hata && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">{hata}</div>}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Ad Soyad</label>
-              <input
-                value={profil.ad}
-                onChange={(e) => setProfil({ ...profil, ad: e.target.value })}
-                placeholder="Ad Soyadiniz"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">GSM Numaraniz</label>
-              <input
-                value={profil.telefon}
-                disabled
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-gray-50 text-gray-500"
-              />
-            </div>
-          </div>
-          <div className="mb-4">
-            <label className="text-sm font-medium text-gray-700 mb-1 block">Adres</label>
-            <textarea
-              value={profil.adres}
-              onChange={(e) => setProfil({ ...profil, adres: e.target.value })}
-              placeholder="Adresiniz"
-              rows={3}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">İl</label>
-              <select
-                value={profil.il}
-                onChange={(e) => setProfil({ ...profil, il: e.target.value, ilce: '' })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-              >
-                <option value="">Seciniz</option>
-                {iller.map((il) => <option key={il} value={il}>{il}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">İlçe</label>
-              <select
-                value={profil.ilce}
-                onChange={(e) => setProfil({ ...profil, ilce: e.target.value })}
-                disabled={!profil.il}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-50"
-              >
-                <option value="">Seciniz</option>
-                {ilceleri.map((ilce) => <option key={ilce} value={ilce}>{ilce}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="mb-6">
-            <label className="text-sm font-medium text-gray-700 mb-1 block">Yeni Şifreniz</label>
-            <div className="flex items-center gap-3 flex-wrap">
-              <input
-                type="password"
-                value={profil.yeniSifre}
-                onChange={(e) => setProfil({ ...profil, yeniSifre: e.target.value })}
-                placeholder="Yeni sifre"
-                className="w-64 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-              />
-              <span className="text-xs text-red-500">Degistirmek istemiyorsaniz bos bırakin.</span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <button
-              onClick={handleHesapSil}
-              className="border border-gray-300 text-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition"
-            >
-              Kullanici hesabini kapat
-            </button>
-            <button
-              onClick={handleProfilGuncelle}
-              className="bg-[#f97316] text-white px-8 py-2.5 rounded-lg text-sm font-medium hover:bg-orange-600 transition"
-            >
-              Bilgileri Guncelle
-            </button>
-          </div>
-        </div>
-      )}
+          {/* SIDEBAR */}
+          <aside className="w-full lg:w-52 flex-shrink-0">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
 
-      {activeMenu === 'İlanlarım' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-bold text-gray-800 text-lg">İlanlarım</h2>
-            <button
-              onClick={onIlanEkle}
-              className="flex items-center gap-2 bg-[#f97316] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition"
-            >
-              <Plus size={16} />
-              Yeni İlan Ekle
-            </button>
-          </div>
-          {yukleniyor ? (
-            <div className="flex flex-col gap-3">
-              {[1, 2, 3].map((i) => <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse"></div>)}
-            </div>
-          ) : ilanlar.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">
-              <p className="font-medium">Henuz ilaniniz yok</p>
-              <button onClick={onIlanEkle} className="mt-4 bg-[#f97316] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition">
-                İlan Ver
-              </button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">İlan</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Kategori</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Tarih</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Durum</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">İslemler</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ilanlar.map((ilan) => (
-                    <tr key={ilan.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <p className="text-gray-700 font-medium line-clamp-1 max-w-xs">{ilan.aciklama}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{ilan.guzergahlar[0]?.kalkis_ilce} - {ilan.guzergahlar[0]?.varis_ilce}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">
-                          {ilan.kategori.replace(/_/g, ' ')}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                          {ilan.durum === 'aktif' ? 'Aktif' : 'Pasif'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => onIlanDetay(ilan)} className="p-1.5 text-gray-400 hover:text-[#1a3c6e] hover:bg-blue-50 rounded-lg transition"><Eye size={15} /></button>
-                          <button onClick={() => handleIlanSil(ilan.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"><Trash2 size={15} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeMenu === 'Araçlarım' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-bold text-gray-800 text-lg">Araçlarım</h2>
-            <button
-              onClick={() => setAracFormAcik(!aracFormAcik)}
-              className="flex items-center gap-2 bg-[#f97316] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition"
-            >
-              <Plus size={16} />
-              Araç Ekle
-            </button>
-          </div>
-
-          {basari && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">{basari}</div>}
-          {hata && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">{hata}</div>}
-
-          {aracFormAcik && (
-            <div className="border border-gray-200 rounded-xl p-4 mb-6 bg-gray-50">
-              <h3 className="font-medium text-gray-700 mb-4">Yeni Araç Ekle</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Marka *</label>
-                  <select
-                    value={aracForm.marka}
-                    onChange={(e) => setAracForm({ ...aracForm, marka: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-                  >
-                    <option value="">Secin</option>
-                    {markalar.map((m) => <option key={m} value={m}>{m}</option>)}
-                  </select>
+              {/* KULLANICI BILGISI */}
+              <div className="bg-slate-800 px-4 py-4">
+                <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mb-2">
+                  <User size={18} className="text-white" />
                 </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Model *</label>
-                  <input
-                    value={aracForm.model}
-                    onChange={(e) => setAracForm({ ...aracForm, model: e.target.value })}
-                    placeholder="Sprinter, Transit..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Yil</label>
-                  <input
-                    value={aracForm.yil}
-                    onChange={(e) => setAracForm({ ...aracForm, yil: e.target.value })}
-                    placeholder="2020"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Plaka *</label>
-                  <input
-                    value={aracForm.plaka}
-                    onChange={(e) => setAracForm({ ...aracForm, plaka: e.target.value })}
-                    placeholder="34 ABC 123"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Koltuk Sayisi</label>
-                  <input
-                    value={aracForm.koltuk_sayisi}
-                    onChange={(e) => setAracForm({ ...aracForm, koltuk_sayisi: e.target.value })}
-                    placeholder="16+1"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Araç Tipi</label>
-                  <select
-                    value={aracForm.arac_tipi}
-                    onChange={(e) => setAracForm({ ...aracForm, arac_tipi: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-                  >
-                    <option value="">Secin</option>
-                    {aracTipleri.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
+                <p className="text-white font-semibold text-sm truncate">
+                  {user?.full_name || 'Kullanici'}
+                </p>
+                <p className="text-slate-400 text-xs truncate">
+                  {user?.phone_number}
+                </p>
               </div>
-              <div className="flex gap-3 mt-4">
+
+              {/* MENU */}
+              <nav className="py-2">
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
+                  const aktif = aktifSekme === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setAktifSekme(item.id as Sekme)}
+                      className={
+                        'w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium transition ' +
+                        (aktif
+                          ? 'bg-orange-500 text-white'
+                          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800')
+                      }
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <Icon size={15} />
+                        {item.label}
+                      </span>
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <span className={'text-xs px-1.5 py-0.5 rounded-full font-bold ' +
+                          (aktif ? 'bg-white/20 text-white' : 'bg-red-500 text-white')}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* ILAN VER + CIKIS */}
+              <div className="border-t border-slate-100 p-3 flex flex-col gap-2">
                 <button
-                  onClick={() => setAracFormAcik(false)}
-                  className="flex-1 border border-gray-300 text-gray-600 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition"
+                  onClick={onIlanEkle}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold py-2 rounded-lg transition flex items-center justify-center gap-1.5"
                 >
-                  İptal
+                  <Plus size={13} />
+                  Ilan Ver
                 </button>
                 <button
-                  onClick={handleAracEkle}
-                  className="flex-1 bg-[#f97316] text-white py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition"
+                  onClick={onLogout}
+                  className="w-full flex items-center justify-center gap-1.5 text-slate-400 hover:text-red-500 text-xs py-2 rounded-lg hover:bg-red-50 transition"
                 >
-                  Kaydet
+                  <LogOut size={13} />
+                  Cikis Yap
                 </button>
               </div>
-            </div>
-          )}
 
-          {yukleniyor ? (
-            <div className="flex flex-col gap-3">
-              {[1, 2].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse"></div>)}
             </div>
-          ) : araclar.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">
-              <Car size={48} className="mx-auto mb-4 opacity-30" />
-              <p className="font-medium">Henuz arac eklemediniz</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {araclar.map((arac) => (
-                <div key={arac.id} className="border border-gray-200 rounded-xl p-4 flex items-center justify-between hover:bg-gray-50">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Car size={18} className="text-[#1a3c6e]" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-800">{arac.marka} {arac.model} {arac.yil}</p>
-                      <p className="text-xs text-gray-500">{arac.plaka} • {arac.koltuk_sayisi} koltuk • {arac.arac_tipi}</p>
-                    </div>
+          </aside>
+
+          {/* ANA ICERIK */}
+          <main className="flex-1 min-w-0">
+
+            {/* PROFIL */}
+            {aktifSekme === 'profil' && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <h2 className="font-bold text-slate-800 text-base mb-5">Profil Bilgilerim</h2>
+                {basari && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">{basari}</div>}
+                {hata && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">{hata}</div>}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 mb-1 block">Ad Soyad</label>
+                    <input className={ic} value={profil.ad}
+                      onChange={(e) => setProfil({ ...profil, ad: e.target.value })}
+                      placeholder="Ad Soyadiniz" />
                   </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 mb-1 block">GSM Numaraniz</label>
+                    <input className={ic + ' bg-slate-50 text-slate-400'} value={profil.telefon} disabled />
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="text-xs font-semibold text-slate-500 mb-1 block">Adres</label>
+                  <textarea className={ic + ' resize-none'} value={profil.adres}
+                    onChange={(e) => setProfil({ ...profil, adres: e.target.value })}
+                    placeholder="Adresiniz" rows={3} />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 mb-1 block">Il</label>
+                    <select className={ic} value={profil.il}
+                      onChange={(e) => setProfil({ ...profil, il: e.target.value, ilce: '' })}>
+                      <option value="">Seciniz</option>
+                      {iller.map((il) => <option key={il} value={il}>{il}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 mb-1 block">Ilce</label>
+                    <select className={ic} value={profil.ilce} disabled={!profil.il}
+                      onChange={(e) => setProfil({ ...profil, ilce: e.target.value })}>
+                      <option value="">Seciniz</option>
+                      {ilceleri.map((ilce) => <option key={ilce} value={ilce}>{ilce}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mb-5">
+                  <label className="text-xs font-semibold text-slate-500 mb-1 block">Yeni Sifre</label>
+                  <input type="password" className={ic + ' max-w-xs'} value={profil.yeniSifre}
+                    onChange={(e) => setProfil({ ...profil, yeniSifre: e.target.value })}
+                    placeholder="Degistirmek istemiyorsaniz bos birakin" />
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                   <button
-                    onClick={() => handleAracSil(arac.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                    onClick={handleHesapSil}
+                    className="text-xs text-slate-400 hover:text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg transition"
                   >
-                    <Trash2 size={15} />
+                    Hesabi Kapat
+                  </button>
+                  <button onClick={handleProfilGuncelle} className={btnO}>
+                    Bilgileri Guncelle
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+              </div>
+            )}
 
-      {activeMenu === 'İlan Mesajları' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h2 className="font-bold text-gray-800 text-lg mb-6">İlan Mesajları</h2>
-          {yukleniyor ? (
-            <div className="flex flex-col gap-3">
-              {[1, 2].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse"></div>)}
-            </div>
-          ) : mesajlar.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">
-              <MessageSquare size={48} className="mx-auto mb-4 opacity-30" />
-              <p className="font-medium">Henuz mesajiniz yok</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {mesajlar.map((mesaj) => (
-                <div
-                  key={mesaj.id}
-                  onClick={() => !mesaj.okundu && handleMesajOku(mesaj.id)}
-                  className={`border rounded-xl p-4 cursor-pointer transition ${
-                    mesaj.okundu ? 'border-gray-200 bg-white' : 'border-blue-200 bg-blue-50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
+            {/* ILANLARIM */}
+            {aktifSekme === 'ilanlar' && (
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                  <h2 className="font-bold text-slate-800 text-base">Ilanlarim</h2>
+                  <button onClick={onIlanEkle} className={btnO + ' flex items-center gap-1.5'}>
+                    <Plus size={14} />
+                    Yeni Ilan
+                  </button>
+                </div>
+                {yukleniyor ? (
+                  <div className="p-5 flex flex-col gap-3">
+                    {[1, 2, 3].map((i) => <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse"></div>)}
+                  </div>
+                ) : ilanlar.length === 0 ? (
+                  <div className="text-center py-16 text-slate-400">
+                    <p className="text-sm font-medium mb-3">Henuz ilaniniz yok</p>
+                    <button onClick={onIlanEkle} className={btnO}>Ilan Ver</button>
+                  </div>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Ilan</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Kategori</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Tarih</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Durum</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Islem</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ilanlar.map((ilan) => (
+                        <tr key={ilan.id} className="border-b border-slate-50 hover:bg-slate-50 transition">
+                          <td className="px-4 py-3">
+                            <p className="text-slate-700 font-medium text-sm line-clamp-1 max-w-xs">{ilan.aciklama}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {ilan.guzergahlar[0]?.kalkis_ilce} - {ilan.guzergahlar[0]?.varis_ilce}
+                            </p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full">
+                              {ilan.kategori.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">
+                            {new Date(ilan.created_at).toLocaleDateString('tr-TR')}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' +
+                              (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500')}>
+                              {ilan.durum === 'aktif' ? 'Aktif' : 'Pasif'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => onIlanDetay(ilan)}
+                                className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition">
+                                <Eye size={14} />
+                              </button>
+                              <button onClick={() => handleIlanSil(ilan.id)}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            {/* ARACLARIM */}
+            {aktifSekme === 'araclar' && (
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                  <h2 className="font-bold text-slate-800 text-base">Araclarim</h2>
+                  <button onClick={() => setAracFormAcik(!aracFormAcik)} className={btnO + ' flex items-center gap-1.5'}>
+                    <Plus size={14} />
+                    Arac Ekle
+                  </button>
+                </div>
+
+                {basari && <div className="mx-5 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">{basari}</div>}
+                {hata && <div className="mx-5 mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">{hata}</div>}
+
+                {aracFormAcik && (
+                  <div className="mx-5 mt-4 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <p className="text-sm font-semibold text-slate-700 mb-3">Yeni Arac Ekle</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                      <div>
+                        <label className="text-xs text-slate-500 mb-1 block">Marka</label>
+                        <select className={ic} value={aracForm.marka}
+                          onChange={(e) => setAracForm({ ...aracForm, marka: e.target.value })}>
+                          <option value="">Secin</option>
+                          {markalar.map((m) => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500 mb-1 block">Model</label>
+                        <input className={ic} value={aracForm.model} placeholder="Sprinter, Transit..."
+                          onChange={(e) => setAracForm({ ...aracForm, model: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500 mb-1 block">Yil</label>
+                        <input className={ic} value={aracForm.yil} placeholder="2020"
+                          onChange={(e) => setAracForm({ ...aracForm, yil: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500 mb-1 block">Plaka</label>
+                        <input className={ic} value={aracForm.plaka} placeholder="34 ABC 123"
+                          onChange={(e) => setAracForm({ ...aracForm, plaka: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500 mb-1 block">Koltuk Sayisi</label>
+                        <input className={ic} value={aracForm.koltuk_sayisi} placeholder="16+1"
+                          onChange={(e) => setAracForm({ ...aracForm, koltuk_sayisi: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500 mb-1 block">Arac Tipi</label>
+                        <select className={ic} value={aracForm.arac_tipi}
+                          onChange={(e) => setAracForm({ ...aracForm, arac_tipi: e.target.value })}>
+                          <option value="">Secin</option>
+                          {aracTipleri.map((t) => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setAracFormAcik(false)} className={btnS + ' flex-1'}>Iptal</button>
+                      <button onClick={handleAracEkle} className={btnO + ' flex-1'}>Kaydet</button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-5">
+                  {yukleniyor ? (
+                    <div className="flex flex-col gap-3">
+                      {[1, 2].map((i) => <div key={i} className="h-16 bg-slate-100 rounded-lg animate-pulse"></div>)}
+                    </div>
+                  ) : araclar.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400">
+                      <Car size={40} className="mx-auto mb-3 opacity-30" />
+                      <p className="text-sm font-medium">Henuz arac eklemediniz</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {araclar.map((arac) => (
+                        <div key={arac.id} className="border border-slate-200 rounded-xl p-4 flex items-center justify-between hover:bg-slate-50 transition">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                              <Car size={18} className="text-slate-500" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-700 text-sm">{arac.marka} {arac.model} {arac.yil}</p>
+                              <p className="text-xs text-slate-400">{arac.plaka} · {arac.koltuk_sayisi} koltuk · {arac.arac_tipi}</p>
+                            </div>
+                          </div>
+                          <button onClick={() => handleAracSil(arac.id)}
+                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* MESAJLAR */}
+            {aktifSekme === 'mesajlar' && (
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                  <h2 className="font-bold text-slate-800 text-base">Ilan Mesajlari</h2>
+                  {okunmamisSayi > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      {okunmamisSayi} okunmamis
+                    </span>
+                  )}
+                </div>
+                <div className="p-5">
+                  {yukleniyor ? (
+                    <div className="flex flex-col gap-3">
+                      {[1, 2].map((i) => <div key={i} className="h-16 bg-slate-100 rounded-lg animate-pulse"></div>)}
+                    </div>
+                  ) : mesajlar.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400">
+                      <MessageSquare size={40} className="mx-auto mb-3 opacity-30" />
+                      <p className="text-sm font-medium">Henuz mesajiniz yok</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {mesajlar.map((mesaj) => (
+                        <div
+                          key={mesaj.id}
+                          onClick={() => !mesaj.okundu && handleMesajOku(mesaj.id)}
+                          className={'border rounded-xl p-4 cursor-pointer transition ' +
+                            (mesaj.okundu ? 'border-slate-200 bg-white' : 'border-orange-200 bg-orange-50')}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-semibold text-slate-700 text-sm">
+                                {mesaj.gonderen?.full_name || mesaj.gonderen?.phone_number}
+                              </p>
+                              <p className="text-xs text-slate-400">{mesaj.ilanlar?.aciklama}</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                              {!mesaj.okundu && (
+                                <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                              )}
+                              <span className="text-xs text-slate-400">
+                                {new Date(mesaj.created_at).toLocaleDateString('tr-TR')}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-sm text-slate-600">{mesaj.mesaj}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* FAVORILER */}
+            {aktifSekme === 'favoriler' && (
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100">
+                  <h2 className="font-bold text-slate-800 text-base">Favori Ilanlarim</h2>
+                </div>
+                <div className="p-5">
+                  {yukleniyor ? (
+                    <div className="flex flex-col gap-3">
+                      {[1, 2].map((i) => <div key={i} className="h-16 bg-slate-100 rounded-lg animate-pulse"></div>)}
+                    </div>
+                  ) : favoriler.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400">
+                      <Heart size={40} className="mx-auto mb-3 opacity-30" />
+                      <p className="text-sm font-medium">Henuz favori ilaniniz yok</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {favoriler.map((fav) => (
+                        <div key={fav.id} className="border border-slate-200 rounded-xl p-4 flex items-center justify-between hover:bg-slate-50 transition">
+                          <div>
+                            <p className="font-semibold text-slate-700 text-sm line-clamp-1">{fav.ilanlar?.aciklama}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {fav.ilanlar?.ilan_veren} · {fav.ilanlar?.kategori?.replace(/_/g, ' ')}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0 ml-3">
+                            <button onClick={() => onIlanDetay(fav.ilanlar)}
+                              className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition">
+                              <Eye size={14} />
+                            </button>
+                            <button onClick={() => handleFavoriKaldir(fav.ilan_id)}
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
+                              <Heart size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* DESTEK */}
+            {aktifSekme === 'destek' && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <h2 className="font-bold text-slate-800 text-base mb-5">Destek</h2>
+                {destekGonderildi ? (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <span className="text-green-600 text-xl font-bold">✓</span>
+                    </div>
+                    <p className="font-semibold text-green-700 mb-1">Talebiniz Alindi</p>
+                    <p className="text-green-600 text-sm mb-4">En kisa surede size donecegiz.</p>
+                    <button onClick={() => setDestekGonderildi(false)} className={btnO}>
+                      Yeni Talep Gonder
+                    </button>
+                  </div>
+                ) : (
+                  <div className="max-w-lg flex flex-col gap-3">
+                    {hata && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">{hata}</div>}
                     <div>
-                      <p className="font-medium text-gray-800 text-sm">
-                        {mesaj.gonderen?.full_name || mesaj.gonderen?.phone_number}
-                      </p>
-                      <p className="text-xs text-gray-500">{mesaj.ilanlar?.aciklama}</p>
+                      <label className="text-xs font-semibold text-slate-500 mb-1 block">Konu</label>
+                      <input className={ic} value={destekForm.konu} placeholder="Destek konusu"
+                        onChange={(e) => setDestekForm({ ...destekForm, konu: e.target.value })} />
                     </div>
-                    <div className="flex items-center gap-2">
-                      {!mesaj.okundu && (
-                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      )}
-                      <span className="text-xs text-gray-400">
-                        {new Date(mesaj.created_at).toLocaleDateString('tr-TR')}
-                      </span>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-500 mb-1 block">Mesaj</label>
+                      <textarea className={ic + ' resize-none'} value={destekForm.mesaj}
+                        placeholder="Mesajinizi yazin..." rows={5}
+                        onChange={(e) => setDestekForm({ ...destekForm, mesaj: e.target.value })} />
                     </div>
+                    <button onClick={handleDestekGonder} className={btnO}>Gonder</button>
                   </div>
-                  <p className="text-sm text-gray-700">{mesaj.mesaj}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeMenu === 'Favori İlanlarım' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h2 className="font-bold text-gray-800 text-lg mb-6">Favori İlanlarım</h2>
-          {yukleniyor ? (
-            <div className="flex flex-col gap-3">
-              {[1, 2].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse"></div>)}
-            </div>
-          ) : favoriler.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">
-              <Heart size={48} className="mx-auto mb-4 opacity-30" />
-              <p className="font-medium">Henuz favori ilaniniz yok</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {favoriler.map((fav) => (
-                <div key={fav.id} className="border border-gray-200 rounded-xl p-4 flex items-center justify-between hover:bg-gray-50">
-                  <div>
-                    <p className="font-medium text-gray-800 text-sm line-clamp-1">{fav.ilanlar?.aciklama}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{fav.ilanlar?.ilan_veren} • {fav.ilanlar?.kategori?.replace(/_/g, ' ')}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onIlanDetay(fav.ilanlar)}
-                      className="p-1.5 text-gray-400 hover:text-[#1a3c6e] hover:bg-blue-50 rounded-lg transition"
-                    >
-                      <Eye size={15} />
-                    </button>
-                    <button
-                      onClick={() => handleFavoriKaldir(userId, fav.ilan_id)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
-                    >
-                      <Heart size={15} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeMenu === 'Destek' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h2 className="font-bold text-gray-800 text-lg mb-6">Destek</h2>
-          {destekGonderildi ? (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-4 rounded-lg text-sm text-center">
-              <p className="font-medium">Destek talebiniz basariyla gonderildi!</p>
-              <p className="mt-1">En kisa surede size donecegiz.</p>
-              <button
-                onClick={() => setDestekGonderildi(false)}
-                className="mt-3 bg-[#f97316] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition"
-              >
-                Yeni Talep Gonder
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4 max-w-lg">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Konu</label>
-                <input
-                  value={destekForm.konu}
-                  onChange={(e) => setDestekForm({ ...destekForm, konu: e.target.value })}
-                  placeholder="Destek konusu"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-                />
+                )}
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Mesaj</label>
-                <textarea
-                  value={destekForm.mesaj}
-                  onChange={(e) => setDestekForm({ ...destekForm, mesaj: e.target.value })}
-                  placeholder="Mesajinizi yazin..."
-                  rows={4}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-                />
-              </div>
-              <button
-                onClick={handleDestekGonder}
-                className="bg-[#f97316] text-white py-2.5 rounded-lg font-medium hover:bg-orange-600 transition"
-              >
-                Gonder
-              </button>
-            </div>
-          )}
+            )}
+
+          </main>
         </div>
-      )}
+      </div>
     </div>
   );
 }
