@@ -5,7 +5,7 @@ import { ilanlariGetir } from '../lib/ilanlar';
 import { KategoriType, Ilan } from '../types';
 import { supabase } from '../lib/supabase';
 
-const REKLAM_ARASI = 8;
+const REKLAM_ARASI = 2;
 
 type ReklamKartiProps = {
   reklam: any;
