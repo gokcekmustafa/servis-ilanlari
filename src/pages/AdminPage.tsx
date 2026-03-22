@@ -4,7 +4,9 @@ import { Ilan } from '../types';
 import {
   LayoutDashboard, Users, FileText, Megaphone,
   Image, HeadphonesIcon, LogOut, Trash2, PlusCircle, RefreshCw,
-  Shield, UserPlus, CheckCircle2, XCircle, Edit2, Save, X, Lock
+  Shield, UserPlus, CheckCircle2, XCircle, Edit2, Save, X, Lock,
+  Eye, EyeOff, Key, UserX, MessageSquare, Image as ImageIcon, Settings,
+  Ban, CheckSquare, Square
 } from 'lucide-react';
 
 // Yetkiler tipi
@@ -62,6 +64,11 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
   const [yeniSifre, setYeniSifre] = useState('');
   const [seciliDestek, setSeciliDestek] = useState<any>(null);
   const [destekCevap, setDestekCevap] = useState('');
+  
+  // Superadmin özel state'ler
+  const [sifrelerGorunuyor, setSifrelerGorunuyor] = useState<Record<string, boolean>>({});
+  const [detayliGorunum, setDetayliGorunum] = useState(false);
+  const [kullaniciYetkilari, setKullaniciYetkilari] = useState<Record<string, any>>({});
 
   // Personel yönetimi
   const [isPersonelFormOpen, setIsPersonelFormOpen] = useState(false);
@@ -161,6 +168,41 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
     hepsiniYukle();
   };
 
+  // Şifre görünürlüğünü değiştir
+  const sifreGorunurlukDegistir = (kullaniciId: string) => {
+    setSifrelerGorunuyor(prev => ({ ...prev, [kullaniciId]: !prev[kullaniciId] }));
+  };
+
+  // Kullanıcı yetkisini değiştir
+  const kullaniciYetkiDegistir = (kullaniciId: string, yetki: string, deger: boolean) => {
+    setKullaniciYetkilari(prev => ({
+      ...prev,
+      [kullaniciId]: {
+        ...prev[kullaniciId],
+        [yetki]: deger
+      }
+    }));
+  };
+
+  // Seçili kullanıcının yetkilerini state'e yükle
+  useEffect(() => {
+    if (seciliKullanici && isSuperAdmin) {
+      setKullaniciYetkilari(prev => ({
+        ...prev,
+        [seciliKullanici.id]: seciliKullanici.yetkiler || {
+          ilan_verebilir: true,
+          mesaj_gonderebilir: true,
+          favori_ekleyebilir: true,
+          profil_resmi: true,
+          telefon_goster: true,
+          yorum_yapabilir: true,
+          arama_yapabilir: true,
+          bildirim_alabilir: true,
+        }
+      }));
+    }
+  }, [seciliKullanici, isSuperAdmin]);
+
   const kullaniciSil = async (id: string) => {
     if (!isSuperAdmin && !yetkiler.kullanici_yonetimi) return;
     if (!window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) return;
@@ -178,6 +220,10 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
     if (yeniSifre) {
       guncelleme.password_hash = await hashPassword(yeniSifre);
       guncelleme.sifre_acik = yeniSifre;
+    }
+    // Superadmin ise kullanıcı yetkilerini de güncelle
+    if (isSuperAdmin && kullaniciYetkilari[seciliKullanici.id]) {
+      guncelleme.yetkiler = kullaniciYetkilari[seciliKullanici.id];
     }
     await supabase.from('profiles').update(guncelleme).eq('id', seciliKullanici.id);
     setYeniSifre('');
@@ -319,6 +365,18 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
     destek_yonetimi:   { label: 'Destek',           aciklama: 'Destek taleplerini cevaplayabilir' },
     reklam_yonetimi:   { label: 'Reklam',           aciklama: 'Reklam ekleyip yönetebilir' },
     duyuru_yonetimi:   { label: 'Duyuru',           aciklama: 'Duyuru ekleyip yönetebilir' },
+  };
+
+  // Kullanıcı yetki kısıtlamaları için tanımlar
+  const kullaniciYetkiTanimlar: Record<string, { label: string; aciklama: string; icon: any }> = {
+    ilan_verebilir:     { label: 'İlan Verme',        aciklama: 'Yeni ilan yayınlayabilir', icon: FileText },
+    mesaj_gonderebilir: { label: 'Mesajlaşma',       aciklama: 'Diğer kullanıcılarla mesajlaşabilir', icon: MessageSquare },
+    favori_ekleyebilir: { label: 'Favori Ekleme',    aciklama: 'İlanları favorilerine ekleyebilir', icon: CheckSquare },
+    profil_resmi:       { label: 'Profil Resmi',     aciklama: 'Profil resmi ekleyip değiştirebilir', icon: ImageIcon },
+    telefon_goster:     { label: 'Telefon Göster',   aciklama: 'Telefon numarasını diğerleri görebilir', icon: Users },
+    yorum_yapabilir:    { label: 'Yorum Yapma',      aciklama: 'İlanlara yorum yapabilir', icon: MessageSquare },
+    arama_yapabilir:    { label: 'Arama Yapma',      aciklama: 'İlanlar arasında arama yapabilir', icon: Settings },
+    bildirim_alabilir:  { label: 'Bildirimler',       aciklama: 'Sistem bildirimleri alabilir', icon: Megaphone },
   };
 
   // Menü öğelerini yetkiye göre filtrele
