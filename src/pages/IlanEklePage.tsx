@@ -214,10 +214,15 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
   });
   const [aracimVarIs, setAracimVarIs] = useState({ secilen_arac: '', calisma_yerleri: '' });
   const [soforAriyorum, setSoforAriyorum] = useState({
-    odeme_sekli: '', ucret: '', aranan_tecrube: '',
-    ortalama_servis_suresi: '', yolcu_sayisi: '', km: '',
-    calisılacak_gun: '', yabanci_diller: [] as string[],
-  });
+  odeme_sekli: 'aylik',
+  ucret: '',
+  aranan_tecrube: '',
+  ortalama_servis_suresi: '',
+  yolcu_sayisi: '',
+  km: '',
+  calisılacak_gun: '',
+  yabanci_diller: [] as string[],
+});
   const [hostesAriyorum, setHostesAriyorum] = useState({
     ucret: '', calisılacak_okul: '', aranan_tecrube: '',
     okul_turu: 'Anaokulu Kres', yabanci_diller: [] as string[],
@@ -315,59 +320,67 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
   };
 
   const handleYayinla = async () => {
-    if (!aciklama) { setHata('Ilan detayi zorunludur.'); return; }
-    setYukleniyor(true);
-    const user = mevcutKullanici();
+  if (!aciklama) { setHata('Ilan detayi zorunludur.'); return; }
+  setYukleniyor(true);
+  const user = mevcutKullanici();
 
-    let resimUrl = '';
-    if (profilResim) {
-      const { data } = await supabase.storage.from('profil-resimleri').upload(`ilan-${Date.now()}`, profilResim);
-      if (data) {
-        const { data: urlData } = supabase.storage.from('profil-resimleri').getPublicUrl(data.path);
-        resimUrl = urlData.publicUrl;
-      }
+  let resimUrl = '';
+  if (profilResim) {
+    const { data } = await supabase.storage
+      .from('profil-resimleri')
+      .upload('ilan-' + Date.now(), profilResim);
+    if (data) {
+      const { data: urlData } = supabase.storage
+        .from('profil-resimleri')
+        .getPublicUrl(data.path);
+      resimUrl = urlData.publicUrl;
     }
+  }
 
-    const ilanGuzergahlar = ['hostesim_is', 'soforum_is'].includes(selectedKategori!) ? [{
-      giris_saati: konumGiris, kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah,
-      varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: konumCikis,
-    }] : guzergahlar;
+  const ilanGuzergahlar = ['hostesim_is', 'soforum_is'].includes(selectedKategori!) ? [{
+    giris_saati: konumGiris,
+    kalkis_il: konumIl,
+    kalkis_ilce: konumIlce,
+    kalkis_mah: konumMah,
+    varis_il: '',
+    varis_ilce: '',
+    varis_mah: '',
+    cikis_saati: konumCikis,
+  }] : guzergahlar;
 
-    let ekAlanlar: any = {};
-    if (selectedKategori === 'isim_var_arac') {
-      ekAlanlar = isimVarArac;
-    } else if (selectedKategori === 'aracim_var_is') {
-      ekAlanlar = aracimVarIs;
-    } else if (selectedKategori === 'sofor_ariyorum') {
-      // arac_secimi alanini DB'ye gonderme — ilanlar tablosunda bu kolon yok
-      const { ...soforAlanlari } = soforAriyorum;
-      ekAlanlar = soforAlanlari;
-    } else if (selectedKategori === 'hostes_ariyorum') {
-      ekAlanlar = hostesAriyorum;
-    } else if (selectedKategori === 'hostesim_is') {
-      ekAlanlar = { ...hostesimIs, profil_resmi: resimUrl };
-    } else if (selectedKategori === 'soforum_is') {
-      ekAlanlar = { ...soforumIs, profil_resmi: resimUrl };
-    } else if (selectedKategori === 'plaka_satiyorum') {
-      ekAlanlar = plakaSatiyorum;
-    }
+  let ekbilgiler: any = {};
+  if (selectedKategori === 'isim_var_arac') {
+    ekbilgiler = isimVarArac;
+  } else if (selectedKategori === 'aracim_var_is') {
+    ekbilgiler = aracimVarIs;
+  } else if (selectedKategori === 'sofor_ariyorum') {
+    ekbilgiler = soforAriyorum;
+  } else if (selectedKategori === 'hostes_ariyorum') {
+    ekbilgiler = hostesAriyorum;
+  } else if (selectedKategori === 'hostesim_is') {
+    ekbilgiler = { ...hostesimIs, profil_resmi: resimUrl };
+  } else if (selectedKategori === 'soforum_is') {
+    ekbilgiler = { ...soforumIs, profil_resmi: resimUrl };
+  } else if (selectedKategori === 'plaka_satiyorum') {
+    ekbilgiler = plakaSatiyorum;
+  }
 
-    const { error } = await ilanEkle({
-      kategori: selectedKategori!,
-      servis_turu: isimVarArac.servis_turu,
-      aciklama,
-      ilan_veren: user?.full_name || user?.phone_number || '',
-      user_id: user?.id || userId,
-      guzergahlar: ilanGuzergahlar,
-      ...ekAlanlar,
-    } as any);
+  const { error } = await ilanEkle({
+    kategori: selectedKategori!,
+    servis_turu: isimVarArac.servis_turu,
+    aciklama,
+    ilan_veren: user?.full_name || user?.phone_number || '',
+    user_id: user?.id || userId,
+    guzergahlar: ilanGuzergahlar,
+    ekbilgiler,
+  } as any);
 
-    setYukleniyor(false);
-    if (error) { setHata('Hata: ' + error.message); return; }
-    sessionStorage.removeItem('ilan-ekle-adim');
-    sessionStorage.removeItem('ilan-ekle-kategori');
-    onSuccess();
-  };
+  setYukleniyor(false);
+  if (error) { setHata('Hata: ' + error.message); return; }
+  sessionStorage.removeItem('ilan-ekle-adim');
+  sessionStorage.removeItem('ilan-ekle-kategori');
+  onSuccess();
+};
 
   const selectedKategoriLabel = kategoriler.find((k) => k.id === selectedKategori)?.label;
 
@@ -651,10 +664,17 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                     <h3 className="font-semibold text-slate-700 mb-4">Ilan Detaylari</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                       <div>
-                        <label className={lb}>Odeme Sekli</label>
-                        <input value={soforAriyorum.odeme_sekli} placeholder="Aylik / Gunluk"
-                          onChange={(e) => setSoforAriyorum({ ...soforAriyorum, odeme_sekli: e.target.value })} className={ic} />
-                      </div>
+  <label className={lb}>Odeme Sekli</label>
+  <select
+    value={soforAriyorum.odeme_sekli}
+    onChange={(e) => setSoforAriyorum({ ...soforAriyorum, odeme_sekli: e.target.value })}
+    className={ic}
+  >
+    <option value="aylik">Aylik</option>
+    <option value="haftalik">Haftalik</option>
+    <option value="gunluk">Gunluk</option>
+  </select>
+</div>
                       <div>
                         <label className={lb}>Ucret (TL)</label>
                         <input type="number" value={soforAriyorum.ucret}
