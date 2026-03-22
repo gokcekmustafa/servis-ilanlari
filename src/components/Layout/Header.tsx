@@ -53,14 +53,14 @@ export default function Header({
   ];
 
   return (
-    <header>
+    <header className="bg-slate-100 pt-3 px-4">
+      <div className="max-w-5xl mx-auto">
 
-      {/* 1. EN UST SERIT - uye sayisi + ilan ver */}
-      <div className="bg-slate-800 text-slate-400 text-xs py-1.5">
-        <div className="max-w-5xl mx-auto px-4 flex items-center justify-between">
-          <span>
+        {/* 1. UST SERIT */}
+        <div className="bg-slate-600 rounded-t-lg px-4 py-1.5 flex items-center justify-between">
+          <span className="text-slate-300 text-xs">
             Sistemde Kayitli Kisi Sayisi:{' '}
-            <span className="text-white font-bold text-sm">
+            <span className="text-white font-bold">
               {sayi !== null ? sayi.toLocaleString('tr-TR') : '...'}
             </span>
           </span>
@@ -71,32 +71,31 @@ export default function Header({
             Ucretsiz Ilan Ver
           </button>
         </div>
-      </div>
 
-      {/* 2. ORTA ALAN - logo ortada, giris/panel sagda */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        {/* 2. LOGO ALANI */}
+        <div className="bg-white border-x border-slate-200 px-4 py-3 flex items-center justify-between">
 
-          {/* SOL - bos denge icin */}
-          <div className="w-48 hidden md:block" />
-
-          {/* LOGO - tam ortada */}
           <div
-            className="flex items-center gap-2 cursor-pointer mx-auto md:mx-0"
+            className="flex items-center gap-2 cursor-pointer"
             onClick={() => onNavigate('home')}
           >
-            <div className="bg-slate-800 rounded-lg p-1.5">
-              <Truck className="text-orange-400" size={24} />
+            <div className="bg-orange-500 rounded-lg p-1.5">
+              <Truck className="text-white" size={22} />
             </div>
             <span className="text-slate-800 font-bold text-xl tracking-tight">
               salonum<span className="text-orange-500">.site</span>
             </span>
           </div>
 
-          {/* SAG - giris/panel butonlari */}
-          <div className="w-48 hidden md:flex items-center justify-end gap-2">
+          <div className="hidden md:flex items-center gap-2">
             {isLoggedIn ? (
               <>
+                <button
+                  onClick={onIlanEkle}
+                  className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+                >
+                  Ilan Ver
+                </button>
                 <button
                   onClick={onGoPanel}
                   className="relative p-2 text-slate-400 hover:text-slate-600 transition"
@@ -110,16 +109,16 @@ export default function Header({
                 </button>
                 <button
                   onClick={onGoPanel}
-                  className="flex items-center gap-1.5 text-slate-600 hover:text-slate-800 border border-slate-200 text-xs font-medium px-3 py-1.5 rounded-lg transition"
+                  className="flex items-center gap-1.5 text-slate-600 hover:text-slate-800 border border-slate-200 hover:border-slate-300 text-sm font-medium px-3 py-2 rounded-lg transition"
                 >
-                  <LayoutDashboard size={13} />
+                  <LayoutDashboard size={15} />
                   {isAdmin ? 'Admin' : 'Panelim'}
                 </button>
                 <button
                   onClick={onLogout}
-                  className="flex items-center gap-1 text-slate-400 hover:text-red-500 text-xs px-2 py-1.5 rounded-lg hover:bg-red-50 transition"
+                  className="flex items-center gap-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 text-sm px-3 py-2 rounded-lg transition"
                 >
-                  <LogOut size={13} />
+                  <LogOut size={15} />
                   Cikis
                 </button>
               </>
@@ -127,13 +126,13 @@ export default function Header({
               <>
                 <button
                   onClick={onGoLogin}
-                  className="text-slate-600 hover:text-slate-800 border border-slate-200 hover:border-slate-300 text-xs font-medium px-3 py-1.5 rounded-lg transition"
+                  className="text-slate-600 hover:text-slate-800 border border-slate-200 hover:border-slate-300 text-sm font-medium px-4 py-2 rounded-lg transition"
                 >
                   Giris Yap
                 </button>
                 <button
                   onClick={onIlanEkle}
-                  className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
+                  className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold px-4 py-2 rounded-lg transition"
                 >
                   Kayit Ol
                 </button>
@@ -141,7 +140,6 @@ export default function Header({
             )}
           </div>
 
-          {/* MOBIL MENU BUTONU */}
           <div className="flex md:hidden items-center gap-2">
             {isLoggedIn && (
               <button onClick={onGoPanel} className="relative p-2 text-slate-400">
@@ -161,16 +159,14 @@ export default function Header({
             </button>
           </div>
         </div>
-      </div>
 
-      {/* 3. NAV SERIDI - lacivert, linkler soldan */}
-      <nav className="bg-slate-800 hidden md:block">
-        <div className="max-w-5xl mx-auto px-4 flex items-center">
+        {/* 3. NAV SERIDI */}
+        <nav className="bg-slate-500 rounded-b-lg hidden md:flex items-center px-2">
           {navLinks.map((item) => (
             <button
               key={item.page}
               onClick={() => onNavigate(item.page)}
-              className="text-slate-300 hover:text-white text-sm py-2.5 px-4 hover:bg-slate-700 transition font-medium"
+              className="text-slate-200 hover:text-white hover:bg-slate-400 text-sm font-medium px-4 py-2.5 rounded transition"
             >
               {item.label}
             </button>
@@ -178,71 +174,71 @@ export default function Header({
           {isLoggedIn && (
             <button
               onClick={onIlanEkle}
-              className="ml-auto text-orange-400 hover:text-orange-300 text-sm py-2.5 px-4 font-medium transition"
+              className="ml-auto text-orange-300 hover:text-orange-200 text-sm font-medium px-4 py-2.5 transition"
             >
               + Ilan Ver
             </button>
           )}
-        </div>
-      </nav>
+        </nav>
 
-      {/* MOBIL ACILAN MENU */}
-      {menuAcik && (
-        <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex flex-col gap-2">
-          <div className="flex flex-wrap gap-1 mb-1">
-            {navLinks.map((item) => (
-              <button
-                key={item.page}
-                onClick={() => { onNavigate(item.page); setMenuAcik(false); }}
-                className="text-slate-500 text-sm py-1.5 px-3 rounded-lg hover:bg-slate-50 transition"
-              >
-                {item.label}
-              </button>
-            ))}
+        {/* MOBIL MENU */}
+        {menuAcik && (
+          <div className="md:hidden bg-white border-x border-b border-slate-200 rounded-b-lg px-4 py-3 flex flex-col gap-2">
+            <div className="flex flex-wrap gap-1 mb-1">
+              {navLinks.map((item) => (
+                <button
+                  key={item.page}
+                  onClick={() => { onNavigate(item.page); setMenuAcik(false); }}
+                  className="text-slate-500 text-sm py-1.5 px-3 rounded-lg hover:bg-slate-50 transition"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-slate-100 pt-2 flex flex-col gap-2">
+              {isLoggedIn ? (
+                <>
+                  <button
+                    onClick={() => { onIlanEkle(); setMenuAcik(false); }}
+                    className="w-full bg-orange-500 text-white py-2.5 rounded-lg font-semibold text-sm"
+                  >
+                    Ilan Ver
+                  </button>
+                  <button
+                    onClick={() => { onGoPanel(); setMenuAcik(false); }}
+                    className="w-full flex items-center justify-center gap-2 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm"
+                  >
+                    <LayoutDashboard size={15} />
+                    {isAdmin ? 'Admin Panel' : 'Panelim'}
+                  </button>
+                  <button
+                    onClick={() => { onLogout(); setMenuAcik(false); }}
+                    className="w-full flex items-center justify-center gap-2 text-red-500 border border-red-100 py-2.5 rounded-lg text-sm"
+                  >
+                    <LogOut size={15} /> Cikis Yap
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => { onGoLogin(); setMenuAcik(false); }}
+                    className="w-full border border-slate-200 text-slate-600 py-2.5 rounded-lg font-medium text-sm"
+                  >
+                    Giris Yap
+                  </button>
+                  <button
+                    onClick={() => { onIlanEkle(); setMenuAcik(false); }}
+                    className="w-full bg-orange-500 text-white py-2.5 rounded-lg font-semibold text-sm"
+                  >
+                    Ucretsiz Ilan Ver
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-          <div className="border-t border-slate-100 pt-2 flex flex-col gap-2">
-            {isLoggedIn ? (
-              <>
-                <button
-                  onClick={() => { onIlanEkle(); setMenuAcik(false); }}
-                  className="w-full bg-orange-500 text-white py-2.5 rounded-lg font-semibold text-sm"
-                >
-                  Ilan Ver
-                </button>
-                <button
-                  onClick={() => { onGoPanel(); setMenuAcik(false); }}
-                  className="w-full flex items-center justify-center gap-2 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm"
-                >
-                  <LayoutDashboard size={15} />
-                  {isAdmin ? 'Admin Panel' : 'Panelim'}
-                </button>
-                <button
-                  onClick={() => { onLogout(); setMenuAcik(false); }}
-                  className="w-full flex items-center justify-center gap-2 text-red-500 border border-red-100 py-2.5 rounded-lg text-sm"
-                >
-                  <LogOut size={15} /> Cikis Yap
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => { onGoLogin(); setMenuAcik(false); }}
-                  className="w-full border border-slate-200 text-slate-600 py-2.5 rounded-lg font-medium text-sm"
-                >
-                  Giris Yap
-                </button>
-                <button
-                  onClick={() => { onIlanEkle(); setMenuAcik(false); }}
-                  className="w-full bg-orange-500 text-white py-2.5 rounded-lg font-semibold text-sm"
-                >
-                  Ucretsiz Ilan Ver
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+        )}
 
+      </div>
     </header>
   );
 }
