@@ -3,8 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Ilan } from '../types';
 import {
   LayoutDashboard, Users, FileText, Megaphone,
-  Image, HeadphonesIcon, LogOut, Trash2, CheckCircle,
-  XCircle, PlusCircle, RefreshCw, Eye, EyeOff
+  Image, HeadphonesIcon, LogOut, Trash2, PlusCircle, RefreshCw
 } from 'lucide-react';
 
 type AdminPageProps = {
@@ -30,6 +29,9 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
   const [yukleniyor, setYukleniyor] = useState(true);
 
   const [yeniReklam, setYeniReklam] = useState({ baslik: '', resim_url: '', link_url: '', konum: 'liste' });
+  const [reklamYukleniyor, setReklamYukleniyor] = useState(false);
+  const [surukleAktif, setSurukleAktif] = useState(false);
+
   const [yeniDuyuru, setYeniDuyuru] = useState({ baslik: '', mesaj: '', resim_url: '', saniye: 2 });
   const [yeniKullanici, setYeniKullanici] = useState({ full_name: '', phone_number: '', password: '', type: 'staff' });
   const [seciliKullanici, setSeciliKullanici] = useState<any>(null);
@@ -64,6 +66,35 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
     return Array.from(new Uint8Array(hash))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
+  };
+
+  const dosyaYukle = async (dosya: File) => {
+    if (!dosya.type.startsWith('image/')) {
+      alert('Sadece resim dosyasi yukleyebilirsiniz');
+      return;
+    }
+    setReklamYukleniyor(true);
+    const dosyaAdi = Date.now() + '-' + dosya.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const { error } = await supabase.storage
+      .from('reklamlar')
+      .upload(dosyaAdi, dosya, { contentType: dosya.type });
+    if (error) {
+      alert('Yuklerken hata olustu: ' + error.message);
+      setReklamYukleniyor(false);
+      return;
+    }
+    const { data: urlData } = supabase.storage
+      .from('reklamlar')
+      .getPublicUrl(dosyaAdi);
+    setYeniReklam(prev => ({ ...prev, resim_url: urlData.publicUrl }));
+    setReklamYukleniyor(false);
+  };
+
+  const surukBirak = (e: React.DragEvent) => {
+    e.preventDefault();
+    setSurukleAktif(false);
+    const dosya = e.dataTransfer.files[0];
+    if (dosya) dosyaYukle(dosya);
   };
 
   const ilanSil = async (id: string) => {
@@ -171,20 +202,18 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
     { id: 'destek', label: 'Destek', icon: HeadphonesIcon, sayi: destekler.filter(d => d.durum === 'bekliyor').length },
   ];
 
-  const inputClass = "w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white";
-  const btnOrange = "bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition";
-  const btnSlate = "bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium px-4 py-2 rounded-lg transition";
+  const ic = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
+  const btnO = 'bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition';
+  const btnS = 'bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium px-4 py-2 rounded-lg transition';
 
   return (
     <div className="flex min-h-screen bg-slate-100">
 
-      {/* SIDEBAR */}
       <aside className="w-56 bg-slate-800 flex-shrink-0 flex flex-col">
         <div className="px-4 py-5 border-b border-slate-700">
           <p className="text-white font-bold text-base">Admin Panel</p>
           <p className="text-slate-400 text-xs mt-0.5">salonum.site</p>
         </div>
-
         <nav className="flex-1 py-3">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -195,9 +224,7 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                 onClick={() => setAktifSekme(item.id as Sekme)}
                 className={
                   'w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium transition ' +
-                  (aktif
-                    ? 'bg-orange-500 text-white'
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white')
+                  (aktif ? 'bg-orange-500 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white')
                 }
               >
                 <span className="flex items-center gap-2.5">
@@ -205,10 +232,7 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                   {item.label}
                 </span>
                 {item.sayi !== undefined && item.sayi > 0 && (
-                  <span className={
-                    'text-xs px-1.5 py-0.5 rounded-full font-bold ' +
-                    (aktif ? 'bg-white/20 text-white' : 'bg-slate-600 text-slate-300')
-                  }>
+                  <span className={'text-xs px-1.5 py-0.5 rounded-full font-bold ' + (aktif ? 'bg-white/20 text-white' : 'bg-slate-600 text-slate-300')}>
                     {item.sayi}
                   </span>
                 )}
@@ -216,7 +240,6 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
             );
           })}
         </nav>
-
         <div className="p-4 border-t border-slate-700">
           <button
             onClick={onLogout}
@@ -228,15 +251,12 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
         </div>
       </aside>
 
-      {/* ICERIK */}
       <main className="flex-1 p-6 overflow-auto">
-
-        {/* YENILE BUTONU */}
         <div className="flex items-center justify-between mb-5">
-          <h1 className="text-slate-800 font-bold text-lg capitalize">
+          <h1 className="text-slate-800 font-bold text-lg">
             {menuItems.find(m => m.id === aktifSekme)?.label}
           </h1>
-          <button onClick={hepsiniYukle} className={btnSlate + ' flex items-center gap-1.5'}>
+          <button onClick={hepsiniYukle} className={btnS + ' flex items-center gap-1.5'}>
             <RefreshCw size={14} />
             Yenile
           </button>
@@ -246,17 +266,16 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
           <div className="text-center py-20 text-slate-400 text-sm">Yukleniyor...</div>
         )}
 
-        {/* ISTATISTIKLER */}
         {!yukleniyor && aktifSekme === 'istatistik' && (
           <div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {[
-                { label: 'Toplam Ilan', value: ilanlar.length, color: 'bg-blue-50 text-blue-700 border-blue-200' },
-                { label: 'Toplam Uye', value: kullanicilar.length, color: 'bg-green-50 text-green-700 border-green-200' },
-                { label: 'Aktif Reklam', value: reklamlar.filter(r => r.aktif).length, color: 'bg-orange-50 text-orange-700 border-orange-200' },
-                { label: 'Bekleyen Destek', value: destekler.filter(d => d.durum === 'bekliyor').length, color: 'bg-red-50 text-red-700 border-red-200' },
+                { label: 'Toplam Ilan', value: ilanlar.length, renk: 'bg-blue-50 text-blue-700 border-blue-200' },
+                { label: 'Toplam Uye', value: kullanicilar.length, renk: 'bg-green-50 text-green-700 border-green-200' },
+                { label: 'Aktif Reklam', value: reklamlar.filter(r => r.aktif).length, renk: 'bg-orange-50 text-orange-700 border-orange-200' },
+                { label: 'Bekleyen Destek', value: destekler.filter(d => d.durum === 'bekliyor').length, renk: 'bg-red-50 text-red-700 border-red-200' },
               ].map((stat) => (
-                <div key={stat.label} className={'rounded-xl border p-4 ' + stat.color}>
+                <div key={stat.label} className={'rounded-xl border p-4 ' + stat.renk}>
                   <p className="text-xs font-medium opacity-70 mb-1">{stat.label}</p>
                   <p className="text-3xl font-bold">{stat.value}</p>
                 </div>
@@ -285,7 +304,6 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
           </div>
         )}
 
-        {/* ILANLAR */}
         {!yukleniyor && aktifSekme === 'ilanlar' && (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <table className="w-full text-sm">
@@ -305,35 +323,18 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                     <td className="px-4 py-3 text-slate-500 text-xs">{ilan.kategori}</td>
                     <td className="px-4 py-3 text-slate-400 text-xs">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</td>
                     <td className="px-4 py-3">
-                      <span className={
-                        'text-xs font-semibold px-2 py-0.5 rounded-full ' +
-                        (ilan.durum === 'aktif'
-                          ? 'bg-green-100 text-green-700'
-                          : ilan.durum === 'pasif'
-                          ? 'bg-slate-100 text-slate-500'
-                          : 'bg-yellow-100 text-yellow-700')
-                      }>
+                      <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' +
+                        (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : ilan.durum === 'pasif' ? 'bg-slate-100 text-slate-500' : 'bg-yellow-100 text-yellow-700')}>
                         {ilan.durum || 'aktif'}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => onIlanDetay(ilan)}
-                          className="text-xs text-blue-500 hover:text-blue-700 font-medium"
-                        >
-                          Detay
+                        <button onClick={() => onIlanDetay(ilan)} className="text-xs text-blue-500 hover:text-blue-700 font-medium">Detay</button>
+                        <button onClick={() => ilanDurumDegistir(ilan.id, ilan.durum === 'aktif' ? 'pasif' : 'aktif')} className="text-xs text-orange-500 hover:text-orange-700 font-medium">
+                          {ilan.durum === 'aktif' ? 'Pasif Yap' : 'Aktif Yap'}
                         </button>
-                        <button
-                          onClick={() => ilanDurumDegistir(ilan.id, ilan.durum === 'aktif' ? 'pasif' : 'aktif')}
-                          className="text-xs text-orange-500 hover:text-orange-700 font-medium"
-                        >
-                          {ilan.durum === 'aktif' ? 'Pasif' : 'Aktif'}
-                        </button>
-                        <button
-                          onClick={() => ilanSil(ilan.id)}
-                          className="text-xs text-red-400 hover:text-red-600"
-                        >
+                        <button onClick={() => ilanSil(ilan.id)} className="text-red-400 hover:text-red-600">
                           <Trash2 size={13} />
                         </button>
                       </div>
@@ -348,11 +349,8 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
           </div>
         )}
 
-        {/* KULLANICILAR */}
         {!yukleniyor && aktifSekme === 'kullanicilar' && (
           <div className="grid grid-cols-3 gap-4">
-
-            {/* LISTE */}
             <div className="col-span-2 bg-white rounded-xl border border-slate-200 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
@@ -368,24 +366,20 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                   {kullanicilar.map((u) => (
                     <tr
                       key={u.id}
-                      className={'border-b border-slate-50 hover:bg-slate-50 transition cursor-pointer ' + (seciliKullanici?.id === u.id ? 'bg-orange-50' : '')}
                       onClick={() => setSeciliKullanici(u)}
+                      className={'border-b border-slate-50 hover:bg-slate-50 transition cursor-pointer ' + (seciliKullanici?.id === u.id ? 'bg-orange-50' : '')}
                     >
                       <td className="px-4 py-3 text-slate-700 font-medium">{u.full_name || 'Isimsiz'}</td>
                       <td className="px-4 py-3 text-slate-500 text-xs">{u.phone_number}</td>
                       <td className="px-4 py-3">
-                        <span className={
-                          'text-xs font-semibold px-2 py-0.5 rounded-full ' +
-                          (u.type === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500')
-                        }>
+                        <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' +
+                          (u.type === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500')}>
                           {u.type || 'uye'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={
-                          'text-xs font-semibold px-2 py-0.5 rounded-full ' +
-                          (u.aktif !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600')
-                        }>
+                        <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' +
+                          (u.aktif !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600')}>
                           {u.aktif !== false ? 'Aktif' : 'Pasif'}
                         </span>
                       </td>
@@ -403,76 +397,61 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
               </table>
             </div>
 
-            {/* DETAY / YENI KULLANICI */}
             <div className="flex flex-col gap-4">
               {seciliKullanici && (
                 <div className="bg-white rounded-xl border border-slate-200 p-4">
                   <p className="text-sm font-semibold text-slate-700 mb-3">Kullanici Duzenle</p>
-                  <input
-                    className={inputClass + ' mb-2'}
-                    value={seciliKullanici.full_name || ''}
+                  <input className={ic + ' mb-2'} value={seciliKullanici.full_name || ''}
                     onChange={e => setSeciliKullanici({ ...seciliKullanici, full_name: e.target.value })}
-                    placeholder="Ad Soyad"
-                  />
-                  <input
-                    className={inputClass + ' mb-2'}
-                    value={seciliKullanici.phone_number || ''}
+                    placeholder="Ad Soyad" />
+                  <input className={ic + ' mb-2'} value={seciliKullanici.phone_number || ''}
                     onChange={e => setSeciliKullanici({ ...seciliKullanici, phone_number: e.target.value })}
-                    placeholder="Telefon"
-                  />
-                  <input
-                    className={inputClass + ' mb-2'}
-                    value={yeniSifre}
+                    placeholder="Telefon" />
+                  <input className={ic + ' mb-2'} value={yeniSifre}
                     onChange={e => setYeniSifre(e.target.value)}
-                    placeholder="Yeni sifre (bos birakilabilir)"
-                    type="password"
-                  />
-                  <div className="flex gap-2 mb-2">
+                    placeholder="Yeni sifre (bos birakilabilir)" type="password" />
+                  <div className="flex gap-2 mb-3">
                     <button
                       onClick={() => setSeciliKullanici({ ...seciliKullanici, aktif: true })}
-                      className={'flex-1 text-xs py-1.5 rounded-lg border font-medium ' + (seciliKullanici.aktif !== false ? 'bg-green-500 text-white border-green-500' : 'text-slate-500 border-slate-200')}
+                      className={'flex-1 text-xs py-1.5 rounded-lg border font-medium transition ' +
+                        (seciliKullanici.aktif !== false ? 'bg-green-500 text-white border-green-500' : 'text-slate-500 border-slate-200')}
                     >
                       Aktif
                     </button>
                     <button
                       onClick={() => setSeciliKullanici({ ...seciliKullanici, aktif: false })}
-                      className={'flex-1 text-xs py-1.5 rounded-lg border font-medium ' + (seciliKullanici.aktif === false ? 'bg-red-500 text-white border-red-500' : 'text-slate-500 border-slate-200')}
+                      className={'flex-1 text-xs py-1.5 rounded-lg border font-medium transition ' +
+                        (seciliKullanici.aktif === false ? 'bg-red-500 text-white border-red-500' : 'text-slate-500 border-slate-200')}
                     >
                       Pasif
                     </button>
                   </div>
-                  <button onClick={kullaniciGuncelle} className={btnOrange + ' w-full'}>
-                    Kaydet
-                  </button>
+                  <button onClick={kullaniciGuncelle} className={btnO + ' w-full'}>Kaydet</button>
                 </div>
               )}
-
               <div className="bg-white rounded-xl border border-slate-200 p-4">
                 <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
                   <PlusCircle size={15} className="text-orange-500" />
                   Yeni Kullanici
                 </p>
-                <input className={inputClass + ' mb-2'} placeholder="Ad Soyad" value={yeniKullanici.full_name}
+                <input className={ic + ' mb-2'} placeholder="Ad Soyad" value={yeniKullanici.full_name}
                   onChange={e => setYeniKullanici({ ...yeniKullanici, full_name: e.target.value })} />
-                <input className={inputClass + ' mb-2'} placeholder="Telefon" value={yeniKullanici.phone_number}
+                <input className={ic + ' mb-2'} placeholder="Telefon" value={yeniKullanici.phone_number}
                   onChange={e => setYeniKullanici({ ...yeniKullanici, phone_number: e.target.value })} />
-                <input className={inputClass + ' mb-2'} placeholder="Sifre" type="password" value={yeniKullanici.password}
+                <input className={ic + ' mb-2'} placeholder="Sifre" type="password" value={yeniKullanici.password}
                   onChange={e => setYeniKullanici({ ...yeniKullanici, password: e.target.value })} />
-                <select className={inputClass + ' mb-3'} value={yeniKullanici.type}
+                <select className={ic + ' mb-3'} value={yeniKullanici.type}
                   onChange={e => setYeniKullanici({ ...yeniKullanici, type: e.target.value })}>
                   <option value="staff">Staff</option>
                   <option value="admin">Admin</option>
                   <option value="uye">Uye</option>
                 </select>
-                <button onClick={kullaniciEkle} className={btnOrange + ' w-full'}>
-                  Kullanici Olustur
-                </button>
+                <button onClick={kullaniciEkle} className={btnO + ' w-full'}>Kullanici Olustur</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* REKLAMLAR */}
         {!yukleniyor && aktifSekme === 'reklamlar' && (
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2 flex flex-col gap-3">
@@ -518,33 +497,81 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                 <PlusCircle size={15} className="text-orange-500" />
                 Yeni Reklam Ekle
               </p>
-              <input className={inputClass + ' mb-2'} placeholder="Baslik (opsiyonel)"
+              <input className={ic + ' mb-2'} placeholder="Baslik (opsiyonel)"
                 value={yeniReklam.baslik}
                 onChange={e => setYeniReklam({ ...yeniReklam, baslik: e.target.value })} />
-              <input className={inputClass + ' mb-2'} placeholder="Resim URL (zorunlu)"
-                value={yeniReklam.resim_url}
-                onChange={e => setYeniReklam({ ...yeniReklam, resim_url: e.target.value })} />
-              <input className={inputClass + ' mb-2'} placeholder="Tiklama linki (opsiyonel)"
+              <input className={ic + ' mb-2'} placeholder="Tiklama linki (opsiyonel)"
                 value={yeniReklam.link_url}
                 onChange={e => setYeniReklam({ ...yeniReklam, link_url: e.target.value })} />
-              <select className={inputClass + ' mb-3'}
-                value={yeniReklam.konum}
+              <select className={ic + ' mb-3'} value={yeniReklam.konum}
                 onChange={e => setYeniReklam({ ...yeniReklam, konum: e.target.value })}>
                 <option value="liste">Liste Arasi</option>
                 <option value="header">Header</option>
               </select>
-              {yeniReklam.resim_url && (
-                <img src={yeniReklam.resim_url} className="w-full h-20 object-cover rounded-lg mb-3 border border-slate-100"
-                  onError={(e: any) => { e.target.style.display = 'none'; }} />
+
+              {yeniReklam.resim_url ? (
+                <div className="mb-3 relative">
+                  <img
+                    src={yeniReklam.resim_url}
+                    className="w-full h-24 object-cover rounded-lg border border-slate-200"
+                  />
+                  <button
+                    onClick={() => setYeniReklam({ ...yeniReklam, resim_url: '' })}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold"
+                  >
+                    x
+                  </button>
+                  <p className="text-xs text-green-600 mt-1 font-medium">Resim yuklendi</p>
+                </div>
+              ) : (
+                <div
+                  onDragOver={e => { e.preventDefault(); setSurukleAktif(true); }}
+                  onDragLeave={() => setSurukleAktif(false)}
+                  onDrop={surukBirak}
+                  onClick={() => document.getElementById('reklam-dosya-input')?.click()}
+                  className={
+                    'mb-3 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ' +
+                    (surukleAktif ? 'border-orange-400 bg-orange-50' : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50')
+                  }
+                >
+                  {reklamYukleniyor ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-xs text-slate-400">Yukleniyor...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                        <Image size={20} className="text-slate-400" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-600">Surukle birak veya tikla</p>
+                      <p className="text-xs text-slate-400">PNG, JPG, GIF desteklenir</p>
+                    </div>
+                  )}
+                  <input
+                    id="reklam-dosya-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const dosya = e.target.files?.[0];
+                      if (dosya) dosyaYukle(dosya);
+                    }}
+                  />
+                </div>
               )}
-              <button onClick={reklamEkle} className={btnOrange + ' w-full'}>
+
+              <button
+                onClick={reklamEkle}
+                disabled={!yeniReklam.resim_url || reklamYukleniyor}
+                className={btnO + ' w-full disabled:opacity-50 disabled:cursor-not-allowed'}
+              >
                 Reklam Ekle
               </button>
             </div>
           </div>
         )}
 
-        {/* DUYURULAR */}
         {!yukleniyor && aktifSekme === 'duyurular' && (
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2 flex flex-col gap-3">
@@ -577,35 +604,28 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                 </div>
               )}
             </div>
-
             <div className="bg-white rounded-xl border border-slate-200 p-4 h-fit">
               <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
                 <PlusCircle size={15} className="text-orange-500" />
                 Yeni Duyuru
               </p>
-              <input className={inputClass + ' mb-2'} placeholder="Baslik"
-                value={yeniDuyuru.baslik}
+              <input className={ic + ' mb-2'} placeholder="Baslik" value={yeniDuyuru.baslik}
                 onChange={e => setYeniDuyuru({ ...yeniDuyuru, baslik: e.target.value })} />
-              <textarea className={inputClass + ' mb-2 resize-none'} placeholder="Mesaj" rows={3}
+              <textarea className={ic + ' mb-2 resize-none'} placeholder="Mesaj" rows={3}
                 value={yeniDuyuru.mesaj}
                 onChange={e => setYeniDuyuru({ ...yeniDuyuru, mesaj: e.target.value })} />
-              <input className={inputClass + ' mb-2'} placeholder="Resim URL (opsiyonel)"
-                value={yeniDuyuru.resim_url}
+              <input className={ic + ' mb-2'} placeholder="Resim URL (opsiyonel)" value={yeniDuyuru.resim_url}
                 onChange={e => setYeniDuyuru({ ...yeniDuyuru, resim_url: e.target.value })} />
               <div className="flex items-center gap-2 mb-3">
                 <label className="text-xs text-slate-500 flex-shrink-0">Gecikme (sn):</label>
-                <input className={inputClass} type="number" min={0} max={30}
-                  value={yeniDuyuru.saniye}
+                <input className={ic} type="number" min={0} max={30} value={yeniDuyuru.saniye}
                   onChange={e => setYeniDuyuru({ ...yeniDuyuru, saniye: Number(e.target.value) })} />
               </div>
-              <button onClick={duyuruEkle} className={btnOrange + ' w-full'}>
-                Duyuru Ekle
-              </button>
+              <button onClick={duyuruEkle} className={btnO + ' w-full'}>Duyuru Ekle</button>
             </div>
           </div>
         )}
 
-        {/* DESTEK */}
         {!yukleniyor && aktifSekme === 'destek' && (
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2 flex flex-col gap-3">
@@ -622,9 +642,7 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                       <p className="text-xs text-slate-500 mt-1 line-clamp-2">{d.mesaj}</p>
                     </div>
                     <span className={'ml-4 flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ' +
-                      (d.durum === 'cevaplandi'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700')}>
+                      (d.durum === 'cevaplandi' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')}>
                       {d.durum === 'cevaplandi' ? 'Cevaplandi' : 'Bekliyor'}
                     </span>
                   </div>
@@ -636,27 +654,22 @@ export default function AdminPage({ onLogout, onIlanDetay }: AdminPageProps) {
                 </div>
               )}
             </div>
-
             <div className="bg-white rounded-xl border border-slate-200 p-4 h-fit">
               {seciliDestek ? (
                 <>
                   <p className="text-sm font-semibold text-slate-700 mb-1">{seciliDestek.konu}</p>
                   <p className="text-xs text-slate-500 mb-3">{seciliDestek.mesaj}</p>
                   <textarea
-                    className={inputClass + ' mb-3 resize-none'}
+                    className={ic + ' mb-3 resize-none'}
                     placeholder="Cevabin..."
                     rows={5}
                     value={destekCevap}
                     onChange={e => setDestekCevap(e.target.value)}
                   />
-                  <button onClick={destekCevapla} className={btnOrange + ' w-full'}>
-                    Cevapla
-                  </button>
+                  <button onClick={destekCevapla} className={btnO + ' w-full'}>Cevapla</button>
                 </>
               ) : (
-                <p className="text-sm text-slate-400 text-center py-8">
-                  Cevaplamak icin bir talep sec
-                </p>
+                <p className="text-sm text-slate-400 text-center py-8">Cevaplamak icin bir talep sec</p>
               )}
             </div>
           </div>
