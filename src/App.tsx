@@ -24,7 +24,6 @@ type Page =
   | 'sss' | 'iletisim' | 'kullanim-kosullari'
   | 'kisisel-veriler' | 'kunye';
 
-// Yetkiler tipi — AdminPage ile ortak kullanılır
 export type Yetkiler = {
   ilan_onay?: boolean;
   kullanici_yonetimi?: boolean;
@@ -47,14 +46,9 @@ export default function App() {
   const [currentPage, setCurrentPageState] = useState<Page>('home');
   const [prevPage, setPrevPage] = useState<Page>('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Admin erişimi: superadmin veya type==='admin' olan personeller
   const [isAdmin, setIsAdmin] = useState(false);
-  // Superadmin mi? (tüm yetkilere sahip, personel yönetebilir)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  // Personelin aktif yetkileri
   const [yetkiler, setYetkiler] = useState<Yetkiler>({});
-
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedIlan, setSelectedIlan] = useState<Ilan | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
@@ -67,7 +61,6 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
-  // Kullanıcı bilgilerinden rol/yetki state'lerini doldur
   const kullaniciyiIsle = (user: any) => {
     if (!user) return;
     setIsLoggedIn(true);
@@ -75,14 +68,12 @@ export default function App() {
 
     const temiz = user.phone_number?.replace(/\s/g, '').replace(/[^0-9]/g, '');
     const superTemiz = SUPERADMIN_TELEFON.replace(/\s/g, '').replace(/[^0-9]/g, '');
-
     const superAdmin = temiz === superTemiz || user.type === 'superadmin';
     const adminKullanici = superAdmin || user.type === 'admin';
 
     setIsSuperAdmin(superAdmin);
     setIsAdmin(adminKullanici);
 
-    // Superadmin'in tüm yetkileri var, personelin sadece atanan yetkileri
     if (superAdmin) {
       setYetkiler({
         ilan_onay: true,
@@ -93,7 +84,6 @@ export default function App() {
         ilan_sil: true,
       });
     } else if (user.type === 'admin') {
-      // Pasif personel admin paneline giremez
       if (user.aktif === false) {
         setIsAdmin(false);
         return;
@@ -107,7 +97,6 @@ export default function App() {
     if (path && validPages.includes(path as Page)) {
       setCurrentPageState(path as Page);
     }
-
     const user = mevcutKullanici();
     if (user) kullaniciyiIsle(user);
     setYukleniyor(false);
@@ -263,7 +252,6 @@ export default function App() {
   }
 
   if (currentPage === 'admin') {
-    // Admin yetkisi yoksa anasayfaya yönlendir
     if (!isAdmin) {
       setCurrentPage('home');
       return null;
