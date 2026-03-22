@@ -27,5 +27,6 @@ export interface Ilan {
   servis_turu?: string[];
   created_at: string;
   user_id: string;
-  view_count?: number; // ← bu eklendi
+  view_count?: number; // Görüntülenme sayısı
+  durum?: string;      // İlanın durumu (aktif, pasif vb.)
 }
