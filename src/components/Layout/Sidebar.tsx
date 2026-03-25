@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import { KategoriType, Ilan } from '../../types';
 
 type SidebarProps = {
@@ -19,39 +19,14 @@ type SidebarProps = {
 };
 
 const tumKategoriler = [
-  { kategori: 'isim_var_arac' as KategoriType, label: 'Isim Var Arac Ariyorum' },
-  { kategori: 'aracim_var_is' as KategoriType, label: 'Aracim Var Is Ariyorum' },
-  { kategori: 'sofor_ariyorum' as KategoriType, label: 'Sofor Ariyorum' },
-  { kategori: 'hostes_ariyorum' as KategoriType, label: 'Hostes Ariyorum' },
-  { kategori: 'hostesim_is' as KategoriType, label: 'Hostesim Is Ariyorum' },
-  { kategori: 'soforum_is' as KategoriType, label: 'Soforum Is Ariyorum' },
-  { kategori: 'plaka_satiyorum' as KategoriType, label: 'Plakam Satiyorum' },
+  { kategori: 'isim_var_arac' as KategoriType, label: 'İşim Var Araç Arıyorum' },
+  { kategori: 'aracim_var_is' as KategoriType, label: 'Aracım Var İş Arıyorum' },
+  { kategori: 'sofor_ariyorum' as KategoriType, label: 'Şoför Arıyorum' },
+  { kategori: 'soforum_is' as KategoriType, label: 'Şoför İş Arıyor' },
+  { kategori: 'hostes_ariyorum' as KategoriType, label: 'Hostes Arıyorum' },
+  { kategori: 'hostesim_is' as KategoriType, label: 'Hostesim İş Arıyor' },
+  { kategori: 'plaka_satiyorum' as KategoriType, label: 'Plaka Satıyorum' },
 ];
-
-const ANADOLU_ILCELERI = [
-  'Adalar', 'Atasehir', 'Beykoz', 'Cekmekoy', 'Kadikoy',
-  'Kartal', 'Maltepe', 'Pendik', 'Sancaktepe', 'Sile',
-  'Sultanbeyli', 'Tuzla', 'Umraniye', 'Uskudar',
-];
-
-const AVRUPA_ILCELERI = [
-  'Arnavutkoy', 'Avcilar', 'Bagcilar', 'Bahcelievler', 'Bakirkoy',
-  'Basaksehir', 'Bayrampasa', 'Besiktas', 'Beylikduzu', 'Beyoglu',
-  'Buyukcekmece', 'Catalca', 'Esenler', 'Esenyurt', 'Eyupsultan',
-  'Fatih', 'Gaziosmanpasa', 'Gungoren', 'Kagithane', 'Kucukcekmece',
-  'Sariyer', 'Silivri', 'Sisli', 'Sultangazi', 'Zeytinburnu',
-];
-
-function ilceYakasiniGetir(ilce: string): string {
-  const temiz = ilce.toLowerCase()
-    .replace(/i/g, 'i').replace(/ı/g, 'i')
-    .replace(/ö/g, 'o').replace(/ü/g, 'u')
-    .replace(/ş/g, 's').replace(/ç/g, 'c')
-    .replace(/ğ/g, 'g');
-  if (ANADOLU_ILCELERI.some(a => a.toLowerCase().replace(/i/g, 'i').replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ç/g, 'c').replace(/ğ/g, 'g') === temiz)) return 'anadolu';
-  if (AVRUPA_ILCELERI.some(a => a.toLowerCase().replace(/i/g, 'i').replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ç/g, 'c').replace(/ğ/g, 'g') === temiz)) return 'avrupa';
-  return '';
-}
 
 export default function Sidebar({
   selectedKategoriler,
@@ -68,31 +43,26 @@ export default function Sidebar({
   selectedYaka,
   onYakaChange,
 }: SidebarProps) {
-  const [ilceAcik, setIlceAcik] = useState(false);
+  // Akordeon menülerin açık/kapalı durumları
+  const [kategoriAcik, setKategoriAcik] = useState(true);
+  const [konumAcik, setKonumAcik] = useState(true);
+  const [ekFiltrelerAcik, setEkFiltrelerAcik] = useState(false);
 
-  const handleCheckbox = (kategori: KategoriType) => {
-    if (selectedKategoriler.includes(kategori)) {
-      onKategoriChange(selectedKategoriler.filter((k) => k !== kategori));
-    } else {
-      onKategoriChange([...selectedKategoriler, kategori]);
-    }
-  };
-
+  // Kategori sayısını hesaplama
   const kategoriSayisi = (kategori: KategoriType) =>
     ilanlar.filter((i) => i.kategori === kategori).length;
 
+  const toplamIlanSayisi = ilanlar.length;
+
+  // Şehirleri ve ilçeleri hesaplama
   const sehirler = useMemo(() => {
     const sayac: Record<string, number> = {};
     ilanlar.forEach((ilan) => {
       ilan.guzergahlar.forEach((g) => {
-        if (g.kalkis_il) {
-          sayac[g.kalkis_il] = (sayac[g.kalkis_il] || 0) + 1;
-        }
+        if (g.kalkis_il) sayac[g.kalkis_il] = (sayac[g.kalkis_il] || 0) + 1;
       });
     });
-    return Object.entries(sayac)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8);
+    return Object.keys(sayac).sort();
   }, [ilanlar]);
 
   const ilceler = useMemo(() => {
@@ -105,274 +75,161 @@ export default function Sidebar({
         }
       });
     });
-    return Object.entries(sayac)
-      .sort((a, b) => b[1] - a[1]);
+    return Object.keys(sayac).sort();
   }, [ilanlar, selectedSehir]);
 
-  const istanbulSecili = selectedSehir === 'Istanbul';
-
-  const anadoluSayisi = useMemo(() => {
-    if (!istanbulSecili) return 0;
-    return ilanlar.filter((ilan) =>
-      ilan.guzergahlar.some((g) =>
-        g.kalkis_il === 'Istanbul' && g.kalkis_ilce && ilceYakasiniGetir(g.kalkis_ilce) === 'anadolu'
-      )
-    ).length;
-  }, [ilanlar, istanbulSecili]);
-
-  const avrupaSayisi = useMemo(() => {
-    if (!istanbulSecili) return 0;
-    return ilanlar.filter((ilan) =>
-      ilan.guzergahlar.some((g) =>
-        g.kalkis_il === 'Istanbul' && g.kalkis_ilce && ilceYakasiniGetir(g.kalkis_ilce) === 'avrupa'
-      )
-    ).length;
-  }, [ilanlar, istanbulSecili]);
-
-  const aktifFiltreSayisi =
-    selectedKategoriler.length +
-    (selectedSehir ? 1 : 0) +
-    (selectedIlce ? 1 : 0) +
-    (selectedYaka ? 1 : 0);
-
   return (
-    <aside className="w-full flex flex-col gap-3">
+    <aside className="w-full bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
+      {/* Üst Başlık */}
+      <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-2 bg-gray-50">
+        <Filter size={16} className="text-gray-500" />
+        <span className="font-semibold text-gray-700">Filtrele</span>
+      </div>
 
-      {/* KATEGORİ */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <span className="text-sm font-semibold text-gray-800">Ilan Kategorisi</span>
-          {selectedKategoriler.length > 0 && (
-            <button
+      {/* 1. KATEGORİ BÖLÜMÜ */}
+      <div className="border-b border-gray-100">
+        <button
+          onClick={() => setKategoriAcik(!kategoriAcik)}
+          className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition"
+        >
+          <span className="text-sm font-semibold text-gray-800">Kategori</span>
+          {kategoriAcik ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+        </button>
+        
+        {kategoriAcik && (
+          <div className="pb-3 px-2">
+            {/* Tüm Kategoriler Butonu */}
+            <div
               onClick={() => onKategoriChange([])}
-              className="text-xs text-orange-500 hover:text-orange-600 font-medium transition"
+              className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition mb-1 ${
+                selectedKategoriler.length === 0 ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-gray-600 hover:bg-gray-50'
+              }`}
             >
-              Temizle
-            </button>
-          )}
-        </div>
-        <div className="py-1">
-          {tumKategoriler.map((item) => {
-            const sayi = kategoriSayisi(item.kategori);
-            return (
-              <label
-                key={item.kategori}
-                className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-50 transition group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <input
-                    type="checkbox"
-                    checked={selectedKategoriler.includes(item.kategori)}
-                    onChange={() => handleCheckbox(item.kategori)}
-                    className="accent-orange-500 w-3.5 h-3.5"
-                  />
-                  <span className={
-                    'text-xs transition ' +
-                    (selectedKategoriler.includes(item.kategori)
-                      ? 'text-orange-600 font-semibold'
-                      : 'text-gray-600 group-hover:text-gray-800')
-                  }>
-                    {item.label}
-                  </span>
+              <span className="text-sm">Tüm Kategoriler</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${selectedKategoriler.length === 0 ? 'bg-blue-100' : 'bg-gray-100 text-gray-500'}`}>
+                {toplamIlanSayisi}
+              </span>
+            </div>
+
+            {/* Alt Kategoriler */}
+            {tumKategoriler.map((item) => {
+              const sayi = kategoriSayisi(item.kategori);
+              const isSelected = selectedKategoriler.includes(item.kategori);
+              
+              if (sayi === 0) return null; // İlanı olmayan kategoriyi gizle (daha temiz görünür)
+
+              return (
+                <div
+                  key={item.kategori}
+                  onClick={() => onKategoriChange([item.kategori])} // Tekli seçim mantığı (Sahibinden gibi)
+                  className={`flex items-center justify-between px-3 py-1.5 rounded-md cursor-pointer transition ${
+                    isSelected ? 'bg-blue-50/50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="text-sm ml-2">- {item.label}</span>
+                  <span className="text-xs text-gray-400">{sayi}</span>
                 </div>
-                <span className="text-xs text-gray-400">{sayi}</span>
-              </label>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* ŞEHİR */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <span className="text-sm font-semibold text-gray-800">Sehir</span>
-          {selectedSehir && (
-            <button
-              onClick={() => { onSehirChange(''); onIlceChange(''); onYakaChange(''); }}
-              className="text-xs text-orange-500 hover:text-orange-600 font-medium transition"
-            >
-              Temizle
-            </button>
-          )}
-        </div>
-        <div className="py-1">
-          {sehirler.map(([sehir, sayi]) => (
-            <label
-              key={sehir}
-              className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-50 transition group"
-            >
-              <div className="flex items-center gap-2.5">
-                <input
-                  type="radio"
-                  name="sehir"
-                  checked={selectedSehir === sehir}
-                  onChange={() => {
-                    onSehirChange(sehir);
-                    onIlceChange('');
-                    onYakaChange('');
-                  }}
-                  className="accent-orange-500 w-3.5 h-3.5"
-                />
-                <span className={
-                  'text-xs transition ' +
-                  (selectedSehir === sehir
-                    ? 'text-orange-600 font-semibold'
-                    : 'text-gray-600 group-hover:text-gray-800')
-                }>
-                  {sehir}
-                </span>
-              </div>
-              <span className="text-xs text-gray-400">{sayi}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+      {/* 2. KONUM BÖLÜMÜ */}
+      <div className="border-b border-gray-100">
+        <button
+          onClick={() => setKonumAcik(!konumAcik)}
+          className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition"
+        >
+          <span className="text-sm font-semibold text-gray-800">Konum</span>
+          {konumAcik ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+        </button>
 
-      {/* İSTANBUL YAKASI */}
-      {istanbulSecili && (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-800">Yaka</span>
-            {selectedYaka && (
-              <button
-                onClick={() => { onYakaChange(''); onIlceChange(''); }}
-                className="text-xs text-orange-500 hover:text-orange-600 font-medium transition"
+        {konumAcik && (
+          <div className="px-4 pb-4 flex flex-col gap-3">
+            {/* Şehir Seçimi */}
+            <div>
+              <select
+                value={selectedSehir}
+                onChange={(e) => {
+                  onSehirChange(e.target.value);
+                  onIlceChange('');
+                  onYakaChange('');
+                }}
+                className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 text-gray-700 bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none"
               >
-                Temizle
-              </button>
+                <option value="">Tüm Şehirler</option>
+                {sehirler.map((sehir) => (
+                  <option key={sehir} value={sehir}>{sehir}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* İlçe Seçimi (Sadece şehir seçiliyse görünür) */}
+            {selectedSehir && ilceler.length > 0 && (
+              <div>
+                <select
+                  value={selectedIlce}
+                  onChange={(e) => onIlceChange(e.target.value)}
+                  className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 text-gray-700 bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none"
+                >
+                  <option value="">Tüm İlçeler</option>
+                  {ilceler.map((ilce) => (
+                    <option key={ilce} value={ilce}>{ilce}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {/* Yaka Seçimi (Sadece İstanbul seçiliyse görünür) */}
+            {selectedSehir === 'Istanbul' && (
+              <div>
+                <select
+                  value={selectedYaka}
+                  onChange={(e) => { onYakaChange(e.target.value); onIlceChange(''); }}
+                  className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 text-gray-700 bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none"
+                >
+                  <option value="">Tüm Yakalar</option>
+                  <option value="avrupa">Avrupa Yakası</option>
+                  <option value="anadolu">Anadolu Yakası</option>
+                </select>
+              </div>
             )}
           </div>
-          <div className="py-1">
-            {[
-              { val: 'anadolu', label: 'Anadolu Yakasi', sayi: anadoluSayisi },
-              { val: 'avrupa', label: 'Avrupa Yakasi', sayi: avrupaSayisi },
-            ].map((item) => (
-              <label
-                key={item.val}
-                className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-50 transition group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <input
-                    type="radio"
-                    name="yaka"
-                    checked={selectedYaka === item.val}
-                    onChange={() => { onYakaChange(item.val); onIlceChange(''); }}
-                    className="accent-orange-500 w-3.5 h-3.5"
-                  />
-                  <span className={
-                    'text-xs transition ' +
-                    (selectedYaka === item.val
-                      ? 'text-orange-600 font-semibold'
-                      : 'text-gray-600 group-hover:text-gray-800')
-                  }>
-                    {item.label}
-                  </span>
-                </div>
-                <span className="text-xs text-gray-400">{item.sayi}</span>
-              </label>
-            ))}
+        )}
+      </div>
+
+      {/* 3. EK FİLTRELER (Şimdilik Görsel Amaçlı Placeholder) */}
+      <div className="border-b border-gray-100">
+        <button
+          onClick={() => setEkFiltrelerAcik(!ekFiltrelerAcik)}
+          className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition"
+        >
+          <span className="text-sm font-semibold text-gray-800">Ek Filtreler</span>
+          {ekFiltrelerAcik ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+        </button>
+        {ekFiltrelerAcik && (
+          <div className="px-4 pb-4">
+            <p className="text-xs text-gray-500">Yakında eklenecek...</p>
           </div>
-        </div>
-      )}
-
-      {/* İLÇE */}
-      {selectedSehir && ilceler.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <button
-            onClick={() => setIlceAcik(!ilceAcik)}
-            className="w-full px-4 py-3 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 transition"
-          >
-            <span className="text-sm font-semibold text-gray-800">
-              Ilce
-              {selectedIlce && (
-                <span className="ml-2 text-xs text-orange-500 font-medium">({selectedIlce})</span>
-              )}
-            </span>
-            {ilceAcik
-              ? <ChevronUp size={14} className="text-gray-400" />
-              : <ChevronDown size={14} className="text-gray-400" />
-            }
-          </button>
-          {ilceAcik && (
-            <div className="py-1 max-h-48 overflow-y-auto">
-              {ilceler.map(([ilce, sayi]) => (
-                <label
-                  key={ilce}
-                  className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-50 transition group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <input
-                      type="radio"
-                      name="ilce"
-                      checked={selectedIlce === ilce}
-                      onChange={() => onIlceChange(ilce)}
-                      className="accent-orange-500 w-3.5 h-3.5"
-                    />
-                    <span className={
-                      'text-xs transition ' +
-                      (selectedIlce === ilce
-                        ? 'text-orange-600 font-semibold'
-                        : 'text-gray-600 group-hover:text-gray-800')
-                    }>
-                      {ilce}
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-400">{sayi}</span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* SIRALAMA */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100">
-          <span className="text-sm font-semibold text-gray-800">Siralama</span>
-        </div>
-        <div className="py-1">
-          {[
-            { val: 'yeni', label: 'Once En Yeni' },
-            { val: 'eski', label: 'Once En Eski' },
-          ].map((item) => (
-            <label
-              key={item.val}
-              className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition"
-            >
-              <input
-                type="radio"
-                name="siralama"
-                checked={siralama === item.val}
-                onChange={() => onSiralamaChange(item.val)}
-                className="accent-orange-500 w-3.5 h-3.5"
-              />
-              <span className={
-                'text-xs transition ' +
-                (siralama === item.val
-                  ? 'text-orange-600 font-semibold'
-                  : 'text-gray-600')
-              }>
-                {item.label}
-              </span>
-            </label>
-          ))}
-        </div>
+        )}
       </div>
 
       {/* BUTONLAR */}
-      <button
-        onClick={onFilter}
-        className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg font-semibold text-sm transition"
-      >
-        {aktifFiltreSayisi > 0 ? 'Filtrele (' + aktifFiltreSayisi + ')' : 'Filtrele'}
-      </button>
-      <button
-        onClick={onClear}
-        className="w-full bg-white hover:bg-gray-50 text-gray-500 border border-gray-200 py-2 rounded-lg font-medium text-sm transition"
-      >
-        Filtreleri Temizle
-      </button>
-
+      <div className="p-4 bg-gray-50 mt-auto flex flex-col gap-2">
+        <button
+          onClick={onFilter}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-md font-semibold text-sm transition shadow-sm"
+        >
+          Aramayı Daralt
+        </button>
+        <button
+          onClick={onClear}
+          className="w-full bg-white hover:bg-gray-100 text-gray-600 border border-gray-300 py-2 rounded-md font-medium text-sm transition"
+        >
+          Seçimleri Temizle
+        </button>
+      </div>
     </aside>
   );
 }
