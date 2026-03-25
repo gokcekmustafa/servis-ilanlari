@@ -25,30 +25,54 @@ export default function MainFilter() {
   }, [selectedRegion]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto bg-white p-8 rounded-2xl shadow-2xl border border-gray-100 -mt-16 relative z-20">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+    <div className="w-full max-w-5xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-100 relative z-30">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        {/* Şehir */}
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-gray-600">Şehir</label>
-          <select className="p-3 border rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)}>
-            <option value="">Tüm Şehirler</option>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Şehir Seçin</label>
+          <select 
+            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            value={selectedCity}
+            onChange={(e) => setSelectedCity(e.target.value)}
+          >
+            <option value="">Tüm Türkiye</option>
             {locations.map(l => <option key={l.city} value={l.city}>{l.city}</option>)}
           </select>
         </div>
+
+        {/* Bölge / Yaka */}
         <div className={`flex flex-col gap-2 ${!selectedCity && 'opacity-40'}`}>
-          <label className="text-sm font-semibold text-gray-600">Bölge / Yaka</label>
-          <select className="p-3 border rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" disabled={!selectedCity} value={selectedRegion} onChange={(e) => setSelectedRegion(e.target.value)}>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Bölge / Yaka</label>
+          <select 
+            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            disabled={!selectedCity}
+            value={selectedRegion}
+            onChange={(e) => setSelectedRegion(e.target.value)}
+          >
             <option value="">Seçiniz</option>
             {availableRegions.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
           </select>
         </div>
+
+        {/* İlçe */}
         <div className={`flex flex-col gap-2 ${!selectedRegion && 'opacity-40'}`}>
-          <label className="text-sm font-semibold text-gray-600">İlçe</label>
-          <select className="p-3 border rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" disabled={!selectedRegion} value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)}>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">İlçe</label>
+          <select 
+            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            disabled={!selectedRegion}
+            value={selectedDistrict}
+            onChange={(e) => setSelectedDistrict(e.target.value)}
+          >
             <option value="">Tüm İlçeler</option>
             {availableDistricts.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95">
+
+        {/* Buton */}
+        <button className="bg-[#1a3c6e] hover:bg-blue-900 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+          </svg>
           İlanları Ara
         </button>
       </div>
