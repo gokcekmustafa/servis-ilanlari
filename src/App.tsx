@@ -119,12 +119,10 @@ export default function App() {
     const user = mevcutKullanici();
     if (user) {
       kullaniciyiIsle(user);
-
       const temiz = user.phone_number?.replace(/\s/g, '').replace(/[^0-9]/g, '');
       const superTemiz = SUPERADMIN_TELEFON.replace(/\s/g, '').replace(/[^0-9]/g, '');
       const superAdmin = temiz === superTemiz || user.type === 'superadmin';
       const adminKullanici = superAdmin || (user.type === 'admin' && user.aktif !== false);
-
       if (adminKullanici) {
         setCurrentPage('admin');
         return;
@@ -134,13 +132,13 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-  await cikisYap();
-  sessionStorage.clear();
-  setIsLoggedIn(false);
-  setIsAdmin(false);
-  setUserId(null);
-  setCurrentPage('home');
-};
+    await cikisYap();
+    sessionStorage.clear();
+    setIsLoggedIn(false);
+    setIsAdmin(false);
+    setUserId(null);
+    setCurrentPage('home');
+  };
 
   const handleIlanDetay = (ilan: Ilan) => {
     setSelectedIlan(ilan);
@@ -190,25 +188,8 @@ export default function App() {
     );
   }
 
-  if (currentPage === 'login') {
-    return (
-      <LoginPage
-        onLogin={handleLogin}
-        onGoRegister={() => setCurrentPage('register')}
-        onGoHome={() => setCurrentPage('home')}
-      />
-    );
-  }
-
-  if (currentPage === 'register') {
-    return (
-      <RegisterPage
-        onRegister={handleLogin}
-        onGoLogin={() => setCurrentPage('login')}
-        onGoHome={() => setCurrentPage('home')}
-      />
-    );
-  }
+  if (currentPage === 'login') return <LoginPage onLogin={handleLogin} onGoRegister={() => setCurrentPage('register')} onGoHome={() => setCurrentPage('home')} />;
+  if (currentPage === 'register') return <RegisterPage onRegister={handleLogin} onGoLogin={() => setCurrentPage('login')} onGoHome={() => setCurrentPage('home')} />;
 
   const withLayout = (content: React.ReactNode) => (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -218,51 +199,12 @@ export default function App() {
     </div>
   );
 
-  if (currentPage === 'detay' && selectedIlan) {
-    return withLayout(
-      <IlanDetayPage
-        ilan={selectedIlan}
-        onGoBack={goBack}
-        onGoLogin={() => setCurrentPage('login')}
-        isLoggedIn={isLoggedIn}
-      />
-    );
-  }
-
-  if (currentPage === 'ilan-ekle') {
-    return withLayout(
-      <IlanEklePage
-        onGoBack={goBack}
-        onSuccess={handleIlanSuccess}
-        userId={userId || ''}
-      />
-    );
-  }
-
-  if (currentPage === 'panel') {
-    return withLayout(
-      <PanelPage
-        onLogout={handleLogout}
-        onIlanEkle={handleIlanEkle}
-        onIlanDetay={handleIlanDetay}
-        userId={userId || ''}
-      />
-    );
-  }
-
+  if (currentPage === 'detay' && selectedIlan) return withLayout(<IlanDetayPage ilan={selectedIlan} onGoBack={goBack} onGoLogin={() => setCurrentPage('login')} isLoggedIn={isLoggedIn} />);
+  if (currentPage === 'ilan-ekle') return withLayout(<IlanEklePage onGoBack={goBack} onSuccess={handleIlanSuccess} userId={userId || ''} />);
+  if (currentPage === 'panel') return withLayout(<PanelPage onLogout={handleLogout} onIlanEkle={handleIlanEkle} onIlanDetay={handleIlanDetay} userId={userId || ''} />);
   if (currentPage === 'admin') {
-    if (!isAdmin) {
-      setCurrentPage('home');
-      return null;
-    }
-    return withLayout(
-      <AdminPage
-        onLogout={handleLogout}
-        onIlanDetay={handleIlanDetay}
-        isSuperAdmin={isSuperAdmin}
-        yetkiler={yetkiler}
-      />
-    );
+    if (!isAdmin) { setCurrentPage('home'); return null; }
+    return withLayout(<AdminPage onLogout={handleLogout} onIlanDetay={handleIlanDetay} isSuperAdmin={isSuperAdmin} yetkiler={yetkiler} />);
   }
 
   if (currentPage === 'hakkimizda') return withLayout(<HakkimizdaPage onGoBack={goBack} />);
