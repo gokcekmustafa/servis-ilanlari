@@ -21,7 +21,7 @@ const badges: Record<KategoriType, { label: string; color: string; bg: string; t
 const plakaSatiyormu = (ilan: Ilan) => ilan.kategori === 'plaka_satiyorum';
 
 export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
-  const badge = badges[ilan.kategori] || { label: 'Diğer', bg: 'bg-gray-50', text: 'text-gray-700' };
+  const badge = badges[ilan.kategori] || { label: 'Diğer', color: 'gray', bg: 'bg-gray-50', text: 'text-gray-700' };
   const ucret = ilan.ekbilgiler?.ucret;
   const kapasite = ilan.ekbilgiler?.kapasite || 'Bilinmiyor'; // Örnek alan, veritabanında varsa gelir
   
