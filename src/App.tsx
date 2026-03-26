@@ -86,15 +86,10 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
   };
 
   const duyuruYukle = async () => {
-    const { data } = await supabase.from('duyurular').select('*').eq('aktif', true).limit(1).single();
-    if (data) {
-      const kapatildi = sessionStorage.getItem('duyuru_kapatildi_' + data.id);
-      if (!kapatildi) {
-        setDuyuru(data);
-        setTimeout(() => setPopupAcik(true), (data.saniye || 2) * 1000);
-      }
-    }
-  };
+  // Şimdilik devre dışı - API problemi var
+  // const { data } = await supabase.from('duyurular')...
+  setDuyuru(null);
+};
 
   useEffect(() => {
     if (!popupAcik || !duyuru) return;
