@@ -9,10 +9,30 @@ import { SlidersHorizontal, X } from 'lucide-react';
 
 const REKLAM_ARASI = 2;
 
-export default function HomePage({ onGoLogin, onIlanDetay }: {
+type ReklamKartiProps = { reklam: any };
+
+function ReklamKarti({ reklam }: ReklamKartiProps) {
+  return (
+    <div
+      onClick={() => reklam.link_url && window.open(reklam.link_url, '_blank')}
+      className="cursor-pointer rounded-lg overflow-hidden border border-gray-200 hover:border-orange-300 transition-all"
+    >
+      <div className="relative">
+        <img src={reklam.resim_url} alt={reklam.baslik || 'Reklam'} className="w-full h-20 object-cover" />
+        <span className="absolute top-1.5 right-1.5 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">
+          Reklam
+        </span>
+      </div>
+    </div>
+  );
+}
+
+type HomePageProps = {
   onGoLogin: () => void;
   onIlanDetay: (ilan: Ilan) => void;
-}) {
+};
+
+export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(null);
@@ -29,6 +49,7 @@ export default function HomePage({ onGoLogin, onIlanDetay }: {
   const [reklamlar, setReklamlar] = useState<any[]>([]);
   const [duyuru, setDuyuru] = useState<any>(null);
   const [popupAcik, setPopupAcik] = useState(false);
+  const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
 
   useEffect(() => {
@@ -36,6 +57,11 @@ export default function HomePage({ onGoLogin, onIlanDetay }: {
     reklamlariYukle();
     duyuruYukle();
   }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = filtreAcik ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [filtreAcik]);
 
   const ilanlarYukle = async () => {
     setYukleniyor(true);
@@ -60,8 +86,25 @@ export default function HomePage({ onGoLogin, onIlanDetay }: {
       .eq('aktif', true)
       .limit(1)
       .single();
-    if (data) setDuyuru(data);
+    if (data) {
+      const kapatildi = sessionStorage.getItem('duyuru_kapatildi_' + data.id);
+      if (!kapatildi) {
+        setDuyuru(data);
+        setTimeout(() => setPopupAcik(true), (data.saniye || 2) * 1000);
+      }
+    }
   };
+
+  useEffect(() => {
+    if (!popupAcik || !duyuru) return;
+    const sure = (duyuru.goster_sure || 8) * 1000;
+    const timer = setTimeout(() => {
+      setPopupAcik(false);
+      sessionStorage.setItem('duyuru_kapatildi_' + duyuru.id, '1');
+    }, sure);
+    setOtomatikKapatTimer(timer);
+    return () => clearTimeout(timer);
+  }, [popupAcik, duyuru]);
 
   const handleFilter = () => {
     setAktifKategori(selectedKategori);
@@ -93,6 +136,14 @@ export default function HomePage({ onGoLogin, onIlanDetay }: {
       if (aktifIlce) {
         const ilceVar = ilan.guzergahlar.some((g) => g.kalkis_ilce === aktifIlce);
         if (!ilceVar) return false;
+      }
+      if (aktifYaka && aktifSehir === 'Istanbul') {
+        const yakaVar = ilan.guzergahlar.some((g) =>
+          g.kalkis_il === 'Istanbul' &&
+          g.kalkis_ilce &&
+          g.kalkis_ilce
+        );
+        if (!yakaVar) return false;
       }
       return true;
     })
@@ -155,7 +206,6 @@ export default function HomePage({ onGoLogin, onIlanDetay }: {
             {aktivFiltreVar && (
               <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-3 flex-wrap">
                 <span className="text-sm font-medium text-gray-700">Aktif Filtreler:</span>
-                {/* Kategori Badge */}
                 {aktifKategori && (
                   <div className="flex items-center gap-2 bg-white border border-orange-300 rounded-full px-3 py-1.5">
                     <span className="text-sm text-gray-700 font-medium">{aktifKategori}</span>
@@ -167,7 +217,6 @@ export default function HomePage({ onGoLogin, onIlanDetay }: {
                     </button>
                   </div>
                 )}
-                {/* Konum Badge */}
                 {(aktifSehir || aktifIlce || aktifYaka) && (
                   <div className="flex items-center gap-2 bg-white border border-orange-300 rounded-full px-3 py-1.5">
                     <span className="text-sm text-gray-700 font-medium">
@@ -274,6 +323,55 @@ export default function HomePage({ onGoLogin, onIlanDetay }: {
                 ilanlar={ilanlar}
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Duyuru Popup */}
+      {popupAcik && duyuru && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4"
+          onClick={() => {
+            setPopupAcik(false);
+            if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
+          }}
+        >
+          <div
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md relative shadow-xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {duyuru.resim_url ? (
+              <>
+                <img src={duyuru.resim_url} alt={duyuru.baslik || 'Duyuru'} className="w-full h-48 sm:h-56 object-cover" />
+                <div className="p-4 sm:p-5">
+                  {duyuru.baslik && <h2 className="text-base font-bold text-gray-800 mb-1.5">{duyuru.baslik}</h2>}
+                  {duyuru.mesaj && <p className="text-sm text-gray-500 leading-relaxed">{duyuru.mesaj}</p>}
+                  <button 
+                    onClick={() => {
+                      setPopupAcik(false);
+                      if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
+                    }}
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition mt-4"
+                  >
+                    Kapat
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="p-5 sm:p-6">
+                {duyuru.baslik && <h2 className="text-base font-bold text-gray-800 mb-2">{duyuru.baslik}</h2>}
+                {duyuru.mesaj && <p className="text-sm text-gray-500 leading-relaxed">{duyuru.mesaj}</p>}
+                <button 
+                  onClick={() => {
+                    setPopupAcik(false);
+                    if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
+                  }}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition mt-4"
+                >
+                  Kapat
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
