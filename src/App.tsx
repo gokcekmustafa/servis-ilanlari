@@ -153,7 +153,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
   const aktivFiltreVar = !!aktifKategori || !!aktifSehir || !!aktifIlce;
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-red-500 min-h-screen">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6">
         
         {/* KATEGORİ KARTLARI */}
