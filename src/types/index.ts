@@ -7,7 +7,8 @@ export type KategoriType =
   | 'hostes_ariyorum'
   | 'hostesim_is'
   | 'soforum_is'
-  | 'plaka_satiyorum';
+  | 'plaka_satiyorum'
+  | 'aracimi_satiyorum';
 
 export interface Ilan {
   id: string;
