@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from '../components/Layout/Sidebar';
+import CategoryCards from '../components/CategoryCards';
+import ImprovedSidebar from '../components/Layout/ImprovedSidebar';
 import IlanCard from '../components/IlanCard';
 import { ilanlariGetir } from '../lib/ilanlar';
 import { KategoriType, Ilan } from '../types';
@@ -8,102 +9,33 @@ import { SlidersHorizontal, X } from 'lucide-react';
 
 const REKLAM_ARASI = 2;
 
-const kategoriLabel: Record<KategoriType, string> = {
-  isim_var_arac: 'Isim Var Arac Ariyorum',
-  aracim_var_is: 'Aracim Var Is Ariyorum',
-  sofor_ariyorum: 'Sofor Ariyorum',
-  hostes_ariyorum: 'Hostes Ariyorum',
-  hostesim_is: 'Hostesim Is Ariyorum',
-  soforum_is: 'Soforum Is Ariyorum',
-  plaka_satiyorum: 'Plakam Satiyorum',
-};
-
-const ANADOLU_ILCELERI = [
-  'adalar', 'atasehir', 'beykoz', 'cekmekoy', 'kadikoy',
-  'kartal', 'maltepe', 'pendik', 'sancaktepe', 'sile',
-  'sultanbeyli', 'tuzla', 'umraniye', 'uskudar',
-];
-
-function normalizeStr(str: string): string {
-  return str.toLowerCase()
-    .replace(/i/g, 'i').replace(/ı/g, 'i')
-    .replace(/ö/g, 'o').replace(/ü/g, 'u')
-    .replace(/ş/g, 's').replace(/ç/g, 'c')
-    .replace(/ğ/g, 'g');
-}
-
-function ilceYakasi(ilce: string): string {
-  const n = normalizeStr(ilce);
-  if (ANADOLU_ILCELERI.includes(n)) return 'anadolu';
-  return 'avrupa';
-}
-
-type ReklamKartiProps = { reklam: any };
-
-function ReklamKarti({ reklam }: ReklamKartiProps) {
-  return (
-    <div
-      onClick={() => reklam.link_url && window.open(reklam.link_url, '_blank')}
-      className="cursor-pointer rounded-lg overflow-hidden border border-gray-200 hover:border-orange-300 transition-all"
-    >
-      <div className="relative">
-        <img src={reklam.resim_url} alt={reklam.baslik || 'Reklam'} className="w-full h-20 object-cover" />
-        <span className="absolute top-1.5 right-1.5 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">
-          Reklam
-        </span>
-      </div>
-    </div>
-  );
-}
-
-type IlanListesiProps = { ilanlar: Ilan[]; reklamlar: any[]; onDetay: (ilan: Ilan) => void };
-
-function IlanListesi({ ilanlar, reklamlar, onDetay }: IlanListesiProps) {
-  const elemanlar: React.ReactNode[] = [];
-  ilanlar.forEach((ilan, index) => {
-    elemanlar.push(<IlanCard key={'ilan-' + ilan.id} ilan={ilan} onDetay={onDetay} />);
-    if ((index + 1) % REKLAM_ARASI === 0 && reklamlar.length > 0) {
-      const ri = Math.floor(index / REKLAM_ARASI) % reklamlar.length;
-      elemanlar.push(<ReklamKarti key={'reklam-' + index} reklam={reklamlar[ri]} />);
-    }
-  });
-  return <div className="flex flex-col gap-2">{elemanlar}</div>;
-}
-
-type HomePageProps = {
+export default function HomePage({ onGoLogin, onIlanDetay }: {
   onGoLogin: () => void;
   onIlanDetay: (ilan: Ilan) => void;
-};
-
-export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
+}) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
-  const [selectedKategoriler, setSelectedKategoriler] = useState<KategoriType[]>([]);
-  const [aktifKategoriler, setAktifKategoriler] = useState<KategoriType[]>([]);
+  const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(null);
+  const [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
+  
+  const [selectedSehir, setSelectedSehir] = useState('');
+  const [selectedIlce, setSelectedIlce] = useState('');
+  const [selectedYaka, setSelectedYaka] = useState('');
+  const [aktifSehir, setAktifSehir] = useState('');
+  const [aktifIlce, setAktifIlce] = useState('');
+  const [aktifYaka, setAktifYaka] = useState('');
+  
   const [siralama, setSiralama] = useState('yeni');
   const [reklamlar, setReklamlar] = useState<any[]>([]);
   const [duyuru, setDuyuru] = useState<any>(null);
   const [popupAcik, setPopupAcik] = useState(false);
-  const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
-
-  const [selectedSehir, setSelectedSehir] = useState('');
-  const [aktifSehir, setAktifSehir] = useState('');
-  const [selectedIlce, setSelectedIlce] = useState('');
-  const [aktifIlce, setAktifIlce] = useState('');
-  const [selectedYaka, setSelectedYaka] = useState('');
-  const [aktifYaka, setAktifYaka] = useState('');
 
   useEffect(() => {
     ilanlarYukle();
     reklamlariYukle();
     duyuruYukle();
   }, []);
-
-  useEffect(() => {
-    document.body.style.overflow = filtreAcik ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [filtreAcik]);
 
   const ilanlarYukle = async () => {
     setYukleniyor(true);
@@ -113,41 +45,26 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   };
 
   const reklamlariYukle = async () => {
-    const { data } = await supabase.from('reklamlar').select('*').eq('aktif', true).order('id', { ascending: false });
+    const { data } = await supabase
+      .from('reklamlar')
+      .select('*')
+      .eq('aktif', true)
+      .order('id', { ascending: false });
     if (data) setReklamlar(data);
   };
 
   const duyuruYukle = async () => {
-    const { data } = await supabase.from('duyurular').select('*').eq('aktif', true).limit(1).single();
-    if (data) {
-      const kapatildi = sessionStorage.getItem('duyuru_kapatildi_' + data.id);
-      if (kapatildi) return;
-      setDuyuru(data);
-      setTimeout(() => setPopupAcik(true), (data.saniye || 2) * 1000);
-    }
-  };
-
-  useEffect(() => {
-    if (!popupAcik || !duyuru) return;
-    const sure = (duyuru.goster_sure || 8) * 1000;
-    const timer = setTimeout(() => {
-      setPopupAcik(false);
-      sessionStorage.setItem('duyuru_kapatildi_' + duyuru.id, '1');
-    }, sure);
-    setOtomatikKapatTimer(timer);
-    return () => clearTimeout(timer);
-  }, [popupAcik, duyuru]);
-
-  const popupKapat = (kullaniciKapatti: boolean) => {
-    if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
-    setPopupAcik(false);
-    if (kullaniciKapatti && duyuru) {
-      sessionStorage.setItem('duyuru_kapatildi_' + duyuru.id, '1');
-    }
+    const { data } = await supabase
+      .from('duyurular')
+      .select('*')
+      .eq('aktif', true)
+      .limit(1)
+      .single();
+    if (data) setDuyuru(data);
   };
 
   const handleFilter = () => {
-    setAktifKategoriler(selectedKategoriler);
+    setAktifKategori(selectedKategori);
     setAktifSehir(selectedSehir);
     setAktifIlce(selectedIlce);
     setAktifYaka(selectedYaka);
@@ -155,8 +72,8 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   };
 
   const handleClear = () => {
-    setSelectedKategoriler([]);
-    setAktifKategoriler([]);
+    setSelectedKategori(null);
+    setAktifKategori(null);
     setSelectedSehir('');
     setAktifSehir('');
     setSelectedIlce('');
@@ -164,18 +81,11 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
     setSelectedYaka('');
     setAktifYaka('');
     setSiralama('yeni');
-    setFiltreAcik(false);
-  };
-
-  const handleKategoriKaldir = (kategori: KategoriType) => {
-    const yeni = aktifKategoriler.filter((k) => k !== kategori);
-    setAktifKategoriler(yeni);
-    setSelectedKategoriler(yeni);
   };
 
   const filtrelenmisIlanlar = ilanlar
     .filter((ilan) => {
-      if (aktifKategoriler.length > 0 && !aktifKategoriler.includes(ilan.kategori)) return false;
+      if (aktifKategori && ilan.kategori !== aktifKategori) return false;
       if (aktifSehir) {
         const sehirVar = ilan.guzergahlar.some((g) => g.kalkis_il === aktifSehir);
         if (!sehirVar) return false;
@@ -183,14 +93,6 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
       if (aktifIlce) {
         const ilceVar = ilan.guzergahlar.some((g) => g.kalkis_ilce === aktifIlce);
         if (!ilceVar) return false;
-      }
-      if (aktifYaka && aktifSehir === 'Istanbul') {
-        const yakaVar = ilan.guzergahlar.some((g) =>
-          g.kalkis_il === 'Istanbul' &&
-          g.kalkis_ilce &&
-          ilceYakasi(g.kalkis_ilce) === aktifYaka
-        );
-        if (!yakaVar) return false;
       }
       return true;
     })
@@ -200,230 +102,181 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
         : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
-  const aktifEtiketler = [
-    ...aktifKategoriler.map((k) => ({ tip: 'kategori' as const, deger: k, label: kategoriLabel[k] })),
-    ...(aktifYaka ? [{ tip: 'yaka' as const, deger: aktifYaka, label: aktifYaka === 'anadolu' ? 'Anadolu Yakasi' : 'Avrupa Yakasi' }] : []),
-    ...(aktifIlce ? [{ tip: 'ilce' as const, deger: aktifIlce, label: aktifIlce }] : []),
-    ...(aktifSehir && !aktifIlce && !aktifYaka ? [{ tip: 'sehir' as const, deger: aktifSehir, label: aktifSehir }] : []),
-  ];
-
-  const sidebarProps = {
-    selectedKategoriler,
-    onKategoriChange: setSelectedKategoriler,
-    onFilter: handleFilter,
-    onClear: handleClear,
-    siralama,
-    onSiralamaChange: setSiralama,
-    ilanlar,
-    selectedSehir,
-    onSehirChange: setSelectedSehir,
-    selectedIlce,
-    onIlceChange: setSelectedIlce,
-    selectedYaka,
-    onYakaChange: setSelectedYaka,
-  };
+  const aktivFiltreVar = !!aktifKategori || !!aktifSehir || !!aktifIlce || !!aktifYaka;
 
   return (
-    <div className="bg-gray-100 min-h-screen">
-      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4">
+    <div className="bg-gray-50 min-h-screen">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6">
+        {/* Kategori Kartları */}
+        <CategoryCards
+          ilanlar={ilanlar}
+          selectedKategori={selectedKategori}
+          onCategorySelect={setSelectedKategori}
+        />
 
-        {/* MOBİL FİLTRE BUTONU */}
-        <div className="lg:hidden mb-3 flex items-center gap-2">
+        {/* Mobil Filtre Butonu */}
+        <div className="lg:hidden mb-4 flex gap-2">
           <button
             onClick={() => setFiltreAcik(true)}
-            className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium px-4 py-2.5 rounded-lg shadow-sm transition"
+            className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-medium text-sm hover:bg-gray-50 transition"
           >
-            <SlidersHorizontal size={15} />
-            Filtrele
-            {aktifEtiketler.length > 0 && (
-              <span className="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
-                {aktifEtiketler.length}
-              </span>
-            )}
+            <SlidersHorizontal size={16} /> Filtrele
           </button>
-          {aktifEtiketler.length > 0 && (
+          {aktivFiltreVar && (
             <button
               onClick={handleClear}
-              className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 px-2 py-1 rounded-lg transition"
+              className="px-4 flex items-center gap-1 bg-white border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition"
             >
-              <X size={13} /> Temizle
+              <X size={16} /> Temizle
             </button>
           )}
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-4">
-
-          <div className="hidden lg:block w-52 flex-shrink-0">
-            <Sidebar {...sidebarProps} />
+        <div className="flex gap-6">
+          {/* Sidebar (Desktop) */}
+          <div className="hidden lg:block w-64 flex-shrink-0">
+            <ImprovedSidebar
+              selectedKategoriler={selectedKategori ? [selectedKategori] : []}
+              selectedSehir={selectedSehir}
+              selectedIlce={selectedIlce}
+              selectedYaka={selectedYaka}
+              onSehirChange={setSelectedSehir}
+              onIlceChange={setSelectedIlce}
+              onYakaChange={setSelectedYaka}
+              onFilter={handleFilter}
+              onClear={handleClear}
+              ilanlar={ilanlar}
+            />
           </div>
 
+          {/* Ana İçerik */}
           <div className="flex-1 min-w-0">
-
-            {/* AKTİF ETİKETLER */}
-            {aktifEtiketler.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap mb-2">
-                <span className="text-xs text-gray-500">Filtreler:</span>
-                {aktifEtiketler.map((etiket) => (
-                  <div
-                    key={etiket.tip + etiket.deger}
-                    className="flex items-center gap-1 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-medium px-2.5 py-1 rounded-full"
-                  >
-                    {etiket.label}
+            {/* Aktif Filtreler */}
+            {aktivFiltreVar && (
+              <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-3 flex-wrap">
+                <span className="text-sm font-medium text-gray-700">Aktif Filtreler:</span>
+                {/* Kategori Badge */}
+                {aktifKategori && (
+                  <div className="flex items-center gap-2 bg-white border border-orange-300 rounded-full px-3 py-1.5">
+                    <span className="text-sm text-gray-700 font-medium">{aktifKategori}</span>
                     <button
-                      onClick={() => {
-                        if (etiket.tip === 'kategori') handleKategoriKaldir(etiket.deger as KategoriType);
-                        if (etiket.tip === 'sehir') { setAktifSehir(''); setSelectedSehir(''); setAktifIlce(''); setSelectedIlce(''); setAktifYaka(''); setSelectedYaka(''); }
-                        if (etiket.tip === 'ilce') { setAktifIlce(''); setSelectedIlce(''); }
-                        if (etiket.tip === 'yaka') { setAktifYaka(''); setSelectedYaka(''); setAktifIlce(''); setSelectedIlce(''); }
-                      }}
-                      className="text-orange-500 hover:text-orange-700 ml-0.5 font-bold leading-none"
+                      onClick={() => setAktifKategori(null)}
+                      className="text-orange-500 hover:text-orange-700"
                     >
-                      x
+                      <X size={14} />
                     </button>
                   </div>
-                ))}
+                )}
+                {/* Konum Badge */}
+                {(aktifSehir || aktifIlce || aktifYaka) && (
+                  <div className="flex items-center gap-2 bg-white border border-orange-300 rounded-full px-3 py-1.5">
+                    <span className="text-sm text-gray-700 font-medium">
+                      {aktifIlce || aktifSehir}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setAktifSehir('');
+                        setAktifIlce('');
+                        setAktifYaka('');
+                      }}
+                      className="text-orange-500 hover:text-orange-700"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
                 <button
                   onClick={handleClear}
-                  className="text-xs text-orange-500 hover:text-orange-700 font-medium"
+                  className="ml-auto text-sm text-orange-600 hover:text-orange-700 font-medium"
                 >
-                  Tumunu temizle
+                  Tümünü Temizle
                 </button>
               </div>
             )}
 
-            {/* SIRALAMA BARI */}
-            <div className="bg-white border border-gray-200 rounded-lg mb-3 flex items-center overflow-hidden">
-              <div className="px-4 py-2.5 border-r border-gray-100 flex-shrink-0">
-                <span className="text-xs text-gray-500">
-                  <span className="text-gray-900 font-bold text-sm">{filtrelenmisIlanlar.length}</span>{' '}
-                  ilan bulundu
-                </span>
-              </div>
-              <div className="flex items-center flex-1">
-                {[
-                  { val: 'yeni', label: 'Once En Yeni' },
-                  { val: 'eski', label: 'Once En Eski' },
-                ].map((item) => (
-                  <button
-                    key={item.val}
-                    onClick={() => setSiralama(item.val)}
-                    className={
-                      'px-4 py-2.5 text-xs font-medium border-r border-gray-100 transition whitespace-nowrap ' +
-                      (siralama === item.val
-                        ? 'text-orange-500 font-semibold border-b-2 border-b-orange-500 bg-orange-50'
-                        : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50')
-                    }
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+            {/* Sıralama Çubuğu */}
+            <div className="mb-4 bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-700">
+                <span className="text-orange-600">{filtrelenmisIlanlar.length}</span> ilan bulundu
+              </span>
+              <select
+                value={siralama}
+                onChange={(e) => setSiralama(e.target.value)}
+                className="text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="yeni">Önce En Yeni</option>
+                <option value="eski">Önce En Eski</option>
+              </select>
             </div>
 
-            {/* İLAN LİSTESİ */}
+            {/* İlanlar Listesi */}
             {yukleniyor ? (
-              <div className="flex flex-col gap-2">
+              <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
-                    <div className="h-3 bg-gray-200 rounded w-1/4 mb-3"></div>
-                    <div className="h-3 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div
+                    key={i}
+                    className="bg-white rounded-lg p-4 animate-pulse border border-gray-200"
+                  >
+                    <div className="h-4 bg-gray-200 rounded w-1/3 mb-3"></div>
+                    <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
                   </div>
                 ))}
               </div>
             ) : filtrelenmisIlanlar.length > 0 ? (
-              <IlanListesi ilanlar={filtrelenmisIlanlar} reklamlar={reklamlar} onDetay={onIlanDetay} />
+              <div className="space-y-3">
+                {filtrelenmisIlanlar.map((ilan) => (
+                  <IlanCard
+                    key={ilan.id}
+                    ilan={ilan}
+                    onDetay={() => onIlanDetay(ilan)}
+                  />
+                ))}
+              </div>
             ) : (
-              <div className="text-center py-20 text-gray-400">
+              <div className="text-center py-20 bg-white rounded-lg border border-gray-200">
                 <div className="text-5xl mb-4">🚌</div>
-                <p className="text-base font-medium">Uygun ilan bulunamadi</p>
-                <p className="text-sm mt-2">Filtrelerinizi degistirerek tekrar deneyin</p>
+                <p className="text-base font-medium text-gray-800">Uygun ilan bulunamadı</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Filtrelerinizi değiştirerek tekrar deneyin
+                </p>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* MOBİL DRAWER */}
+      {/* Mobil Filtre Drawer */}
       {filtreAcik && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col">
-          <div className="flex-1 bg-black/50" onClick={() => setFiltreAcik(false)} />
-          <div className="bg-white rounded-t-2xl shadow-xl max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-              <p className="font-semibold text-gray-800">Filtrele</p>
-              <button onClick={() => setFiltreAcik(false)} className="p-1.5 text-gray-400 hover:text-gray-600">
+          <div className="flex-1 bg-black/40" onClick={() => setFiltreAcik(false)} />
+          <div className="bg-white rounded-t-3xl shadow-xl max-h-[85vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between rounded-t-3xl">
+              <h3 className="font-semibold text-gray-800">Filtreleri Ayarla</h3>
+              <button
+                onClick={() => setFiltreAcik(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-600"
+              >
                 <X size={20} />
               </button>
             </div>
-            <div className="px-4 py-4">
-              <Sidebar {...sidebarProps} />
+            <div className="p-4">
+              <ImprovedSidebar
+                selectedKategoriler={selectedKategori ? [selectedKategori] : []}
+                selectedSehir={selectedSehir}
+                selectedIlce={selectedIlce}
+                selectedYaka={selectedYaka}
+                onSehirChange={setSelectedSehir}
+                onIlceChange={setSelectedIlce}
+                onYakaChange={setSelectedYaka}
+                onFilter={handleFilter}
+                onClear={handleClear}
+                ilanlar={ilanlar}
+              />
             </div>
           </div>
         </div>
       )}
-
-      {/* DUYURU POPUP */}
-      {popupAcik && duyuru && (
-        <div
-          className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4"
-          onClick={() => popupKapat(true)}
-        >
-          <div
-            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md relative shadow-xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <OtomatikKapatCubugu sure={duyuru.goster_sure || 8} />
-            <button
-              onClick={() => popupKapat(true)}
-              className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center bg-black/30 hover:bg-black/50 text-white rounded-full text-lg font-bold transition"
-            >
-              x
-            </button>
-            {duyuru.resim_url ? (
-              <>
-                <img src={duyuru.resim_url} alt={duyuru.baslik || 'Duyuru'} className="w-full h-48 sm:h-56 object-cover" />
-                <div className="p-4 sm:p-5">
-                  {duyuru.baslik && <h2 className="text-base font-bold text-gray-800 mb-1.5">{duyuru.baslik}</h2>}
-                  {duyuru.mesaj && <p className="text-sm text-gray-500 leading-relaxed">{duyuru.mesaj}</p>}
-                  <button onClick={() => popupKapat(true)} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition mt-4">
-                    Kapat
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="p-5 sm:p-6">
-                {duyuru.baslik && <h2 className="text-base font-bold text-gray-800 mb-2 pr-8">{duyuru.baslik}</h2>}
-                {duyuru.mesaj && <p className="text-sm text-gray-500 leading-relaxed">{duyuru.mesaj}</p>}
-                <button onClick={() => popupKapat(true)} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition mt-4">
-                  Kapat
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-type OtomatikKapatCubuguProps = { sure: number };
-
-function OtomatikKapatCubugu({ sure }: OtomatikKapatCubuguProps) {
-  const [kalan, setKalan] = React.useState(sure);
-  React.useEffect(() => {
-    setKalan(sure);
-    const interval = setInterval(() => {
-      setKalan((prev) => {
-        if (prev <= 0.1) { clearInterval(interval); return 0; }
-        return +(prev - 0.1).toFixed(1);
-      });
-    }, 100);
-    return () => clearInterval(interval);
-  }, [sure]);
-  const yuzde = Math.round((kalan / sure) * 100);
-  return (
-    <div className="absolute top-0 left-0 right-0 h-1 bg-black/10 z-20">
-      <div className="h-full bg-orange-500" style={{ width: yuzde + '%', transition: 'width 0.1s linear' }} />
     </div>
   );
 }
