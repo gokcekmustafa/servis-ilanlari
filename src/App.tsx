@@ -50,46 +50,94 @@ const KATEGORILER = [
   {
     id: 'isim_var_arac' as KategoriType,
     label: 'Araç Arıyorum',
-    aciklama: 'Personel, öğrenci veya yük taşımacılığı için araç ilanları',
+    aciklama: 'Personel veya öğrenci servisi için araç',
     icon: '🔍',
     bg: 'bg-blue-50',
     border: 'border-blue-200',
     numColor: 'text-blue-600',
     iconBg: 'bg-blue-100',
+    serit: 'bg-blue-500',
   },
   {
     id: 'aracim_var_is' as KategoriType,
     label: 'İş Arıyorum',
-    aciklama: 'Aracıyla birlikte iş arayan taşımacı ilanları',
+    aciklama: 'Aracıyla birlikte iş arayan taşımacılar',
     icon: '🚌',
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
-    numColor: 'text-amber-600',
-    iconBg: 'bg-amber-100',
-  },
-  {
-    id: 'sofor_ariyorum' as KategoriType,
-    label: 'Şoför Aranıyor',
-    aciklama: 'Firmalar ve araç sahipleri profesyonel şoför arıyor',
-    icon: '👤',
     bg: 'bg-green-50',
     border: 'border-green-200',
     numColor: 'text-green-600',
     iconBg: 'bg-green-100',
+    serit: 'bg-green-500',
+  },
+  {
+    id: 'sofor_ariyorum' as KategoriType,
+    label: 'Şoför Aranıyor',
+    aciklama: 'Profesyonel şoför arayan firmalar',
+    icon: '👤',
+    bg: 'bg-orange-50',
+    border: 'border-orange-200',
+    numColor: 'text-orange-600',
+    iconBg: 'bg-orange-100',
+    serit: 'bg-orange-500',
   },
   {
     id: 'hostes_ariyorum' as KategoriType,
-    label: 'Şoför İş Arıyor',
-    aciklama: 'Deneyimli şoförler iş fırsatı arıyor',
-    icon: '👷',
+    label: 'Hostes Aranıyor',
+    aciklama: 'Servis hostesi arayan ilanlar',
+    icon: '👩',
     bg: 'bg-purple-50',
     border: 'border-purple-200',
     numColor: 'text-purple-600',
     iconBg: 'bg-purple-100',
+    serit: 'bg-purple-500',
+  },
+  {
+    id: 'soforum_is' as KategoriType,
+    label: 'Şoför İş Arıyor',
+    aciklama: 'Deneyimli şoförler iş arıyor',
+    icon: '🚗',
+    bg: 'bg-yellow-50',
+    border: 'border-yellow-200',
+    numColor: 'text-yellow-600',
+    iconBg: 'bg-yellow-100',
+    serit: 'bg-yellow-500',
+  },
+  {
+    id: 'hostesim_is' as KategoriType,
+    label: 'Hostes İş Arıyor',
+    aciklama: 'Hostes iş ilanları',
+    icon: '💼',
+    bg: 'bg-pink-50',
+    border: 'border-pink-200',
+    numColor: 'text-pink-600',
+    iconBg: 'bg-pink-100',
+    serit: 'bg-pink-500',
+  },
+  {
+    id: 'plaka_satiyorum' as KategoriType,
+    label: 'Plaka Satılık',
+    aciklama: 'Satılık servis plaka ilanları',
+    icon: '🪧',
+    bg: 'bg-red-50',
+    border: 'border-red-200',
+    numColor: 'text-red-600',
+    iconBg: 'bg-red-100',
+    serit: 'bg-red-500',
+  },
+  {
+    id: 'aracimi_satiyorum' as KategoriType,
+    label: 'Araç Satılık',
+    aciklama: 'Satılık servis araçları',
+    icon: '🚐',
+    bg: 'bg-teal-50',
+    border: 'border-teal-200',
+    numColor: 'text-teal-600',
+    iconBg: 'bg-teal-100',
+    serit: 'bg-teal-500',
   },
 ] as const;
 
-// HOME PAGE COMPONENT - Resmdeki tasarıma göre yeniden yazıldı
+// HOME PAGE COMPONENT — sahibinden.com tarzı
 function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void }) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -101,12 +149,8 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
   const [popupAcik, setPopupAcik] = useState(false);
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
-  const [gorunumModu, setGorunumModu] = useState<'liste' | 'grid'>('liste');
 
-  useEffect(() => {
-    ilanlarYukle();
-    setDuyuru(null);
-  }, []);
+  useEffect(() => { ilanlarYukle(); setDuyuru(null); }, []);
 
   useEffect(() => {
     document.body.style.overflow = filtreAcik ? 'hidden' : '';
@@ -148,19 +192,13 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
     setSiralama('yeni');
   };
 
-  const kategoriSayilari = (kategori: KategoriType) => ilanlar.filter(i => i.kategori === kategori).length;
+  const kategoriSayisi = (id: KategoriType) => ilanlar.filter(i => i.kategori === id).length;
 
   const filtrelenmisIlanlar = ilanlar
-    .filter((ilan) => {
+    .filter(ilan => {
       if (aktifKategori && ilan.kategori !== aktifKategori) return false;
-      if (selectedSehir) {
-        const sehirVar = ilan.guzergahlar.some((g) => g.kalkis_il === selectedSehir);
-        if (!sehirVar) return false;
-      }
-      if (selectedIlce) {
-        const ilceVar = ilan.guzergahlar.some((g) => g.kalkis_ilce === selectedIlce);
-        if (!ilceVar) return false;
-      }
+      if (selectedSehir && !ilan.guzergahlar.some(g => g.kalkis_il === selectedSehir)) return false;
+      if (selectedIlce && !ilan.guzergahlar.some(g => g.kalkis_ilce === selectedIlce)) return false;
       return true;
     })
     .sort((a, b) =>
@@ -172,226 +210,174 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
   const aktivFiltreVar = !!aktifKategori || !!selectedSehir || !!selectedIlce;
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6">
+    <div className="bg-[#f4f4f4] min-h-screen">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4">
 
         {/* KATEGORİ KARTLARI */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">İlan Kategorileri</h2>
-              <p className="text-sm text-gray-500">Toplam {ilanlar.length} aktif ilan</p>
+        <div className="mb-4">
+          <div className="bg-white border border-gray-200 rounded overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 bg-[#f7971e]">
+              <h2 className="text-sm font-bold text-white">İlan Kategorileri</h2>
+              <span className="text-xs text-white/80">{ilanlar.length} aktif ilan</span>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {KATEGORILER.map((kat) => {
-              const sayi = kategoriSayilari(kat.id);
-              const isSelected = aktifKategori === kat.id;
-
-              return (
-                <button
-                  key={kat.id}
-                  onClick={() => setAktifKategori(isSelected ? null : kat.id)}
-                  className={`p-4 rounded-xl border-2 transition-all text-left ${kat.bg} ${
-                    isSelected ? 'border-blue-500 shadow-md ring-2 ring-blue-100' : `${kat.border} hover:shadow-sm`
-                  }`}
-                >
-                  <div className={`w-9 h-9 rounded-lg ${kat.iconBg} flex items-center justify-center text-lg mb-3`}>
-                    {kat.icon}
-                  </div>
-                  <div className={`text-2xl font-bold ${kat.numColor} mb-1`}>{sayi}</div>
-                  <div className="text-sm font-semibold text-gray-800 leading-tight mb-1">{kat.label}</div>
-                  <div className="text-xs text-gray-500 leading-tight hidden sm:block">{kat.aciklama}</div>
-                  <div className="mt-2 text-xs font-medium text-blue-600 flex items-center gap-1">
-                    İlanları Gör <span>→</span>
-                  </div>
-                </button>
-              );
-            })}
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y divide-gray-100">
+              {KATEGORILER.map((kat) => {
+                const sayi = kategoriSayisi(kat.id);
+                const isSelected = aktifKategori === kat.id;
+                return (
+                  <button
+                    key={kat.id}
+                    onClick={() => setAktifKategori(isSelected ? null : kat.id)}
+                    className={"flex items-center gap-3 px-4 py-3 text-left transition-all hover:bg-orange-50 " + (isSelected ? "bg-orange-50 border-l-4 border-[#f7971e]" : "")}
+                  >
+                    <div className={"w-8 h-8 rounded flex items-center justify-center text-base flex-shrink-0 " + kat.iconBg}>
+                      {kat.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-gray-800 leading-tight">{kat.label}</div>
+                      <div className={"text-base font-bold " + (isSelected ? "text-[#f7971e]" : kat.numColor)}>{sayi}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         {/* Mobil Filtre Butonu */}
-        <div className="lg:hidden mb-4 flex gap-2">
+        <div className="lg:hidden mb-3 flex gap-2">
           <button
             onClick={() => setFiltreAcik(true)}
-            className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 py-2.5 rounded-lg font-semibold text-sm transition shadow-sm"
+            className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-300 hover:border-[#f7971e] text-gray-700 py-2 rounded text-sm font-medium transition"
           >
-            <SlidersHorizontal size={15} /> Filtrele
+            <SlidersHorizontal size={14} /> Filtrele
           </button>
           {aktivFiltreVar && (
-            <button
-              onClick={handleClear}
-              className="px-4 flex items-center gap-1 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition font-semibold text-sm"
-            >
-              <X size={15} /> Temizle
+            <button onClick={handleClear} className="px-3 flex items-center gap-1 bg-white border border-gray-300 hover:border-red-300 text-gray-600 rounded transition text-sm">
+              <X size={14} /> Temizle
             </button>
           )}
         </div>
 
-        <div className="flex gap-5">
+        <div className="flex gap-4">
           {/* SOL: FİLTRELER */}
           <div className="hidden lg:block w-52 flex-shrink-0">
-            <div className="bg-white rounded-xl border border-gray-200 p-4 sticky top-6 shadow-sm">
-              <div className="flex items-center gap-1.5 mb-4">
-                <SlidersHorizontal size={15} className="text-blue-600" />
-                <h3 className="font-bold text-gray-900 text-sm">Filtrele</h3>
+            <div className="bg-white border border-gray-200 rounded overflow-hidden sticky top-4">
+              <div className="px-3 py-2.5 bg-[#f7971e] flex items-center gap-1.5">
+                <SlidersHorizontal size={13} className="text-white" />
+                <span className="text-sm font-bold text-white">Filtrele</span>
               </div>
 
-              {/* Kategori Listesi */}
-              <div className="mb-4">
-                <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Kategori</label>
-                <div className="space-y-1">
-                  <button
-                    onClick={() => setAktifKategori(null)}
-                    className={`w-full text-left flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition ${
-                      !aktifKategori ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
+              <div className="border-b border-gray-100">
+                <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Kategori</span>
+                </div>
+                <button
+                  onClick={() => setAktifKategori(null)}
+                  className={"w-full flex items-center justify-between px-3 py-2 text-xs transition hover:bg-orange-50 " + (!aktifKategori ? "text-[#f7971e] font-semibold bg-orange-50 border-l-4 border-[#f7971e]" : "text-gray-600")}
+                >
+                  <span>Tüm Kategoriler</span>
+                  <span className={"text-[10px] px-1.5 py-0.5 rounded " + (!aktifKategori ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-500")}>{ilanlar.length}</span>
+                </button>
+                {KATEGORILER.map(kat => {
+                  const sayi = kategoriSayisi(kat.id);
+                  const isActive = aktifKategori === kat.id;
+                  return (
+                    <button
+                      key={kat.id}
+                      onClick={() => setAktifKategori(isActive ? null : kat.id)}
+                      className={"w-full flex items-center justify-between px-3 py-2 text-xs transition hover:bg-orange-50 border-t border-gray-50 " + (isActive ? "text-[#f7971e] font-semibold bg-orange-50 border-l-4 border-[#f7971e]" : "text-gray-600")}
+                    >
+                      <span className="flex items-center gap-1.5"><span>{kat.icon}</span>{kat.label}</span>
+                      <span className={"text-[10px] px-1.5 py-0.5 rounded " + (isActive ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-500")}>{sayi}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div>
+                <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Konum</span>
+                </div>
+                <div className="p-3 space-y-2">
+                  <select
+                    value={selectedSehir}
+                    onChange={(e) => { setSelectedSehir(e.target.value); setSelectedIlce(''); }}
+                    className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
                   >
-                    <span>Tüm Kategoriler</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${!aktifKategori ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {ilanlar.length}
-                    </span>
-                  </button>
-                  {KATEGORILER.map((kat) => {
-                    const sayi = kategoriSayilari(kat.id);
-                    const isActive = aktifKategori === kat.id;
-                    return (
-                      <button
-                        key={kat.id}
-                        onClick={() => setAktifKategori(isActive ? null : kat.id)}
-                        className={`w-full text-left flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition ${
-                          isActive ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span>{kat.label}</span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
-                          {sayi}
-                        </span>
-                      </button>
-                    );
-                  })}
+                    <option value="">Tüm Şehirler</option>
+                    {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  {selectedSehir && ilceler.length > 0 && (
+                    <select
+                      value={selectedIlce}
+                      onChange={(e) => setSelectedIlce(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                    >
+                      <option value="">Tüm İlçeler</option>
+                      {ilceler.map(i => <option key={i} value={i}>{i}</option>)}
+                    </select>
+                  )}
                 </div>
               </div>
 
-              {/* Konum */}
-              <div className="mb-4">
-                <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Konum</label>
-                <select
-                  value={selectedSehir}
-                  onChange={(e) => { setSelectedSehir(e.target.value); setSelectedIlce(''); }}
-                  className="w-full px-2.5 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700"
-                >
-                  <option value="">Tüm Şehirler</option>
-                  {sehirler.map((sehir) => (
-                    <option key={sehir} value={sehir}>{sehir}</option>
-                  ))}
-                </select>
-                {selectedSehir && ilceler.length > 0 && (
-                  <select
-                    value={selectedIlce}
-                    onChange={(e) => setSelectedIlce(e.target.value)}
-                    className="w-full mt-2 px-2.5 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700"
-                  >
-                    <option value="">Tüm İlçeler</option>
-                    {ilceler.map((ilce) => (
-                      <option key={ilce} value={ilce}>{ilce}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {/* Ek Filtreler başlık (görseldeki gibi) */}
-              <div className="border-t border-gray-100 pt-3">
-                <button className="w-full flex items-center justify-between text-sm text-gray-600 hover:text-gray-800">
-                  <span className="font-semibold text-[11px] uppercase tracking-wide text-gray-500">Ek Filtreler</span>
-                  <span className="text-gray-400">∨</span>
-                </button>
-              </div>
-
               {aktivFiltreVar && (
-                <button
-                  onClick={handleClear}
-                  className="w-full mt-3 text-sm text-red-500 hover:text-red-700 font-medium py-1.5 transition"
-                >
-                  Filtreleri Temizle
-                </button>
+                <div className="p-3 border-t border-gray-100">
+                  <button onClick={handleClear} className="w-full text-xs text-red-500 hover:text-red-700 font-medium py-1.5 border border-red-200 hover:border-red-300 rounded transition">
+                    Filtreleri Temizle
+                  </button>
+                </div>
               )}
             </div>
           </div>
 
-          {/* SAĞ: ANA İÇERİK */}
+          {/* SAĞ: İLAN LİSTESİ */}
           <div className="flex-1 min-w-0">
-
-            {/* SIRALAMA & İLAN SAYISI & GÖRÜNÜM */}
-            <div className="mb-4 bg-white border border-gray-200 rounded-xl p-3 flex items-center justify-between shadow-sm">
+            <div className="bg-white border border-gray-200 rounded px-3 py-2 mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-900">Aktif İlanlar</span>
-                <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                  {filtrelenmisIlanlar.length} ilan bulundu
+                {aktifKategori && (
+                  <span className="flex items-center gap-1 text-xs bg-orange-50 border border-orange-200 text-orange-700 px-2 py-0.5 rounded font-medium">
+                    {KATEGORILER.find(k => k.id === aktifKategori)?.label}
+                    <button onClick={() => setAktifKategori(null)} className="ml-1 hover:text-orange-900"><X size={11} /></button>
+                  </span>
+                )}
+                <span className="text-xs text-gray-500">
+                  <span className="font-semibold text-gray-800">{filtrelenmisIlanlar.length}</span> ilan bulundu
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <select
-                  value={siralama}
-                  onChange={(e) => setSiralama(e.target.value)}
-                  className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white font-medium text-gray-700"
-                >
-                  <option value="yeni">↑ En Yeni</option>
-                  <option value="eski">↓ En Eski</option>
-                </select>
-                {/* Liste / Grid geçiş */}
-                <div className="hidden sm:flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => setGorunumModu('liste')}
-                    className={`p-1.5 transition ${gorunumModu === 'liste' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-50'}`}
-                    title="Liste görünümü"
-                  >
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setGorunumModu('grid')}
-                    className={`p-1.5 transition ${gorunumModu === 'grid' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-50'}`}
-                    title="Izgara görünümü"
-                  >
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-                      <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              <select
+                value={siralama}
+                onChange={(e) => setSiralama(e.target.value)}
+                className="text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+              >
+                <option value="yeni">En Yeni</option>
+                <option value="eski">En Eski</option>
+              </select>
             </div>
 
-            {/* İLAN LİSTESİ */}
             {yukleniyor ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-white rounded-xl p-4 border border-gray-200 animate-pulse">
-                    <div className="h-4 bg-gray-100 rounded w-1/3 mb-3"></div>
-                    <div className="h-3 bg-gray-100 rounded w-full mb-2"></div>
-                    <div className="h-3 bg-gray-100 rounded w-2/3"></div>
+              <div className="space-y-2">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="bg-white border border-gray-200 rounded p-4 animate-pulse">
+                    <div className="h-3 bg-gray-100 rounded w-1/4 mb-2" />
+                    <div className="h-4 bg-gray-100 rounded w-2/3 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-full" />
                   </div>
                 ))}
               </div>
             ) : filtrelenmisIlanlar.length > 0 ? (
-              <div className="space-y-3">
-                {filtrelenmisIlanlar.map((ilan) => (
+              <div className="space-y-2">
+                {filtrelenmisIlanlar.map(ilan => (
                   <IlanCard key={ilan.id} ilan={ilan} onDetay={() => onIlanDetay(ilan)} />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
-                <div className="text-5xl mb-3">🚌</div>
-                <p className="text-base font-bold text-gray-900">Uygun ilan bulunamadı</p>
-                <p className="text-sm text-gray-500 mt-1">Filtrelerinizi değiştirerek tekrar deneyin</p>
+              <div className="bg-white border border-gray-200 rounded text-center py-16">
+                <div className="text-4xl mb-3">🔍</div>
+                <p className="text-sm font-semibold text-gray-700">Uygun ilan bulunamadı</p>
+                <p className="text-xs text-gray-400 mt-1 mb-4">Filtrelerinizi değiştirerek tekrar deneyin</p>
                 {aktivFiltreVar && (
-                  <button onClick={handleClear} className="mt-4 text-sm text-blue-600 hover:underline font-medium">
-                    Filtreleri temizle
-                  </button>
+                  <button onClick={handleClear} className="text-xs text-[#f7971e] hover:underline font-medium">Filtreleri temizle</button>
                 )}
               </div>
             )}
@@ -403,74 +389,56 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
       {filtreAcik && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col">
           <div className="flex-1 bg-black/50" onClick={() => setFiltreAcik(false)} />
-          <div className="bg-white rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
-              <h3 className="font-bold text-gray-900">Filtreleri Ayarla</h3>
-              <button onClick={() => setFiltreAcik(false)} className="p-1.5 text-gray-400 hover:text-gray-600">
-                <X size={20} />
-              </button>
+          <div className="bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-y-auto">
+            <div className="sticky top-0 bg-[#f7971e] px-4 py-3 flex items-center justify-between">
+              <h3 className="font-bold text-white text-sm">Filtrele</h3>
+              <button onClick={() => setFiltreAcik(false)} className="text-white/80 hover:text-white"><X size={20} /></button>
             </div>
             <div className="p-4 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Kategori</label>
+                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Kategori</p>
                 <div className="space-y-1">
                   <button
                     onClick={() => setAktifKategori(null)}
-                    className={`w-full text-left flex justify-between items-center px-3 py-2.5 rounded-lg text-sm font-medium transition ${!aktifKategori ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                    className={"w-full text-left flex justify-between items-center px-3 py-2 rounded text-xs font-medium transition border " + (!aktifKategori ? "bg-orange-50 text-[#f7971e] border-orange-200" : "text-gray-600 hover:bg-gray-50 border-transparent")}
                   >
                     <span>Tüm Kategoriler</span>
-                    <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{ilanlar.length}</span>
+                    <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">{ilanlar.length}</span>
                   </button>
                   {KATEGORILER.map(kat => (
                     <button
                       key={kat.id}
                       onClick={() => setAktifKategori(aktifKategori === kat.id ? null : kat.id)}
-                      className={`w-full text-left flex justify-between items-center px-3 py-2.5 rounded-lg text-sm font-medium transition ${aktifKategori === kat.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                      className={"w-full text-left flex justify-between items-center px-3 py-2 rounded text-xs font-medium transition border " + (aktifKategori === kat.id ? "bg-orange-50 text-[#f7971e] border-orange-200" : "text-gray-600 hover:bg-gray-50 border-transparent")}
                     >
-                      <span>{kat.label}</span>
-                      <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{kategoriSayilari(kat.id)}</span>
+                      <span className="flex items-center gap-1.5"><span>{kat.icon}</span>{kat.label}</span>
+                      <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">{kategoriSayisi(kat.id)}</span>
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Şehir</label>
-                <select
-                  value={selectedSehir}
-                  onChange={(e) => { setSelectedSehir(e.target.value); setSelectedIlce(''); }}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                >
+                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Şehir</p>
+                <select value={selectedSehir} onChange={(e) => { setSelectedSehir(e.target.value); setSelectedIlce(''); }}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
                   <option value="">Tüm Şehirler</option>
-                  {sehirler.map((sehir) => <option key={sehir} value={sehir}>{sehir}</option>)}
+                  {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               {selectedSehir && ilceler.length > 0 && (
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">İlçe</label>
-                  <select
-                    value={selectedIlce}
-                    onChange={(e) => setSelectedIlce(e.target.value)}
-                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                  >
+                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">İlçe</p>
+                  <select value={selectedIlce} onChange={(e) => setSelectedIlce(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
                     <option value="">Tüm İlçeler</option>
-                    {ilceler.map((ilce) => <option key={ilce} value={ilce}>{ilce}</option>)}
+                    {ilceler.map(i => <option key={i} value={i}>{i}</option>)}
                   </select>
                 </div>
               )}
-              <div className="space-y-2 pt-2">
-                <button
-                  onClick={() => setFiltreAcik(false)}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition"
-                >
-                  Uygula
-                </button>
+              <div className="pt-2 space-y-2">
+                <button onClick={() => setFiltreAcik(false)} className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white font-bold py-2.5 rounded transition text-sm">Uygula</button>
                 {aktivFiltreVar && (
-                  <button
-                    onClick={handleClear}
-                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl transition text-sm"
-                  >
-                    Filtreleri Temizle
-                  </button>
+                  <button onClick={handleClear} className="w-full bg-gray-100 text-gray-600 py-2 rounded text-sm font-medium transition hover:bg-gray-200">Temizle</button>
                 )}
               </div>
             </div>
@@ -480,32 +448,16 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
 
       {/* DUYURU POPUP */}
       {popupAcik && duyuru && (
-        <div
-          className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4"
-          onClick={() => {
-            setPopupAcik(false);
-            if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
-          }}
-        >
-          <div
-            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md relative shadow-xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {duyuru.resim_url && (
-              <img src={duyuru.resim_url} alt={duyuru.baslik || 'Duyuru'} className="w-full h-48 sm:h-56 object-cover" />
-            )}
-            <div className="p-5 sm:p-6">
-              {duyuru.baslik && <h2 className="text-lg font-bold text-gray-900 mb-2">{duyuru.baslik}</h2>}
-              {duyuru.mesaj && <p className="text-sm text-gray-600 leading-relaxed mb-4">{duyuru.mesaj}</p>}
-              <button
-                onClick={() => {
-                  setPopupAcik(false);
-                  if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition"
-              >
-                Kapat
-              </button>
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4"
+          onClick={() => { setPopupAcik(false); if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer); }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl overflow-hidden"
+            onClick={e => e.stopPropagation()}>
+            {duyuru.resim_url && <img src={duyuru.resim_url} alt={duyuru.baslik || 'Duyuru'} className="w-full h-48 object-cover" />}
+            <div className="p-5">
+              {duyuru.baslik && <h2 className="text-base font-bold text-gray-900 mb-2">{duyuru.baslik}</h2>}
+              {duyuru.mesaj && <p className="text-sm text-gray-600 mb-4">{duyuru.mesaj}</p>}
+              <button onClick={() => { setPopupAcik(false); if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer); }}
+                className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white py-2.5 rounded font-bold transition">Kapat</button>
             </div>
           </div>
         </div>
