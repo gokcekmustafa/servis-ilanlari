@@ -45,3 +45,35 @@ export const locations: City[] = [
     ]
   }
 ];
+
+
+// ✅ TÜM SORUNU ÇÖZEN FONKSİYON (EN ÖNEMLİ)
+export const getDistricts = (city: City): NeighborhoodDistrict[] => {
+  if (city.sides) {
+    return city.sides.flatMap(side => side.districts);
+  }
+  return city.districts || [];
+};
+
+
+// ✅ YAKA BAZLI (İstanbul için)
+export const getDistrictsBySide = (
+  city: City,
+  sideName: string
+): NeighborhoodDistrict[] => {
+  if (!city.sides) return [];
+
+  const side = city.sides.find(s => s.name === sideName);
+  return side?.districts || [];
+};
+
+
+// ✅ MAHALLE GETİRME
+export const getNeighborhoods = (
+  city: City,
+  districtName: string
+): string[] => {
+  const districts = getDistricts(city);
+  const district = districts.find(d => d.name === districtName);
+  return district?.neighborhoods || [];
+};
