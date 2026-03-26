@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { KategoriType, Ilan } from '../../types';
+import { KategoriType, Ilan } from '../types';
 import { Briefcase, Users, FileText, Truck, ShoppingCart } from 'lucide-react';
 
 type CategoryCardsProps = {
@@ -107,7 +106,7 @@ export default function CategoryCards({
         </button>
 
         {/* Kategori Kartları */}
-        {kategoriData.map(({ kategori, label, icon: Icon, color, borderColor, textColor, hoverColor }) => {
+        {kategoriData.map(({ kategori, label, icon: Icon, color, textColor, hoverColor }) => {
           const sayi = sayiHesapla(kategori);
           const isSelected = selectedKategori === kategori;
 
