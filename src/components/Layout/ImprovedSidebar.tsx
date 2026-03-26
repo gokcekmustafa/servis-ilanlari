@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { KategoriType, Ilan } from '../../types';
 
-type SidebarProps = {
+type ImprovedSidebarProps = {
   selectedKategoriler: KategoriType[];
   selectedSehir: string;
   selectedIlce: string;
@@ -25,7 +25,7 @@ export default function ImprovedSidebar({
   onFilter,
   onClear,
   ilanlar,
-}: SidebarProps) {
+}: ImprovedSidebarProps) {
   const [konumAcik, setKonumAcik] = useState(true);
 
   // Şehir ve ilçeleri hesapla
