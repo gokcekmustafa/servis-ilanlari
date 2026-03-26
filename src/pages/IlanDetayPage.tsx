@@ -19,7 +19,8 @@ const kategoriBadge: Record<KategoriType, { label: string; color: string }> = {
   hostes_ariyorum: { label: 'Hostes Ariyorum',         color: 'bg-purple-100 text-purple-800' },
   hostesim_is:     { label: 'Hostesim Is Ariyorum',    color: 'bg-pink-100 text-pink-800' },
   soforum_is:      { label: 'Soforum Is Ariyorum',     color: 'bg-yellow-100 text-yellow-800' },
-  plaka_satiyorum: { label: 'Plakam Satiyorum',        color: 'bg-red-100 text-red-800' },
+  plaka_satiyorum:  { label: 'Plaka Satılık',        color: 'bg-red-100 text-red-800' },
+  aracimi_satiyorum:{ label: 'Araç Satılık',         color: 'bg-teal-100 text-teal-800' },
 };
 
 export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, tumIlanlar }: IlanDetayPageProps) {
