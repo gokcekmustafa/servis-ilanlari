@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import CategoryCards from '../components/CategoryCards';
-import ImprovedSidebar from '../components/Layout/ImprovedSidebar';
 import IlanCard from '../components/IlanCard';
 import { ilanlariGetir } from '../lib/ilanlar';
 import { KategoriType, Ilan } from '../types';
 import { supabase } from '../lib/supabase';
-import { SlidersHorizontal, X } from 'lucide-react';
+import { SlidersHorizontal, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 const REKLAM_ARASI = 2;
+
+// Kategori Kartları - Resimdeki gibi renkli
+const kategoriKartlari = [
+  { id: 'isim_var_arac' as KategoriType, sayi: 0, label: 'İşim Var\nAraç Arıyorum', bg: 'bg-blue-50', border: 'border-blue-300', num: 'text-blue-700' },
+  { id: 'aracim_var_is' as KategoriType, sayi: 0, label: 'Aracım Var\nİş Arıyorum', bg: 'bg-yellow-50', border: 'border-yellow-300', num: 'text-yellow-700' },
+  { id: 'sofor_ariyorum' as KategoriType, sayi: 0, label: 'Şoför\nArıyorum', bg: 'bg-green-50', border: 'border-green-300', num: 'text-green-700' },
+  { id: 'hostes_ariyorum' as KategoriType, sayi: 0, label: 'Hostes\nArıyorum', bg: 'bg-purple-50', border: 'border-purple-300', num: 'text-purple-700' },
+];
 
 type ReklamKartiProps = { reklam: any };
 
@@ -15,11 +21,11 @@ function ReklamKarti({ reklam }: ReklamKartiProps) {
   return (
     <div
       onClick={() => reklam.link_url && window.open(reklam.link_url, '_blank')}
-      className="cursor-pointer rounded-lg overflow-hidden border border-gray-200 hover:border-orange-300 transition-all"
+      className="cursor-pointer rounded-lg overflow-hidden border border-gray-200 hover:border-blue-300 transition-all"
     >
       <div className="relative">
-        <img src={reklam.resim_url} alt={reklam.baslik || 'Reklam'} className="w-full h-20 object-cover" />
-        <span className="absolute top-1.5 right-1.5 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">
+        <img src={reklam.resim_url} alt={reklam.baslik || 'Reklam'} className="w-full h-24 object-cover" />
+        <span className="absolute top-1.5 right-1.5 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">
           Reklam
         </span>
       </div>
@@ -35,15 +41,16 @@ type HomePageProps = {
 export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
+  
+  // Kategoriler
   const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(null);
   const [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
   
+  // Konum Filtreleri
   const [selectedSehir, setSelectedSehir] = useState('');
-  const [selectedIlce, setSelectedIlce] = useState('');
-  const [selectedYaka, setSelectedYaka] = useState('');
   const [aktifSehir, setAktifSehir] = useState('');
+  const [selectedIlce, setSelectedIlce] = useState('');
   const [aktifIlce, setAktifIlce] = useState('');
-  const [aktifYaka, setAktifYaka] = useState('');
   
   const [siralama, setSiralama] = useState('yeni');
   const [reklamlar, setReklamlar] = useState<any[]>([]);
@@ -51,6 +58,7 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
   const [popupAcik, setPopupAcik] = useState(false);
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
+  const [filtrePanelAcik, setFiltrePanelAcik] = useState(true);
 
   useEffect(() => {
     ilanlarYukle();
@@ -106,11 +114,23 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
     return () => clearTimeout(timer);
   }, [popupAcik, duyuru]);
 
+  // Şehir ve ilçeleri hesapla
+  const sehirler = Array.from(new Set(
+    ilanlar.flatMap(i => i.guzergahlar.map(g => g.kalkis_il).filter(Boolean))
+  )).sort();
+
+  const ilceler = selectedSehir 
+    ? Array.from(new Set(
+        ilanlar
+          .flatMap(i => i.guzergahlar.filter(g => g.kalkis_il === selectedSehir).map(g => g.kalkis_ilce))
+          .filter(Boolean)
+      )).sort()
+    : [];
+
   const handleFilter = () => {
     setAktifKategori(selectedKategori);
     setAktifSehir(selectedSehir);
     setAktifIlce(selectedIlce);
-    setAktifYaka(selectedYaka);
     setFiltreAcik(false);
   };
 
@@ -121,11 +141,10 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
     setAktifSehir('');
     setSelectedIlce('');
     setAktifIlce('');
-    setSelectedYaka('');
-    setAktifYaka('');
     setSiralama('yeni');
   };
 
+  // Filtreleme
   const filtrelenmisIlanlar = ilanlar
     .filter((ilan) => {
       if (aktifKategori && ilan.kategori !== aktifKategori) return false;
@@ -137,14 +156,6 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
         const ilceVar = ilan.guzergahlar.some((g) => g.kalkis_ilce === aktifIlce);
         if (!ilceVar) return false;
       }
-      if (aktifYaka && aktifSehir === 'Istanbul') {
-        const yakaVar = ilan.guzergahlar.some((g) =>
-          g.kalkis_il === 'Istanbul' &&
-          g.kalkis_ilce &&
-          g.kalkis_ilce
-        );
-        if (!yakaVar) return false;
-      }
       return true;
     })
     .sort((a, b) =>
@@ -153,30 +164,64 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
         : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
-  const aktivFiltreVar = !!aktifKategori || !!aktifSehir || !!aktifIlce || !!aktifYaka;
+  const kategoriSayilari = (kategori: KategoriType) =>
+    ilanlar.filter(i => i.kategori === kategori).length;
+
+  const aktivFiltreVar = !!aktifKategori || !!aktifSehir || !!aktifIlce;
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6">
-        {/* Kategori Kartları */}
-        <CategoryCards
-          ilanlar={ilanlar}
-          selectedKategori={selectedKategori}
-          onCategorySelect={setSelectedKategori}
-        />
+    <div className="bg-white min-h-screen">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6">
+        
+        {/* KATEGORİ KARTLARI - Resimdeki gibi */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900">İlan Kategorileri</h2>
+            <a href="#" className="text-blue-600 text-sm font-semibold hover:underline">
+              İlan Ver →
+            </a>
+          </div>
+          <p className="text-xs text-gray-500 mb-4">Toplam {ilanlar.length} ilan</p>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {kategoriKartlari.map((kat) => {
+              const sayi = kategoriSayilari(kat.id);
+              const isSelected = selectedKategori === kat.id;
+              
+              return (
+                <button
+                  key={kat.id}
+                  onClick={() => setSelectedKategori(isSelected ? null : kat.id)}
+                  className={`p-4 rounded-lg border-2 transition-all text-center ${
+                    isSelected
+                      ? `${kat.bg} border-blue-500 shadow-md`
+                      : `${kat.bg} border-gray-200 hover:border-gray-300`
+                  }`}
+                  disabled={sayi === 0}
+                  style={{ opacity: sayi === 0 ? 0.5 : 1 }}
+                >
+                  <div className={`text-2xl font-bold ${kat.num} mb-1`}>{sayi}</div>
+                  <div className="text-xs font-semibold text-gray-700 leading-tight whitespace-pre-line">
+                    {kat.label}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Mobil Filtre Butonu */}
         <div className="lg:hidden mb-4 flex gap-2">
           <button
             onClick={() => setFiltreAcik(true)}
-            className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-medium text-sm hover:bg-gray-50 transition"
+            className="flex-1 flex items-center justify-center gap-2 bg-gray-100 border border-gray-300 text-gray-800 py-3 rounded-lg font-semibold text-sm hover:bg-gray-200 transition"
           >
             <SlidersHorizontal size={16} /> Filtrele
           </button>
           {aktivFiltreVar && (
             <button
               onClick={handleClear}
-              className="px-4 flex items-center gap-1 bg-white border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition"
+              className="px-4 flex items-center gap-1 bg-gray-100 border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
             >
               <X size={16} /> Temizle
             </button>
@@ -184,88 +229,122 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
         </div>
 
         <div className="flex gap-6">
-          {/* Sidebar (Desktop) */}
-          <div className="hidden lg:block w-64 flex-shrink-0">
-            <ImprovedSidebar
-              selectedKategoriler={selectedKategori ? [selectedKategori] : []}
-              selectedSehir={selectedSehir}
-              selectedIlce={selectedIlce}
-              selectedYaka={selectedYaka}
-              onSehirChange={setSelectedSehir}
-              onIlceChange={setSelectedIlce}
-              onYakaChange={setSelectedYaka}
-              onFilter={handleFilter}
-              onClear={handleClear}
-              ilanlar={ilanlar}
-            />
+          {/* SOL: FİLTRELER */}
+          <div className="hidden lg:block w-56 flex-shrink-0">
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 sticky top-6">
+              <h3 className="font-bold text-gray-900 mb-4 flex items-center justify-between">
+                Filtrele
+                {aktivFiltreVar && (
+                  <button
+                    onClick={handleClear}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-semibold"
+                  >
+                    Temizle
+                  </button>
+                )}
+              </h3>
+
+              {/* Şehir Filtresi */}
+              <div className="mb-5">
+                <label className="block text-xs font-bold text-gray-800 mb-2">ŞEHİR</label>
+                <select
+                  value={selectedSehir}
+                  onChange={(e) => {
+                    setSelectedSehir(e.target.value);
+                    setSelectedIlce('');
+                  }}
+                  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="">Tüm Şehirler</option>
+                  {sehirler.map((sehir) => (
+                    <option key={sehir} value={sehir}>{sehir}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* İlçe Filtresi */}
+              {selectedSehir && ilceler.length > 0 && (
+                <div className="mb-5">
+                  <label className="block text-xs font-bold text-gray-800 mb-2">İLÇE</label>
+                  <select
+                    value={selectedIlce}
+                    onChange={(e) => setSelectedIlce(e.target.value)}
+                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  >
+                    <option value="">Tüm İlçeler</option>
+                    {ilceler.map((ilce) => (
+                      <option key={ilce} value={ilce}>{ilce}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Filtrele Butonu */}
+              <button
+                onClick={handleFilter}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition text-sm"
+              >
+                Aramayı Daralt
+              </button>
+            </div>
           </div>
 
-          {/* Ana İçerik */}
+          {/* SAĞ: ANA İÇERİK */}
           <div className="flex-1 min-w-0">
-            {/* Aktif Filtreler */}
+            
+            {/* AKTİF FİLTRELER */}
             {aktivFiltreVar && (
-              <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-3 flex-wrap">
-                <span className="text-sm font-medium text-gray-700">Aktif Filtreler:</span>
-                {aktifKategori && (
-                  <div className="flex items-center gap-2 bg-white border border-orange-300 rounded-full px-3 py-1.5">
-                    <span className="text-sm text-gray-700 font-medium">{aktifKategori}</span>
-                    <button
-                      onClick={() => setAktifKategori(null)}
-                      className="text-orange-500 hover:text-orange-700"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                )}
-                {(aktifSehir || aktifIlce || aktifYaka) && (
-                  <div className="flex items-center gap-2 bg-white border border-orange-300 rounded-full px-3 py-1.5">
-                    <span className="text-sm text-gray-700 font-medium">
-                      {aktifIlce || aktifSehir}
-                    </span>
-                    <button
-                      onClick={() => {
-                        setAktifSehir('');
-                        setAktifIlce('');
-                        setAktifYaka('');
-                      }}
-                      className="text-orange-500 hover:text-orange-700"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                )}
-                <button
-                  onClick={handleClear}
-                  className="ml-auto text-sm text-orange-600 hover:text-orange-700 font-medium"
-                >
-                  Tümünü Temizle
-                </button>
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {aktifKategori && (
+                    <div className="flex items-center gap-1 bg-white border border-blue-300 rounded-full px-3 py-1 text-sm">
+                      <span className="text-gray-800 font-medium text-sm">{aktifKategori}</span>
+                      <button
+                        onClick={() => setAktifKategori(null)}
+                        className="text-blue-600 hover:text-blue-800 ml-1"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+                  {(aktifSehir || aktifIlce) && (
+                    <div className="flex items-center gap-1 bg-white border border-blue-300 rounded-full px-3 py-1 text-sm">
+                      <span className="text-gray-800 font-medium text-sm">{aktifIlce || aktifSehir}</span>
+                      <button
+                        onClick={() => {
+                          setAktifSehir('');
+                          setAktifIlce('');
+                        }}
+                        className="text-blue-600 hover:text-blue-800 ml-1"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Sıralama Çubuğu */}
-            <div className="mb-4 bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-700">
-                <span className="text-orange-600">{filtrelenmisIlanlar.length}</span> ilan bulundu
+            {/* SIRALAMA & İLAN SAYISI */}
+            <div className="mb-4 bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center justify-between">
+              <span className="text-sm font-bold text-gray-900">
+                Aktif İlanlar <span className="text-blue-600">{filtrelenmisIlanlar.length}</span>
               </span>
               <select
                 value={siralama}
                 onChange={(e) => setSiralama(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium"
               >
                 <option value="yeni">Önce En Yeni</option>
                 <option value="eski">Önce En Eski</option>
               </select>
             </div>
 
-            {/* İlanlar Listesi */}
+            {/* İLAN LİSTESİ */}
             {yukleniyor ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="bg-white rounded-lg p-4 animate-pulse border border-gray-200"
-                  >
+                  <div key={i} className="bg-white rounded-lg p-4 border border-gray-200 animate-pulse">
                     <div className="h-4 bg-gray-200 rounded w-1/3 mb-3"></div>
                     <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
                     <div className="h-3 bg-gray-200 rounded w-2/3"></div>
@@ -274,60 +353,96 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
               </div>
             ) : filtrelenmisIlanlar.length > 0 ? (
               <div className="space-y-3">
-                {filtrelenmisIlanlar.map((ilan) => (
-                  <IlanCard
-                    key={ilan.id}
-                    ilan={ilan}
-                    onDetay={() => onIlanDetay(ilan)}
-                  />
+                {filtrelenmisIlanlar.map((ilan, idx) => (
+                  <React.Fragment key={ilan.id}>
+                    <IlanCard ilan={ilan} onDetay={() => onIlanDetay(ilan)} />
+                    {(idx + 1) % REKLAM_ARASI === 0 && reklamlar.length > 0 && (
+                      <ReklamKarti reklam={reklamlar[idx % reklamlar.length]} />
+                    )}
+                  </React.Fragment>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-20 bg-white rounded-lg border border-gray-200">
-                <div className="text-5xl mb-4">🚌</div>
-                <p className="text-base font-medium text-gray-800">Uygun ilan bulunamadı</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Filtrelerinizi değiştirerek tekrar deneyin
-                </p>
+              <div className="text-center py-24 bg-white rounded-lg border border-gray-200">
+                <div className="text-6xl mb-4">🚌</div>
+                <p className="text-lg font-bold text-gray-900 mb-2">Uygun ilan bulunamadı</p>
+                <p className="text-sm text-gray-600">Filtrelerinizi değiştirerek tekrar deneyin</p>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Mobil Filtre Drawer */}
+      {/* MOBİL FİLTRE DRAWER */}
       {filtreAcik && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col">
-          <div className="flex-1 bg-black/40" onClick={() => setFiltreAcik(false)} />
-          <div className="bg-white rounded-t-3xl shadow-xl max-h-[85vh] overflow-y-auto">
+          <div className="flex-1 bg-black/50" onClick={() => setFiltreAcik(false)} />
+          <div className="bg-white rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between rounded-t-3xl">
-              <h3 className="font-semibold text-gray-800">Filtreleri Ayarla</h3>
-              <button
-                onClick={() => setFiltreAcik(false)}
-                className="p-1.5 text-gray-400 hover:text-gray-600"
-              >
+              <h3 className="font-bold text-gray-900">Filtreleri Ayarla</h3>
+              <button onClick={() => setFiltreAcik(false)} className="p-1.5 text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
-            <div className="p-4">
-              <ImprovedSidebar
-                selectedKategoriler={selectedKategori ? [selectedKategori] : []}
-                selectedSehir={selectedSehir}
-                selectedIlce={selectedIlce}
-                selectedYaka={selectedYaka}
-                onSehirChange={setSelectedSehir}
-                onIlceChange={setSelectedIlce}
-                onYakaChange={setSelectedYaka}
-                onFilter={handleFilter}
-                onClear={handleClear}
-                ilanlar={ilanlar}
-              />
+            <div className="p-4 space-y-4">
+              {/* Şehir */}
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">ŞEHİR</label>
+                <select
+                  value={selectedSehir}
+                  onChange={(e) => {
+                    setSelectedSehir(e.target.value);
+                    setSelectedIlce('');
+                  }}
+                  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">Tüm Şehirler</option>
+                  {sehirler.map((sehir) => (
+                    <option key={sehir} value={sehir}>{sehir}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* İlçe */}
+              {selectedSehir && ilceler.length > 0 && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-800 mb-2">İLÇE</label>
+                  <select
+                    value={selectedIlce}
+                    onChange={(e) => setSelectedIlce(e.target.value)}
+                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="">Tüm İlçeler</option>
+                    {ilceler.map((ilce) => (
+                      <option key={ilce} value={ilce}>{ilce}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Butonlar */}
+              <div className="space-y-2 pt-4">
+                <button
+                  onClick={handleFilter}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition"
+                >
+                  Aramayı Daralt
+                </button>
+                {aktivFiltreVar && (
+                  <button
+                    onClick={handleClear}
+                    className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2.5 rounded-lg transition"
+                  >
+                    Filtreleri Temizle
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Duyuru Popup */}
+      {/* DUYURU POPUP */}
       {popupAcik && duyuru && (
         <div
           className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4"
@@ -340,38 +455,22 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
             className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md relative shadow-xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {duyuru.resim_url ? (
-              <>
-                <img src={duyuru.resim_url} alt={duyuru.baslik || 'Duyuru'} className="w-full h-48 sm:h-56 object-cover" />
-                <div className="p-4 sm:p-5">
-                  {duyuru.baslik && <h2 className="text-base font-bold text-gray-800 mb-1.5">{duyuru.baslik}</h2>}
-                  {duyuru.mesaj && <p className="text-sm text-gray-500 leading-relaxed">{duyuru.mesaj}</p>}
-                  <button 
-                    onClick={() => {
-                      setPopupAcik(false);
-                      if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
-                    }}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition mt-4"
-                  >
-                    Kapat
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="p-5 sm:p-6">
-                {duyuru.baslik && <h2 className="text-base font-bold text-gray-800 mb-2">{duyuru.baslik}</h2>}
-                {duyuru.mesaj && <p className="text-sm text-gray-500 leading-relaxed">{duyuru.mesaj}</p>}
-                <button 
-                  onClick={() => {
-                    setPopupAcik(false);
-                    if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
-                  }}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition mt-4"
-                >
-                  Kapat
-                </button>
-              </div>
+            {duyuru.resim_url && (
+              <img src={duyuru.resim_url} alt={duyuru.baslik || 'Duyuru'} className="w-full h-48 sm:h-56 object-cover" />
             )}
+            <div className="p-5 sm:p-6">
+              {duyuru.baslik && <h2 className="text-lg font-bold text-gray-900 mb-2">{duyuru.baslik}</h2>}
+              {duyuru.mesaj && <p className="text-sm text-gray-600 leading-relaxed mb-4">{duyuru.mesaj}</p>}
+              <button 
+                onClick={() => {
+                  setPopupAcik(false);
+                  if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition"
+              >
+                Kapat
+              </button>
+            </div>
           </div>
         </div>
       )}
