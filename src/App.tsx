@@ -1,5 +1,4 @@
 import React from 'react';
-import './App.css'; // Assuming there's a CSS file for styles
 
 const HomePage = () => {
     return (
