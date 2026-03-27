@@ -71,7 +71,7 @@ const KATEGORILER = [
   },
   {
     id: 'sofor_ariyorum' as KategoriType,
-    label: 'Şoför Aranıyor',
+    label: 'Aracım Var Şoför Aranıyorum',
     aciklama: 'Profesyonel şoför arayan firmalar',
     icon: '👤',
     bg: 'bg-orange-50',
@@ -82,7 +82,7 @@ const KATEGORILER = [
   },
   {
     id: 'hostes_ariyorum' as KategoriType,
-    label: 'Hostes Aranıyor',
+    label: 'Aracım Var Hostes Aranıyorum',
     aciklama: 'Servis hostesi arayan ilanlar',
     icon: '👩',
     bg: 'bg-purple-50',
@@ -93,7 +93,7 @@ const KATEGORILER = [
   },
   {
     id: 'soforum_is' as KategoriType,
-    label: 'Şoförüm İş Arıyor',
+    label: 'Şoförüm İş Arıyorum',
     aciklama: 'Deneyimli şoförler iş arıyor',
     icon: '🚗',
     bg: 'bg-yellow-50',
@@ -104,7 +104,7 @@ const KATEGORILER = [
   },
   {
     id: 'hostesim_is' as KategoriType,
-    label: 'Hostesim İş Arıyor',
+    label: 'Hostesim İş Arıyorum',
     aciklama: 'Hostes iş ilanları',
     icon: '💼',
     bg: 'bg-pink-50',
