@@ -70,7 +70,7 @@ export default function Header({
           </span>
 
           {/* Orta: Ücretsiz İlan Ver — esnek alanda biraz sola yaslanmış */}
-          <div className="flex-1 flex justify-center">
+          <div className="flex-1 flex justify-end pr-2">
             <button
               onClick={onIlanEkle}
               className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded transition whitespace-nowrap"
