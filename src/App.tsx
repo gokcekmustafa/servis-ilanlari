@@ -511,6 +511,17 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                   </select>
                 </div>
               )}
+              <div>
+  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Varış Şehri</p>
+  <select
+    value={selectedVaris}
+    onChange={(e) => setSelectedVaris(e.target.value)}
+    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white"
+  >
+    <option value="">Tümü</option>
+    {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
+  </select>
+</div>
               <div className="pt-2 space-y-2">
                 <button onClick={() => setFiltreAcik(false)} className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white font-bold py-2.5 rounded transition text-sm">Uygula</button>
                 {aktivFiltreVar && (
