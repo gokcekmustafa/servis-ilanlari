@@ -26,6 +26,7 @@ const kategoriRenk: Record<string, string> = {
   hostesim_is: 'bg-pink-600',
   soforum_is: 'bg-yellow-600',
   plaka_satiyorum: 'bg-red-600',
+  aracimi_satiyorum: 'bg-red-600',
 };
 
 const tumIller = Object.keys(ilceler).sort();
