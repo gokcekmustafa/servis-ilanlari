@@ -419,10 +419,10 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Konuma Göre</span>
                 </div>
-                <div className="px-3 pt-2 pb-1">
-                  <span className="text-[10px] font-semibold text-orange-500 uppercase tracking-wide">📍 Kalkış</span>
-                </div>
-                <div className="px-3 pb-2 space-y-1.5">
+                <div className="px-3 pt-1.5 pb-0.5">
+  <span className="text-[10px] font-semibold text-orange-500 uppercase tracking-wide">📍 Kalkış</span>
+</div>
+<div className="px-3 pb-2 space-y-1.5">
                   <select
                     value={selectedSehir}
                     onChange={(e) => { setSelectedSehir(e.target.value); setSelectedKalkisIlce(''); setSelectedKalkisMah(''); }}
