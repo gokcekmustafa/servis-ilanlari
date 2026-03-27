@@ -9,13 +9,13 @@ type IlanCardProps = {
 
 const badges: Record<KategoriType, { label: string; bg: string; text: string; border: string }> = {
   isim_var_arac:    { label: 'İşim Var Araç Arıyorum',       bg: 'bg-blue-50',   text: 'text-blue-700',   border: 'border-blue-200' },
-  aracim_var_is:    { label: 'Aracım Var İş Arıyorum',          bg: 'bg-green-50',  text: 'text-green-700',  border: 'border-green-200' },
-  sofor_ariyorum:   { label: 'Aracım Var Şoför Arıyorum',       bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
-  hostes_ariyorum:  { label: 'Aracım Var Hostes Arıyorum',      bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
-  hostesim_is:      { label: 'Hostesim İş Arıyorum',     bg: 'bg-pink-50',   text: 'text-pink-700',   border: 'border-pink-200' },
-  soforum_is:       { label: 'Şoförüm İş Arıyorum',      bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' },
-  plaka_satiyorum:  { label: 'Plakamı Satıyorum',        bg: 'bg-red-50',    text: 'text-red-700',    border: 'border-red-200' },
-  aracimi_satiyorum:{ label: 'Aracımı Satıyorum',         bg: 'bg-teal-50',   text: 'text-teal-700',   border: 'border-teal-200' },
+  aracim_var_is:    { label: 'Aracım Var İş Arıyorum',       bg: 'bg-green-50',  text: 'text-green-700',  border: 'border-green-200' },
+  sofor_ariyorum:   { label: 'Aracım Var Şoför Arıyorum',    bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
+  hostes_ariyorum:  { label: 'Aracım Var Hostes Arıyorum',   bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+  hostesim_is:      { label: 'Hostesim İş Arıyorum',         bg: 'bg-pink-50',   text: 'text-pink-700',   border: 'border-pink-200' },
+  soforum_is:       { label: 'Şoförüm İş Arıyorum',          bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' },
+  plaka_satiyorum:  { label: 'Plakamı Satıyorum',            bg: 'bg-red-50',    text: 'text-red-700',    border: 'border-red-200' },
+  aracimi_satiyorum:{ label: 'Aracımı Satıyorum',            bg: 'bg-teal-50',   text: 'text-teal-700',   border: 'border-teal-200' },
 };
 
 const kategoriSerit: Record<KategoriType, string> = {
@@ -61,7 +61,7 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
       className="bg-white border border-gray-200 hover:border-[#f7971e] hover:shadow-sm transition-all duration-150 cursor-pointer group rounded"
     >
       <div className="flex">
-        {/* Sol renk seridi */}
+        {/* Sol renk şeridi */}
         <div className={`w-1 flex-shrink-0 rounded-l ${serit}`} />
 
         {/* Orta: içerik */}
@@ -123,15 +123,15 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
 
           {/* Alt bilgi */}
           <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-400">
-  <span className="flex items-center gap-1">
-    <MapPin size={11} /> {konum || 'Konum belirtilmemiş'}
-  </span>
-  {kapasite && (
-    <span className="flex items-center gap-1"><Tag size={11} /> {kapasite} kişi</span>
-  )}
-  <span className="flex items-center gap-1"><Eye size={11} /> {goruntulenme}</span>
-  <span className="flex items-center gap-1 ml-auto"><Clock size={11} /> {zamanFarki(ilan.created_at)}</span>
-</div>
+            <span className="flex items-center gap-1">
+              <MapPin size={11} /> {konum || 'Konum belirtilmemiş'}
+            </span>
+            {kapasite && (
+              <span className="flex items-center gap-1"><Tag size={11} /> {kapasite} kişi</span>
+            )}
+            <span className="flex items-center gap-1"><Eye size={11} /> {goruntulenme}</span>
+            <span className="flex items-center gap-1 ml-auto"><Clock size={11} /> {zamanFarki(ilan.created_at)}</span>
+          </div>
         </div>
 
         {/* Sağ panel: kullanıcı + butonlar */}
@@ -149,8 +149,8 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
                 if (telefon) window.open(`https://wa.me/90${telefon.replace(/\D/g, '').replace(/^0/, '')}`, '_blank');
               }}
               className="flex items-center justify-center gap-1.5 bg-white hover:bg-gray-50 text-[#25D366] border border-[#25D366] text-[11px] font-semibold px-3 py-1.5 rounded transition"
->
-  <MessageCircle size={12} className="text-[#25D366]" /> WhatsApp
+            >
+              <MessageCircle size={12} className="text-[#25D366]" /> WhatsApp
             </button>
             <button
               onClick={(e) => {
@@ -168,13 +168,19 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
       {/* Mobil alt butonlar */}
       <div className="sm:hidden flex border-t border-gray-100 divide-x divide-gray-100">
         <button
-          onClick={(e) => { e.stopPropagation(); if (telefon) window.open(`https://wa.me/90${telefon.replace(/\D/g,'').replace(/^0/,'')}`, '_blank'); }}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-[#25D366] bg-white hover:bg-gray-50 border-r border-[#25D366] transition"
->
-  <MessageCircle size={12} className="text-[#25D366]" /> WhatsApp
+          onClick={(e) => {
+            e.stopPropagation();
+            if (telefon) window.open(`https://wa.me/90${telefon.replace(/\D/g, '').replace(/^0/, '')}`, '_blank');
+          }}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-[#25D366] bg-white hover:bg-gray-50 transition"
+        >
+          <MessageCircle size={12} className="text-[#25D366]" /> WhatsApp
         </button>
         <button
-          onClick={(e) => { e.stopPropagation(); if (telefon) window.location.href = `tel:${telefon}`; }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (telefon) window.location.href = `tel:${telefon}`;
+          }}
           className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-gray-700 bg-white hover:bg-gray-50 transition"
         >
           <Phone size={12} className="text-[#f7971e]" /> Ara
