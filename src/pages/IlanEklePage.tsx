@@ -374,11 +374,12 @@ const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(()
     ekbilgiler = { ...hostesimIs, profil_resmi: resimUrl };
   } else if (selectedKategori === 'soforum_is') {
     ekbilgiler = { ...soforumIs, profil_resmi: resimUrl };
-  } else if (selectedKategori === '') {
-    ekbilgiler = plakaSatiyorum;
-  } else if (selectedKategori === '') {
-    ekbilgiler = AracimiSatiyorum;
-  }
+  } else if (selectedKategori === 'plaka_satiyorum') {
+  ekbilgiler = plakaSatiyorum;
+}
+  } else if (selectedKategori === 'aracimi_satiyorum') {
+  ekbilgiler = aracimiSatiyorum;
+}
 
   const { error } = await ilanEkle({
     kategori: selectedKategori!,
