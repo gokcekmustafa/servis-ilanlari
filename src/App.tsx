@@ -45,7 +45,6 @@ const validPages: Page[] = [
   'kisisel-veriler', 'kunye',
 ];
 
-// Kategori yapılandırması
 const KATEGORILER = [
   {
     id: 'isim_var_arac' as KategoriType,
@@ -137,7 +136,32 @@ const KATEGORILER = [
   },
 ] as const;
 
-// HOME PAGE COMPONENT — sahibinden.com tarzı
+// Her 8 ilandan sonra gösterilecek reklam kartı
+function ListeReklamKarti({ reklam }: { reklam: any }) {
+  return (
+    <div
+      onClick={() => reklam.link_url && window.open(reklam.link_url, '_blank')}
+      className={`relative overflow-hidden rounded border border-slate-200 bg-white ${reklam.link_url ? 'cursor-pointer' : ''}`}
+    >
+      {reklam.resim_url ? (
+        <img
+          src={reklam.resim_url}
+          alt={reklam.baslik || 'Reklam'}
+          className="w-full h-28 sm:h-36 object-cover"
+        />
+      ) : (
+        <div className="w-full h-28 sm:h-36 bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center">
+          <span className="text-slate-300 text-xs">Reklam Alanı</span>
+        </div>
+      )}
+      <span className="absolute top-1 right-1 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">
+        Reklam
+      </span>
+    </div>
+  );
+}
+
+// HOME PAGE COMPONENT
 function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void }) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -149,8 +173,13 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
   const [popupAcik, setPopupAcik] = useState(false);
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
+  const [listeReklam, setListeReklam] = useState<any>(null);
 
-  useEffect(() => { ilanlarYukle(); setDuyuru(null); }, []);
+  useEffect(() => {
+    ilanlarYukle();
+    setDuyuru(null);
+    listeReklamYukle();
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = filtreAcik ? 'hidden' : '';
@@ -162,6 +191,17 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
     const { data, error } = await ilanlariGetir();
     if (!error && data) setIlanlar(data as Ilan[]);
     setYukleniyor(false);
+  };
+
+  const listeReklamYukle = async () => {
+    const { data } = await supabase
+      .from('reklamlar')
+      .select('*')
+      .eq('aktif', true)
+      .eq('konum', 'liste')
+      .limit(1)
+      .single();
+    if (data) setListeReklam(data);
   };
 
   useEffect(() => {
@@ -209,18 +249,35 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
 
   const aktivFiltreVar = !!aktifKategori || !!selectedSehir || !!selectedIlce;
 
+  // İlan listesini her 8 elemandan sonra reklam ekleyerek oluştur
+  const ilanListesiWithAds = () => {
+    const result: React.ReactNode[] = [];
+    filtrelenmisIlanlar.forEach((ilan, index) => {
+      result.push(
+        <IlanCard key={ilan.id} ilan={ilan} onDetay={() => onIlanDetay(ilan)} />
+      );
+      // Her 8 ilandan sonra (ve son eleman değilse) reklam ekle
+      if ((index + 1) % 8 === 0 && index < filtrelenmisIlanlar.length - 1) {
+        result.push(
+          <ListeReklamKarti key={`reklam-${index}`} reklam={listeReklam || {}} />
+        );
+      }
+    });
+    return result;
+  };
+
   return (
     <div className="bg-[#f4f4f4] min-h-screen">
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4">
 
         {/* KATEGORİ KARTLARI */}
         <div className="mb-4">
-          <div className="bg-white border border-gray-200 rounded overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2.5 bg-[#f7971e]">
-              <h2 className="text-sm font-bold text-white">İlan Kategorileri</h2>
-              <span className="text-xs text-white/80">{ilanlar.length} aktif ilan</span>
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-3 bg-[#f7971e]">
+              <h2 className="text-sm font-bold text-white tracking-wide">İlan Kategorileri</h2>
+              <span className="text-xs text-white/80 font-medium">{ilanlar.length} aktif ilan</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y divide-gray-100">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3">
               {KATEGORILER.map((kat) => {
                 const sayi = kategoriSayisi(kat.id);
                 const isSelected = aktifKategori === kat.id;
@@ -228,14 +285,23 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                   <button
                     key={kat.id}
                     onClick={() => setAktifKategori(isSelected ? null : kat.id)}
-                    className={"flex items-center gap-3 px-4 py-3 text-left transition-all hover:bg-orange-50 " + (isSelected ? "bg-orange-50 border-l-4 border-[#f7971e]" : "")}
+                    className={
+                      "flex flex-col items-center gap-2.5 px-3 py-4 rounded-xl border-2 text-center transition-all " +
+                      (isSelected
+                        ? "border-[#f7971e] bg-orange-50 shadow-md shadow-orange-100"
+                        : "border-gray-100 bg-gray-50 hover:border-orange-200 hover:bg-orange-50 hover:shadow-sm")
+                    }
                   >
-                    <div className={"w-8 h-8 rounded flex items-center justify-center text-base flex-shrink-0 " + kat.iconBg}>
+                    {/* İkon */}
+                    <div className={"w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 shadow-sm " + kat.iconBg}>
                       {kat.icon}
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold text-gray-800 leading-tight">{kat.label}</div>
-                      <div className={"text-base font-bold " + (isSelected ? "text-[#f7971e]" : kat.numColor)}>{sayi}</div>
+                    {/* Başlık */}
+                    <div className="text-xs font-semibold text-gray-700 leading-snug">{kat.label}</div>
+                    {/* Sayı — başlığa ortalı, renkli badge */}
+                    <div className={"inline-flex items-center justify-center text-sm font-bold px-3 py-0.5 rounded-full " +
+                      (isSelected ? "bg-[#f7971e] text-white" : kat.iconBg + " " + kat.numColor)}>
+                      {sayi}
                     </div>
                   </button>
                 );
@@ -367,9 +433,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
               </div>
             ) : filtrelenmisIlanlar.length > 0 ? (
               <div className="space-y-2">
-                {filtrelenmisIlanlar.map(ilan => (
-                  <IlanCard key={ilan.id} ilan={ilan} onDetay={() => onIlanDetay(ilan)} />
-                ))}
+                {ilanListesiWithAds()}
               </div>
             ) : (
               <div className="bg-white border border-gray-200 rounded text-center py-16">
@@ -625,10 +689,10 @@ export default function App() {
 
   if (currentPage === 'detay' && selectedIlan) return withLayout(<IlanDetayPage ilan={selectedIlan} onGoBack={goBack} onGoLogin={() => setCurrentPage('login')} isLoggedIn={isLoggedIn} />);
   if (currentPage === 'ilan-ekle') return withLayout(<IlanEklePage
-  userId={userId || ''}
-  onGoBack={() => setCurrentPage('home')}
-  onSuccess={() => setCurrentPage('home')}
-/>);
+    userId={userId || ''}
+    onGoBack={() => setCurrentPage('home')}
+    onSuccess={() => setCurrentPage('home')}
+  />);
   if (currentPage === 'panel') return withLayout(<PanelPage onLogout={handleLogout} onIlanEkle={handleIlanEkle} onIlanDetay={handleIlanDetay} userId={userId || ''} />);
   if (currentPage === 'admin') {
     if (!isAdmin) { setCurrentPage('home'); return null; }
