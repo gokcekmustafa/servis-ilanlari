@@ -123,16 +123,15 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
 
           {/* Alt bilgi */}
           <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-400">
-            {konum && (
-              <span className="flex items-center gap-1">
-  <MapPin size={11} /> {konum || 'Konum belirtilmemiş'}
-</span>
-            {kapasite && (
-              <span className="flex items-center gap-1"><Tag size={11} /> {kapasite} kişi</span>
-            )}
-            <span className="flex items-center gap-1"><Eye size={11} /> {goruntulenme}</span>
-            <span className="flex items-center gap-1 ml-auto"><Clock size={11} /> {zamanFarki(ilan.created_at)}</span>
-          </div>
+  <span className="flex items-center gap-1">
+    <MapPin size={11} /> {konum || 'Konum belirtilmemiş'}
+  </span>
+  {kapasite && (
+    <span className="flex items-center gap-1"><Tag size={11} /> {kapasite} kişi</span>
+  )}
+  <span className="flex items-center gap-1"><Eye size={11} /> {goruntulenme}</span>
+  <span className="flex items-center gap-1 ml-auto"><Clock size={11} /> {zamanFarki(ilan.created_at)}</span>
+</div>
         </div>
 
         {/* Sağ panel: kullanıcı + butonlar */}
