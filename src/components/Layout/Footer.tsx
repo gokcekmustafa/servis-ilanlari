@@ -7,12 +7,12 @@ type FooterProps = {
 
 export default function Footer({ onNavigate }: FooterProps) {
   return (
-    <footer className="bg-slate-100 px-4 pb-4 mt-8">
+    <footer className="bg-slate-100 px-4 pb-2 mt-4">
       <div className="max-w-5xl mx-auto">
 
         {/* ANA FOOTER */}
-        <div className="bg-slate-700 rounded-t-lg px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div className="bg-slate-700 rounded-t-lg px-6 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-0">
 
             {/* LOGO + ACIKLAMA */}
             <div className="md:col-span-1">
@@ -27,7 +27,7 @@ export default function Footer({ onNavigate }: FooterProps) {
                   salonum<span className="text-orange-400">.site</span>
                 </span>
               </div>
-              <p className="text-slate-400 text-xs leading-relaxed">
+              <p className="text-slate-400 text-xs leading-snug">
                 Servis araci ve sofor ilanlari platformu. Turkiye genelinde
                 binlerce ilan ile hizmetinizdeyiz.
               </p>
@@ -38,7 +38,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               <h3 className="text-orange-400 font-semibold text-xs uppercase tracking-wider mb-3">
                 Gizlilik ve Kullanim
               </h3>
-              <ul className="space-y-2">
+              <ul className="space-y-1">
                 {[
                   { label: 'Sozlesmeler ve Kurallar', page: 'kullanim-kosullari' },
                   { label: 'Uyelik Sozlesmeleri', page: 'kullanim-kosullari' },
@@ -88,7 +88,7 @@ export default function Footer({ onNavigate }: FooterProps) {
         </div>
 
         {/* ALT SERIT */}
-        <div className="bg-slate-800 rounded-b-lg px-8 py-3 flex items-center justify-between">
+        <div className="bg-slate-800 rounded-b-lg px-6 py-2 flex items-center justify-between">
           <span className="text-slate-500 text-xs">
             2026 salonum.site — Tum haklari saklidir
           </span>
