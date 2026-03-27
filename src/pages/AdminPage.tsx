@@ -88,33 +88,42 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
   const [yukleniyor, setYukleniyor]       = useState(true);
   const [mobilMenuAcik, setMobilMenuAcik] = useState(false);
 
-  const [yeniReklam, setYeniReklam]       = useState({ baslik: '', resim_url: '', link_url: '', konum: 'liste' });
+  const [yeniReklam, setYeniReklam]             = useState({ baslik: '', resim_url: '', link_url: '', konum: 'liste' });
   const [reklamYukleniyor, setReklamYukleniyor] = useState(false);
-  const [surukleAktif, setSurukleAktif]   = useState(false);
+  const [surukleAktif, setSurukleAktif]         = useState(false);
+
+  // Reklam düzenleme state'leri
+  const [duzenleReklam, setDuzenleReklam]       = useState<any>(null); // düzenlenen reklam
+  const [duzenleForm, setDuzenleForm]           = useState({ baslik: '', link_url: '', konum: 'liste', resim_url: '' });
+  const [duzenleResimYukleniyor, setDuzenleResimYukleniyor] = useState(false);
+  const [duzenleSurukle, setDuzenleSurukle]     = useState(false);
+
+  // İlan arası reklam sıklığı
+  const [reklamSiklik, setReklamSiklik]         = useState(8);
+  const [siklikKaydediyor, setSiklikKaydediyor] = useState(false);
+  const [siklikMesaj, setSiklikMesaj]           = useState('');
+
   const [yeniDuyuru, setYeniDuyuru]       = useState({ baslik: '', mesaj: '', resim_url: '', saniye: 2, goster_sure: 8 });
   const [duyuruYukleniyor, setDuyuruYukleniyor] = useState(false);
   const [duyuruSurukle, setDuyuruSurukle]       = useState(false);
   const [seciliDestek, setSeciliDestek]   = useState<any>(null);
   const [destekCevap, setDestekCevap]     = useState('');
 
-  // Kullanıcı detay modal
-  const [detayModal, setDetayModal]                 = useState<any>(null);
-  const [detaySifre, setDetaySifre]                 = useState('');
-  const [detaySifreGoster, setDetaySifreGoster]     = useState(false);
-  const [detayDuzenle, setDetayDuzenle]             = useState(false);
-  const [detayKisitlamalar, setDetayKisitlamalar]   = useState<KullaniciKisitlamalar>({});
-  const [detayKaydediyor, setDetayKaydediyor]       = useState(false);
+  const [detayModal, setDetayModal]               = useState<any>(null);
+  const [detaySifre, setDetaySifre]               = useState('');
+  const [detaySifreGoster, setDetaySifreGoster]   = useState(false);
+  const [detayDuzenle, setDetayDuzenle]           = useState(false);
+  const [detayKisitlamalar, setDetayKisitlamalar] = useState<KullaniciKisitlamalar>({});
+  const [detayKaydediyor, setDetayKaydediyor]     = useState(false);
 
-  // Personel
-  const [personelFormAcik, setPersonelFormAcik]   = useState(false);
-  const [seciliPersonel, setSeciliPersonel]         = useState<any>(null);
-  const [personelForm, setPersonelForm]             = useState({
+  const [personelFormAcik, setPersonelFormAcik] = useState(false);
+  const [seciliPersonel, setSeciliPersonel]       = useState<any>(null);
+  const [personelForm, setPersonelForm]           = useState({
     full_name: '', phone_number: '', password: '', aktif: true,
     yetkiler: Object.fromEntries(Object.keys(PERSONEL_YETKI_TANIM).map(k => [k, false])) as PersonelYetkiler,
   });
   const [personelSifreGoster, setPersonelSifreGoster] = useState<Record<string, boolean>>({});
 
-  // Mobil menü açıkken scroll kilitle
   useEffect(() => {
     document.body.style.overflow = mobilMenuAcik ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -124,18 +133,20 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
 
   const hepsiniYukle = async () => {
     setYukleniyor(true);
-    const [u, i, r, d, ds] = await Promise.all([
+    const [u, i, r, d, ds, ayar] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('ilanlar').select('*').order('created_at', { ascending: false }),
       supabase.from('reklamlar').select('*').order('id', { ascending: false }),
       supabase.from('duyurular').select('*').order('id', { ascending: false }),
       supabase.from('destek').select('*').order('created_at', { ascending: false }),
+      supabase.from('ayarlar').select('*').eq('anahtar', 'reklam_siklik').single(),
     ]);
     setKullanicilar(u.data || []);
     setIlanlar(i.data || []);
     setReklamlar(r.data || []);
     setDuyurular(d.data || []);
     setDestekler(ds.data || []);
+    if (ayar.data?.deger) setReklamSiklik(Number(ayar.data.deger));
     setYukleniyor(false);
   };
 
@@ -198,15 +209,42 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
 
   // ─── REKLAM ─────────────────────────────────────────────────────────────────
 
-  const dosyaYukle = async (dosya: File) => {
+  const dosyaYukle = async (dosya: File, hedef: 'yeni' | 'duzenle' = 'yeni') => {
     if (!dosya.type.startsWith('image/')) { alert('Sadece resim dosyası yükleyebilirsiniz'); return; }
-    setReklamYukleniyor(true);
+    if (hedef === 'yeni') setReklamYukleniyor(true);
+    else setDuzenleResimYukleniyor(true);
     const ad = Date.now() + '-' + dosya.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const { error } = await supabase.storage.from('reklamlar').upload(ad, dosya, { contentType: dosya.type });
-    if (error) { alert('Yüklerken hata: ' + error.message); setReklamYukleniyor(false); return; }
+    if (error) { alert('Yüklerken hata: ' + error.message); setReklamYukleniyor(false); setDuzenleResimYukleniyor(false); return; }
     const { data: u } = supabase.storage.from('reklamlar').getPublicUrl(ad);
-    setYeniReklam(p => ({ ...p, resim_url: u.publicUrl }));
-    setReklamYukleniyor(false);
+    if (hedef === 'yeni') { setYeniReklam(p => ({ ...p, resim_url: u.publicUrl })); setReklamYukleniyor(false); }
+    else { setDuzenleForm(p => ({ ...p, resim_url: u.publicUrl })); setDuzenleResimYukleniyor(false); }
+  };
+
+  const reklamDuzenleAc = (r: any) => {
+    setDuzenleReklam(r);
+    setDuzenleForm({ baslik: r.baslik || '', link_url: r.link_url || '', konum: r.konum || 'liste', resim_url: r.resim_url || '' });
+  };
+
+  const reklamDuzenleKaydet = async () => {
+    if (!duzenleReklam) return;
+    await supabase.from('reklamlar').update({
+      baslik: duzenleForm.baslik,
+      link_url: duzenleForm.link_url,
+      konum: duzenleForm.konum,
+      resim_url: duzenleForm.resim_url,
+    }).eq('id', duzenleReklam.id);
+    setDuzenleReklam(null);
+    hepsiniYukle();
+  };
+
+  const siklikKaydet = async () => {
+    setSiklikKaydediyor(true);
+    // upsert: anahtar yoksa ekle, varsa güncelle
+    await supabase.from('ayarlar').upsert({ anahtar: 'reklam_siklik', deger: String(reklamSiklik) }, { onConflict: 'anahtar' });
+    setSiklikKaydediyor(false);
+    setSiklikMesaj('Kaydedildi ✓');
+    setTimeout(() => setSiklikMesaj(''), 2500);
   };
 
   const duyuruResimYukle = async (dosya: File) => {
@@ -270,8 +308,6 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
     ...(isSuperAdmin ? [{ id: 'personel', label: 'Personel', icon: Shield, sayi: kullanicilar.filter(u => u.type === 'admin').length }] : []),
   ].map(item => ({ ...item, kilitli: !sekmeYetkiVarMi(item.id as Sekme) }));
 
-  // ─── SIDEBAR İÇERİK (masaüstü + mobil drawer ortak) ──────────────────────────
-
   const SidebarIcerik = ({ kapatFn }: { kapatFn?: () => void }) => (
     <>
       <div className="px-4 py-5 border-b border-slate-700">
@@ -284,9 +320,7 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
           const aktif = aktifSekme === item.id;
           return (
             <button key={item.id}
-              onClick={() => {
-                if (!item.kilitli) { setAktifSekme(item.id as Sekme); kapatFn?.(); }
-              }}
+              onClick={() => { if (!item.kilitli) { setAktifSekme(item.id as Sekme); kapatFn?.(); } }}
               title={item.kilitli ? 'Bu bölüm için yetkiniz yok' : ''}
               className={'w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition ' +
                 (item.kilitli ? 'text-slate-600 cursor-not-allowed opacity-40' :
@@ -325,12 +359,10 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
     </>
   );
 
-  // ─── RENDER ──────────────────────────────────────────────────────────────────
-
   return (
     <div className="flex min-h-screen bg-slate-100">
 
-      {/* ══ MOBİL ÜST BAR ══ */}
+      {/* MOBİL ÜST BAR */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-slate-800 flex items-center justify-between px-4 py-3 shadow-lg">
         <button onClick={() => setMobilMenuAcik(true)} className="p-1.5 text-slate-300 hover:text-white rounded-lg">
           <Menu size={20} />
@@ -341,15 +373,13 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
         </button>
       </div>
 
-      {/* ══ MOBİL SIDEBAR DRAWER ══ */}
+      {/* MOBİL SIDEBAR DRAWER */}
       {mobilMenuAcik && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <aside className="w-64 bg-slate-800 flex flex-col h-full overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
               <span className="text-slate-300 text-xs">Menü</span>
-              <button onClick={() => setMobilMenuAcik(false)} className="p-1.5 text-slate-400 hover:text-white rounded-lg">
-                <X size={18} />
-              </button>
+              <button onClick={() => setMobilMenuAcik(false)} className="p-1.5 text-slate-400 hover:text-white rounded-lg"><X size={18} /></button>
             </div>
             <SidebarIcerik kapatFn={() => setMobilMenuAcik(false)} />
           </aside>
@@ -357,16 +387,15 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
         </div>
       )}
 
-      {/* ══ MASAÜSTÜ SIDEBAR ══ */}
+      {/* MASAÜSTÜ SIDEBAR */}
       <aside className="hidden lg:flex w-56 bg-slate-800 flex-shrink-0 flex-col">
         <SidebarIcerik />
       </aside>
 
-      {/* ══ ANA İÇERİK ══ */}
+      {/* ANA İÇERİK */}
       <main className="flex-1 overflow-auto pt-14 lg:pt-0">
         <div className="p-3 sm:p-4 lg:p-6">
 
-          {/* Masaüstü başlık */}
           <div className="hidden lg:flex items-center justify-between mb-5">
             <h1 className="text-slate-800 font-bold text-lg">{menuItems.find(m => m.id === aktifSekme)?.label}</h1>
             <button onClick={hepsiniYukle} className={btnS + ' flex items-center gap-1.5'}><RefreshCw size={14} />Yenile</button>
@@ -417,7 +446,6 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
           {!yukleniyor && aktifSekme === 'kullanicilar' && (
             !sekmeYetkiVarMi('kullanicilar') ? <YetkisizUyari sekme="Kullanıcı Yönetimi" /> : (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              {/* Mobilde kart görünümü */}
               <div className="sm:hidden divide-y divide-slate-100">
                 {kullanicilar.filter(u => u.type !== 'admin').map(u => {
                   const ks = Object.values(u.kisitlamalar || {}).filter(Boolean).length;
@@ -444,7 +472,6 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                   <div className="text-center py-12 text-slate-400 text-sm">Henüz üye yok</div>
                 )}
               </div>
-              {/* Masaüstünde tablo */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -459,10 +486,7 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                       const ks = Object.values(u.kisitlamalar || {}).filter(Boolean).length;
                       return (
                         <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50 transition cursor-pointer" onClick={() => kullaniciDetayAc(u)}>
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-slate-700">{u.full_name || 'İsimsiz'}</div>
-                            {u.email && <div className="text-xs text-slate-400">{u.email}</div>}
-                          </td>
+                          <td className="px-4 py-3"><div className="font-medium text-slate-700">{u.full_name || 'İsimsiz'}</div>{u.email && <div className="text-xs text-slate-400">{u.email}</div>}</td>
                           <td className="px-4 py-3 text-slate-500 text-xs">{u.phone_number}</td>
                           <td className="px-4 py-3"><span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{u.type === 'admin' ? 'Yönetici' : 'Üye'}</span></td>
                           <td className="px-4 py-3"><span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + (u.aktif !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600')}>{u.aktif !== false ? 'Aktif' : 'Pasif'}</span></td>
@@ -484,7 +508,6 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
           {!yukleniyor && aktifSekme === 'ilanlar' && (
             !sekmeYetkiVarMi('ilanlar') ? <YetkisizUyari sekme="İlan Onay" /> : (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              {/* Mobil kart */}
               <div className="sm:hidden divide-y divide-slate-100">
                 {ilanlar.map(ilan => (
                   <div key={ilan.id} className="p-4">
@@ -502,21 +525,15 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                       <button onClick={() => onIlanDetay(ilan)} className="text-xs text-blue-500 font-medium">Detay</button>
                       <span className="text-slate-200">|</span>
                       <button onClick={async () => { await supabase.from('ilanlar').update({ durum: ilan.durum === 'aktif' ? 'pasif' : 'aktif' }).eq('id', ilan.id); hepsiniYukle(); }}
-                        className="text-xs text-orange-500 font-medium">
-                        {ilan.durum === 'aktif' ? 'Pasif Yap' : 'Aktif Yap'}
-                      </button>
+                        className="text-xs text-orange-500 font-medium">{ilan.durum === 'aktif' ? 'Pasif Yap' : 'Aktif Yap'}</button>
                       {(isSuperAdmin || (yetkiler as any).ilan_sil) && (
-                        <>
-                          <span className="text-slate-200">|</span>
-                          <button onClick={() => ilanSil(ilan.id)} className="text-xs text-red-400 font-medium">Sil</button>
-                        </>
+                        <><span className="text-slate-200">|</span><button onClick={() => ilanSil(ilan.id)} className="text-xs text-red-400 font-medium">Sil</button></>
                       )}
                     </div>
                   </div>
                 ))}
                 {ilanlar.length === 0 && <div className="text-center py-12 text-slate-400 text-sm">Hiç ilan yok</div>}
               </div>
-              {/* Masaüstü tablo */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -561,58 +578,108 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
           {/* ─── REKLAMLAR ─── */}
           {!yukleniyor && aktifSekme === 'reklamlar' && (
             !sekmeYetkiVarMi('reklamlar') ? <YetkisizUyari sekme="Reklam Yönetimi" /> : (
-            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2 flex flex-col gap-3">
-                {reklamlar.map(r => (
-                  <div key={r.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3">
-                    <img src={r.resim_url} alt={r.baslik} className="w-24 sm:w-32 h-14 sm:h-16 object-cover rounded-lg border border-slate-100 flex-shrink-0"
-                      onError={(e: any) => { e.target.style.display = 'none'; }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-700 text-sm">{r.baslik || 'Başlıksız'}</p>
-                      <p className="text-xs text-slate-400 truncate mt-0.5">{r.link_url || 'Link yok'}</p>
-                      <span className={'text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ' + (r.konum === 'header' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')}>
-                        {r.konum === 'header' ? 'Üst Alan' : 'Liste Arası'}
-                      </span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 flex-shrink-0">
-                      <button onClick={async () => { await supabase.from('reklamlar').update({ aktif: !r.aktif }).eq('id', r.id); hepsiniYukle(); }}
-                        className={'text-xs font-semibold px-2 sm:px-3 py-1.5 rounded-lg border transition whitespace-nowrap ' + (r.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}>
-                        {r.aktif ? 'Aktif' : 'Pasif'}
-                      </button>
-                      <button onClick={async () => { await supabase.from('reklamlar').delete().eq('id', r.id); hepsiniYukle(); }}
-                        className="text-red-400 hover:text-red-600 p-1"><Trash2 size={15} /></button>
-                    </div>
-                  </div>
-                ))}
-                {reklamlar.length === 0 && <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">Hiç reklam eklenmemiş</div>}
-              </div>
+            <div className="flex flex-col gap-4">
+
+              {/* İlan Arası Reklam Sıklığı Ayarı */}
               <div className="bg-white rounded-xl border border-slate-200 p-4">
-                <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5"><PlusCircle size={15} className="text-orange-500" />Yeni Reklam</p>
-                <input className={ic + ' mb-2'} placeholder="Başlık (opsiyonel)" value={yeniReklam.baslik} onChange={e => setYeniReklam({ ...yeniReklam, baslik: e.target.value })} />
-                <input className={ic + ' mb-2'} placeholder="Tıklama linki" value={yeniReklam.link_url} onChange={e => setYeniReklam({ ...yeniReklam, link_url: e.target.value })} />
-                <select className={ic + ' mb-3'} value={yeniReklam.konum} onChange={e => setYeniReklam({ ...yeniReklam, konum: e.target.value })}>
-                  <option value="liste">Liste Arası</option>
-                  <option value="header">Üst Alan</option>
-                </select>
-                {yeniReklam.resim_url ? (
-                  <div className="mb-3 relative">
-                    <img src={yeniReklam.resim_url} className="w-full h-24 object-cover rounded-lg border border-slate-200" />
-                    <button onClick={() => setYeniReklam({ ...yeniReklam, resim_url: '' })} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
-                    <p className="text-xs text-green-600 mt-1 font-medium">Resim yüklendi ✓</p>
-                  </div>
-                ) : (
-                  <div onDragOver={e => { e.preventDefault(); setSurukleAktif(true); }} onDragLeave={() => setSurukleAktif(false)}
-                    onDrop={e => { e.preventDefault(); setSurukleAktif(false); const f = e.dataTransfer.files[0]; if (f) dosyaYukle(f); }}
-                    onClick={() => document.getElementById('reklam-input')?.click()}
-                    className={'mb-3 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ' + (surukleAktif ? 'border-orange-400 bg-orange-50' : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50')}>
-                    {reklamYukleniyor
-                      ? <div className="flex flex-col items-center gap-2"><div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" /><p className="text-xs text-slate-400">Yükleniyor...</p></div>
-                      : <div className="flex flex-col items-center gap-2"><Image size={24} className="text-slate-300" /><p className="text-sm text-slate-500">Sürükle bırak veya tıkla</p><p className="text-xs text-slate-400">PNG, JPG, GIF</p></div>}
-                    <input id="reklam-input" type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) dosyaYukle(f); }} />
-                  </div>
-                )}
-                <button onClick={async () => { if (!yeniReklam.resim_url) return; await supabase.from('reklamlar').insert([{ ...yeniReklam, aktif: true }]); setYeniReklam({ baslik: '', resim_url: '', link_url: '', konum: 'liste' }); hepsiniYukle(); }}
-                  disabled={!yeniReklam.resim_url || reklamYukleniyor} className={btnO + ' w-full disabled:opacity-50'}>Reklam Ekle</button>
+                <p className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                  <Image size={15} className="text-orange-500" />
+                  İlan Arası Reklam Sıklığı
+                </p>
+                <p className="text-xs text-slate-400 mb-3">Her kaç ilandan sonra liste içi reklam gösterilsin?</p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={reklamSiklik}
+                    onChange={e => setReklamSiklik(Math.max(1, Number(e.target.value)))}
+                    className={ic + ' max-w-[120px]'}
+                  />
+                  <span className="text-sm text-slate-500">ilandan bir</span>
+                  <button
+                    onClick={siklikKaydet}
+                    disabled={siklikKaydediyor}
+                    className={btnO + ' disabled:opacity-60 flex items-center gap-1.5'}
+                  >
+                    {siklikKaydediyor
+                      ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      : <Save size={14} />}
+                    Kaydet
+                  </button>
+                  {siklikMesaj && <span className="text-sm text-green-600 font-medium">{siklikMesaj}</span>}
+                </div>
+              </div>
+
+              <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
+                {/* Reklam Listesi */}
+                <div className="lg:col-span-2 flex flex-col gap-3">
+                  {reklamlar.map(r => (
+                    <div key={r.id} className="bg-white rounded-xl border border-slate-200 p-4">
+                      <div className="flex items-center gap-3">
+                        <img src={r.resim_url} alt={r.baslik} className="w-24 sm:w-32 h-14 sm:h-16 object-cover rounded-lg border border-slate-100 flex-shrink-0"
+                          onError={(e: any) => { e.target.style.display = 'none'; }} />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-700 text-sm">{r.baslik || 'Başlıksız'}</p>
+                          <p className="text-xs text-slate-400 truncate mt-0.5">{r.link_url || 'Link yok'}</p>
+                          <span className={'text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ' + (r.konum === 'header' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')}>
+                            {r.konum === 'header' ? 'Üst Alan' : 'Liste Arası'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={async () => { await supabase.from('reklamlar').update({ aktif: !r.aktif }).eq('id', r.id); hepsiniYukle(); }}
+                            className={'text-xs font-semibold px-2 sm:px-3 py-1.5 rounded-lg border transition whitespace-nowrap ' + (r.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}>
+                            {r.aktif ? 'Aktif' : 'Pasif'}
+                          </button>
+                          <button
+                            onClick={() => reklamDuzenleAc(r)}
+                            className="p-1.5 text-slate-400 hover:text-orange-500 transition" title="Düzenle">
+                            <Edit2 size={15} />
+                          </button>
+                          <button
+                            onClick={async () => { if (!window.confirm('Bu reklamı silmek istiyor musunuz?')) return; await supabase.from('reklamlar').delete().eq('id', r.id); hepsiniYukle(); }}
+                            className="p-1.5 text-slate-400 hover:text-red-500 transition" title="Sil">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {reklamlar.length === 0 && (
+                    <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">Hiç reklam eklenmemiş</div>
+                  )}
+                </div>
+
+                {/* Yeni Reklam Formu */}
+                <div className="bg-white rounded-xl border border-slate-200 p-4">
+                  <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5"><PlusCircle size={15} className="text-orange-500" />Yeni Reklam</p>
+                  <input className={ic + ' mb-2'} placeholder="Başlık (opsiyonel)" value={yeniReklam.baslik} onChange={e => setYeniReklam({ ...yeniReklam, baslik: e.target.value })} />
+                  <input className={ic + ' mb-2'} placeholder="Tıklama linki" value={yeniReklam.link_url} onChange={e => setYeniReklam({ ...yeniReklam, link_url: e.target.value })} />
+                  <select className={ic + ' mb-3'} value={yeniReklam.konum} onChange={e => setYeniReklam({ ...yeniReklam, konum: e.target.value })}>
+                    <option value="liste">Liste Arası</option>
+                    <option value="header">Üst Alan</option>
+                  </select>
+                  {yeniReklam.resim_url ? (
+                    <div className="mb-3 relative">
+                      <img src={yeniReklam.resim_url} className="w-full h-24 object-cover rounded-lg border border-slate-200" />
+                      <button onClick={() => setYeniReklam({ ...yeniReklam, resim_url: '' })} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+                      <p className="text-xs text-green-600 mt-1 font-medium">Resim yüklendi ✓</p>
+                    </div>
+                  ) : (
+                    <div onDragOver={e => { e.preventDefault(); setSurukleAktif(true); }} onDragLeave={() => setSurukleAktif(false)}
+                      onDrop={e => { e.preventDefault(); setSurukleAktif(false); const f = e.dataTransfer.files[0]; if (f) dosyaYukle(f, 'yeni'); }}
+                      onClick={() => document.getElementById('reklam-input')?.click()}
+                      className={'mb-3 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ' + (surukleAktif ? 'border-orange-400 bg-orange-50' : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50')}>
+                      {reklamYukleniyor
+                        ? <div className="flex flex-col items-center gap-2"><div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" /><p className="text-xs text-slate-400">Yükleniyor...</p></div>
+                        : <div className="flex flex-col items-center gap-2"><Image size={24} className="text-slate-300" /><p className="text-sm text-slate-500">Sürükle bırak veya tıkla</p><p className="text-xs text-slate-400">PNG, JPG, GIF</p></div>}
+                      <input id="reklam-input" type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) dosyaYukle(f, 'yeni'); }} />
+                    </div>
+                  )}
+                  <button onClick={async () => { if (!yeniReklam.resim_url) return; await supabase.from('reklamlar').insert([{ ...yeniReklam, aktif: true }]); setYeniReklam({ baslik: '', resim_url: '', link_url: '', konum: 'liste' }); hepsiniYukle(); }}
+                    disabled={!yeniReklam.resim_url || reklamYukleniyor} className={btnO + ' w-full disabled:opacity-50'}>Reklam Ekle</button>
+                </div>
               </div>
             </div>
             )
@@ -625,7 +692,6 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
               <div className="lg:col-span-2 flex flex-col gap-3">
                 {duyurular.map(d => (
                   <div key={d.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                    {/* Resim varsa göster */}
                     {d.resim_url && (
                       <div className="relative">
                         <img src={d.resim_url} alt={d.baslik} className="w-full h-36 object-cover" />
@@ -669,75 +735,47 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-4">
                 <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5"><PlusCircle size={15} className="text-orange-500" />Yeni Duyuru</p>
-
                 <input className={ic + ' mb-2'} placeholder="Başlık (opsiyonel)" value={yeniDuyuru.baslik} onChange={e => setYeniDuyuru({ ...yeniDuyuru, baslik: e.target.value })} />
                 <textarea className={ic + ' mb-3 resize-none'} placeholder="Mesaj — resim eklemediyseniz zorunludur" rows={3} value={yeniDuyuru.mesaj} onChange={e => setYeniDuyuru({ ...yeniDuyuru, mesaj: e.target.value })} />
-
-                {/* Resim yükleme */}
                 <p className="text-xs font-medium text-slate-500 mb-1.5">Resim <span className="text-slate-400 font-normal">(opsiyonel)</span></p>
                 {yeniDuyuru.resim_url ? (
                   <div className="mb-3 relative rounded-xl overflow-hidden border border-slate-200">
                     <img src={yeniDuyuru.resim_url} className="w-full h-32 object-cover" alt="Önizleme" />
-                    <button
-                      onClick={() => setYeniDuyuru({ ...yeniDuyuru, resim_url: '' })}
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold shadow-md hover:bg-red-600 transition"
-                    >×</button>
+                    <button onClick={() => setYeniDuyuru({ ...yeniDuyuru, resim_url: '' })}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold shadow-md hover:bg-red-600 transition">×</button>
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-3 py-2">
                       <p className="text-white text-xs font-medium">✓ Resim yüklendi</p>
                     </div>
                   </div>
                 ) : (
-                  <div
-                    onDragOver={e => { e.preventDefault(); setDuyuruSurukle(true); }}
-                    onDragLeave={() => setDuyuruSurukle(false)}
+                  <div onDragOver={e => { e.preventDefault(); setDuyuruSurukle(true); }} onDragLeave={() => setDuyuruSurukle(false)}
                     onDrop={e => { e.preventDefault(); setDuyuruSurukle(false); const f = e.dataTransfer.files[0]; if (f) duyuruResimYukle(f); }}
                     onClick={() => document.getElementById('duyuru-resim-input')?.click()}
-                    className={'mb-3 border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition ' +
-                      (duyuruSurukle ? 'border-orange-400 bg-orange-50' : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50')}
-                  >
-                    {duyuruYukleniyor ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                        <p className="text-xs text-slate-400">Yükleniyor...</p>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-1.5">
-                        <Image size={22} className="text-slate-300" />
-                        <p className="text-sm text-slate-500 font-medium">Sürükle bırak veya tıkla</p>
-                        <p className="text-xs text-slate-400">PNG, JPG, GIF · Maks 5MB</p>
-                      </div>
-                    )}
-                    <input id="duyuru-resim-input" type="file" accept="image/*" className="hidden"
-                      onChange={e => { const f = e.target.files?.[0]; if (f) duyuruResimYukle(f); e.target.value = ''; }} />
+                    className={'mb-3 border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition ' + (duyuruSurukle ? 'border-orange-400 bg-orange-50' : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50')}>
+                    {duyuruYukleniyor
+                      ? <div className="flex flex-col items-center gap-2"><div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" /><p className="text-xs text-slate-400">Yükleniyor...</p></div>
+                      : <div className="flex flex-col items-center gap-1.5"><Image size={22} className="text-slate-300" /><p className="text-sm text-slate-500 font-medium">Sürükle bırak veya tıkla</p><p className="text-xs text-slate-400">PNG, JPG, GIF · Maks 5MB</p></div>}
+                    <input id="duyuru-resim-input" type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) duyuruResimYukle(f); e.target.value = ''; }} />
                   </div>
                 )}
-
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div>
                     <label className="text-xs text-slate-500 mb-1 block">Kaç sn. sonra açılsın</label>
-                    <input className={ic} type="number" min={0} max={60} value={yeniDuyuru.saniye}
-                      onChange={e => setYeniDuyuru({ ...yeniDuyuru, saniye: Number(e.target.value) })} />
+                    <input className={ic} type="number" min={0} max={60} value={yeniDuyuru.saniye} onChange={e => setYeniDuyuru({ ...yeniDuyuru, saniye: Number(e.target.value) })} />
                   </div>
                   <div>
                     <label className="text-xs text-slate-500 mb-1 block">Kaç sn. görünür kalsın</label>
-                    <input className={ic} type="number" min={2} max={120} value={yeniDuyuru.goster_sure}
-                      onChange={e => setYeniDuyuru({ ...yeniDuyuru, goster_sure: Number(e.target.value) })} />
+                    <input className={ic} type="number" min={2} max={120} value={yeniDuyuru.goster_sure} onChange={e => setYeniDuyuru({ ...yeniDuyuru, goster_sure: Number(e.target.value) })} />
                   </div>
                 </div>
-                <button
-                  onClick={async () => {
-                    // Resim varsa başlık+mesaj zorunlu değil; resim yoksa mesaj zorunlu, başlık hiç zorunlu değil
-                    const eklenebilir = yeniDuyuru.resim_url || yeniDuyuru.mesaj;
-                    if (!eklenebilir) return;
-                    await supabase.from('duyurular').insert([{ ...yeniDuyuru, aktif: true }]);
-                    setYeniDuyuru({ baslik: '', mesaj: '', resim_url: '', saniye: 2, goster_sure: 8 });
-                    hepsiniYukle();
-                  }}
-                  disabled={duyuruYukleniyor || (!yeniDuyuru.resim_url && !yeniDuyuru.mesaj)}
-                  className={btnO + ' w-full disabled:opacity-50 disabled:cursor-not-allowed'}
-                >
-                  Duyuru Ekle
-                </button>
+                <button onClick={async () => {
+                  const eklenebilir = yeniDuyuru.resim_url || yeniDuyuru.mesaj;
+                  if (!eklenebilir) return;
+                  await supabase.from('duyurular').insert([{ ...yeniDuyuru, aktif: true }]);
+                  setYeniDuyuru({ baslik: '', mesaj: '', resim_url: '', saniye: 2, goster_sure: 8 });
+                  hepsiniYukle();
+                }} disabled={duyuruYukleniyor || (!yeniDuyuru.resim_url && !yeniDuyuru.mesaj)}
+                  className={btnO + ' w-full disabled:opacity-50 disabled:cursor-not-allowed'}>Duyuru Ekle</button>
               </div>
             </div>
             )
@@ -792,18 +830,9 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                 <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 mb-4 sm:mb-6">
                   <h3 className="text-base font-bold text-slate-800 mb-4 border-b pb-2">{seciliPersonel ? 'Personel Düzenle' : 'Yeni Personel Ekle'}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-5">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label>
-                      <input type="text" className={ic} value={personelForm.full_name} onChange={e => setPersonelForm({ ...personelForm, full_name: e.target.value })} placeholder="Ahmet Yılmaz" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Telefon</label>
-                      <input type="text" className={ic} value={personelForm.phone_number} onChange={e => setPersonelForm({ ...personelForm, phone_number: e.target.value })} placeholder="05XXXXXXXXX" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">{seciliPersonel ? 'Yeni Şifre (boş = değiştirme)' : 'Şifre'}</label>
-                      <input type="password" className={ic} value={personelForm.password} onChange={e => setPersonelForm({ ...personelForm, password: e.target.value })} placeholder="••••••" />
-                    </div>
+                    <div><label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label><input type="text" className={ic} value={personelForm.full_name} onChange={e => setPersonelForm({ ...personelForm, full_name: e.target.value })} placeholder="Ahmet Yılmaz" /></div>
+                    <div><label className="block text-xs font-medium text-slate-500 mb-1">Telefon</label><input type="text" className={ic} value={personelForm.phone_number} onChange={e => setPersonelForm({ ...personelForm, phone_number: e.target.value })} placeholder="05XXXXXXXXX" /></div>
+                    <div><label className="block text-xs font-medium text-slate-500 mb-1">{seciliPersonel ? 'Yeni Şifre (boş = değiştirme)' : 'Şifre'}</label><input type="password" className={ic} value={personelForm.password} onChange={e => setPersonelForm({ ...personelForm, password: e.target.value })} placeholder="••••••" /></div>
                   </div>
                   <div className="mb-5">
                     <label className="block text-sm font-semibold text-slate-700 mb-1">Yetki Ayarları</label>
@@ -813,10 +842,7 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                         <label key={key} className={'flex items-start gap-3 p-3 border rounded-xl cursor-pointer transition-colors ' + ((personelForm.yetkiler as any)[key] ? 'border-orange-300 bg-orange-50' : 'border-slate-100 hover:bg-slate-50')}>
                           <input type="checkbox" className="w-4 h-4 accent-orange-500 mt-0.5 flex-shrink-0" checked={!!(personelForm.yetkiler as any)[key]}
                             onChange={() => setPersonelForm({ ...personelForm, yetkiler: { ...personelForm.yetkiler, [key]: !(personelForm.yetkiler as any)[key] } })} />
-                          <div>
-                            <p className="text-sm font-medium text-slate-700">{tanim.label}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">{tanim.aciklama}</p>
-                          </div>
+                          <div><p className="text-sm font-medium text-slate-700">{tanim.label}</p><p className="text-xs text-slate-400 mt-0.5">{tanim.aciklama}</p></div>
                         </label>
                       ))}
                     </div>
@@ -834,35 +860,20 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                 </div>
               )}
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                {/* Mobil kart */}
                 <div className="sm:hidden divide-y divide-slate-100">
                   {kullanicilar.filter(u => u.type === 'admin').map(p => (
                     <div key={p.id} className="p-4">
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <div>
-                          <p className="font-semibold text-slate-700 text-sm">{p.full_name}</p>
-                          <p className="text-xs text-slate-400">{p.phone_number}</p>
-                        </div>
+                        <div><p className="font-semibold text-slate-700 text-sm">{p.full_name}</p><p className="text-xs text-slate-400">{p.phone_number}</p></div>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {p.aktif !== false
                             ? <span className="inline-flex items-center text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full text-xs font-semibold"><CheckCircle2 size={10} className="mr-1" />Aktif</span>
                             : <span className="inline-flex items-center text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full text-xs font-semibold"><XCircle size={10} className="mr-1" />Pasif</span>}
                         </div>
                       </div>
-                      {/* Şifre */}
                       <div className="flex items-center gap-2 mb-2 bg-slate-50 px-3 py-2 rounded-lg">
-                        <span className="font-mono text-xs text-slate-600 flex-1">
-                          {personelSifreGoster[p.id] ? (p.sifre_acik || '(kayıtlı değil)') : '••••••'}
-                        </span>
-                        <button onClick={() => setPersonelSifreGoster(prev => ({ ...prev, [p.id]: !prev[p.id] }))} className="text-slate-400">
-                          {personelSifreGoster[p.id] ? <EyeOff size={13} /> : <Eye size={13} />}
-                        </button>
-                      </div>
-                      {/* Yetkiler */}
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {p.yetkiler && Object.entries(p.yetkiler).some(([, v]) => v)
-                          ? Object.entries(p.yetkiler).map(([k, v]) => v ? <span key={k} className="bg-orange-50 text-orange-600 border border-orange-100 text-[10px] px-1.5 py-0.5 rounded-full">{PERSONEL_YETKI_TANIM[k]?.label || k}</span> : null)
-                          : <span className="text-xs text-slate-400 italic">Yetki yok</span>}
+                        <span className="font-mono text-xs text-slate-600 flex-1">{personelSifreGoster[p.id] ? (p.sifre_acik || '(kayıtlı değil)') : '••••••'}</span>
+                        <button onClick={() => setPersonelSifreGoster(prev => ({ ...prev, [p.id]: !prev[p.id] }))} className="text-slate-400">{personelSifreGoster[p.id] ? <EyeOff size={13} /> : <Eye size={13} />}</button>
                       </div>
                       <div className="flex gap-2 pt-1">
                         <button onClick={() => personelDuzenleAc(p)} className="flex-1 text-xs text-orange-500 border border-orange-200 bg-orange-50 py-1.5 rounded-lg flex items-center justify-center gap-1"><Edit2 size={12} />Düzenle</button>
@@ -870,11 +881,8 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                       </div>
                     </div>
                   ))}
-                  {kullanicilar.filter(u => u.type === 'admin').length === 0 && (
-                    <div className="p-8 text-center text-slate-400 text-sm">Henüz personel eklenmemiş</div>
-                  )}
+                  {kullanicilar.filter(u => u.type === 'admin').length === 0 && <div className="p-8 text-center text-slate-400 text-sm">Henüz personel eklenmemiş</div>}
                 </div>
-                {/* Masaüstü tablo */}
                 <div className="hidden sm:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -891,12 +899,8 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                           <td className="p-4 text-slate-600">{p.phone_number}</td>
                           <td className="p-4">
                             <div className="flex items-center gap-2">
-                              <span className="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded-lg">
-                                {personelSifreGoster[p.id] ? (p.sifre_acik || '(kayıtlı değil)') : '••••••'}
-                              </span>
-                              <button onClick={() => setPersonelSifreGoster(prev => ({ ...prev, [p.id]: !prev[p.id] }))} className="text-slate-400 hover:text-slate-600">
-                                {personelSifreGoster[p.id] ? <EyeOff size={13} /> : <Eye size={13} />}
-                              </button>
+                              <span className="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded-lg">{personelSifreGoster[p.id] ? (p.sifre_acik || '(kayıtlı değil)') : '••••••'}</span>
+                              <button onClick={() => setPersonelSifreGoster(prev => ({ ...prev, [p.id]: !prev[p.id] }))} className="text-slate-400 hover:text-slate-600">{personelSifreGoster[p.id] ? <EyeOff size={13} /> : <Eye size={13} />}</button>
                             </div>
                           </td>
                           <td className="p-4">
@@ -933,13 +937,62 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
         </div>
       </main>
 
+      {/* ════ REKLAM DÜZENLEME MODAL ════ */}
+      {duzenleReklam && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+          onClick={e => { if (e.target === e.currentTarget) setDuzenleReklam(null); }}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <p className="font-bold text-slate-800 text-base flex items-center gap-2"><Edit2 size={16} className="text-orange-500" />Reklamı Düzenle</p>
+              <button onClick={() => setDuzenleReklam(null)} className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <input className={ic} placeholder="Başlık (opsiyonel)" value={duzenleForm.baslik} onChange={e => setDuzenleForm({ ...duzenleForm, baslik: e.target.value })} />
+              <input className={ic} placeholder="Tıklama linki" value={duzenleForm.link_url} onChange={e => setDuzenleForm({ ...duzenleForm, link_url: e.target.value })} />
+              <select className={ic} value={duzenleForm.konum} onChange={e => setDuzenleForm({ ...duzenleForm, konum: e.target.value })}>
+                <option value="liste">Liste Arası</option>
+                <option value="header">Üst Alan</option>
+              </select>
+              {/* Resim önizleme + değiştirme */}
+              <div>
+                <p className="text-xs font-medium text-slate-500 mb-2">Reklam Görseli</p>
+                {duzenleForm.resim_url && (
+                  <div className="relative mb-2 rounded-xl overflow-hidden border border-slate-200">
+                    <img src={duzenleForm.resim_url} className="w-full h-32 object-cover" alt="Önizleme" />
+                    <button onClick={() => setDuzenleForm({ ...duzenleForm, resim_url: '' })}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold shadow hover:bg-red-600 transition">×</button>
+                  </div>
+                )}
+                <div
+                  onDragOver={e => { e.preventDefault(); setDuzenleSurukle(true); }}
+                  onDragLeave={() => setDuzenleSurukle(false)}
+                  onDrop={e => { e.preventDefault(); setDuzenleSurukle(false); const f = e.dataTransfer.files[0]; if (f) dosyaYukle(f, 'duzenle'); }}
+                  onClick={() => document.getElementById('duzenle-resim-input')?.click()}
+                  className={'border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition ' + (duzenleSurukle ? 'border-orange-400 bg-orange-50' : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50')}>
+                  {duzenleResimYukleniyor
+                    ? <div className="flex items-center justify-center gap-2"><div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" /><p className="text-xs text-slate-400">Yükleniyor...</p></div>
+                    : <p className="text-xs text-slate-500">{duzenleForm.resim_url ? 'Farklı bir resim seç' : 'Sürükle bırak veya tıkla'}</p>}
+                  <input id="duzenle-resim-input" type="file" accept="image/*" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) dosyaYukle(f, 'duzenle'); e.target.value = ''; }} />
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 p-5 border-t border-slate-100">
+              <button onClick={() => setDuzenleReklam(null)} className={btnS + ' flex-1'}>İptal</button>
+              <button onClick={reklamDuzenleKaydet} disabled={!duzenleForm.resim_url || duzenleResimYukleniyor}
+                className={btnO + ' flex-1 flex items-center justify-center gap-1.5 disabled:opacity-60'}>
+                <Save size={14} />Kaydet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ════ KULLANICI DETAY MODAL ════ */}
       {detayModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={e => { if (e.target === e.currentTarget) setDetayModal(null); }}>
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
-
-            {/* Modal Başlık */}
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 sticky top-0 bg-white z-10 rounded-t-2xl">
               <div className="flex items-center gap-3">
                 <div className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-sm flex-shrink-0">
@@ -959,47 +1012,33 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                 <button onClick={() => setDetayModal(null)} className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"><X size={18} /></button>
               </div>
             </div>
-
             <div className="p-4 sm:p-5 space-y-5">
-
-              {/* Temel Bilgiler */}
               <div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Temel Bilgiler</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {[
-                    { label: 'Ad Soyad',      value: detayModal.full_name,    alan: 'full_name',    ikon: <Users size={12} /> },
-                    { label: 'Telefon',        value: detayModal.phone_number, alan: 'phone_number', ikon: <Phone size={12} /> },
-                    { label: 'E-posta',        value: detayModal.email,        alan: 'email',        ikon: <Bell size={12} /> },
+                    { label: 'Ad Soyad', value: detayModal.full_name, alan: 'full_name', ikon: <Users size={12} /> },
+                    { label: 'Telefon', value: detayModal.phone_number, alan: 'phone_number', ikon: <Phone size={12} /> },
+                    { label: 'E-posta', value: detayModal.email, alan: 'email', ikon: <Bell size={12} /> },
                     { label: 'Kullanıcı Tipi', value: detayModal.type === 'admin' ? 'Yönetici' : 'Üye', alan: null, ikon: <Shield size={12} /> },
-                    { label: 'Kayıt Tarihi',   value: detayModal.created_at ? new Date(detayModal.created_at).toLocaleString('tr-TR') : '—', alan: null, ikon: <Calendar size={12} /> },
-                    { label: 'Son Giriş',      value: detayModal.last_sign_in_at ? new Date(detayModal.last_sign_in_at).toLocaleString('tr-TR') : '—', alan: null, ikon: <Calendar size={12} /> },
+                    { label: 'Kayıt Tarihi', value: detayModal.created_at ? new Date(detayModal.created_at).toLocaleString('tr-TR') : '—', alan: null, ikon: <Calendar size={12} /> },
+                    { label: 'Son Giriş', value: detayModal.last_sign_in_at ? new Date(detayModal.last_sign_in_at).toLocaleString('tr-TR') : '—', alan: null, ikon: <Calendar size={12} /> },
                   ].map(item => (
                     <div key={item.label} className="bg-slate-50 rounded-xl p-3">
                       <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5">{item.ikon}<span>{item.label}</span></div>
-                      {detayDuzenle && item.alan ? (
-                        <input className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                          value={(detayModal as any)[item.alan] || ''} onChange={e => setDetayModal({ ...detayModal, [item.alan!]: e.target.value })} />
-                      ) : (
-                        <p className="text-sm font-medium text-slate-700 break-all">{item.value || '—'}</p>
-                      )}
+                      {detayDuzenle && item.alan
+                        ? <input className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-400" value={(detayModal as any)[item.alan] || ''} onChange={e => setDetayModal({ ...detayModal, [item.alan!]: e.target.value })} />
+                        : <p className="text-sm font-medium text-slate-700 break-all">{item.value || '—'}</p>}
                     </div>
                   ))}
                 </div>
               </div>
-
-              {/* Hesap Durumu */}
               <div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Hesap Durumu</p>
                 {detayDuzenle ? (
                   <div className="flex gap-2">
-                    <button onClick={() => setDetayModal({ ...detayModal, aktif: true })}
-                      className={'flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition ' + (detayModal.aktif !== false ? 'bg-green-500 text-white border-green-500' : 'text-slate-500 border-slate-200 bg-white')}>
-                      ✓ Aktif
-                    </button>
-                    <button onClick={() => setDetayModal({ ...detayModal, aktif: false })}
-                      className={'flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition ' + (detayModal.aktif === false ? 'bg-red-500 text-white border-red-500' : 'text-slate-500 border-slate-200 bg-white')}>
-                      ✕ Pasif
-                    </button>
+                    <button onClick={() => setDetayModal({ ...detayModal, aktif: true })} className={'flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition ' + (detayModal.aktif !== false ? 'bg-green-500 text-white border-green-500' : 'text-slate-500 border-slate-200 bg-white')}>✓ Aktif</button>
+                    <button onClick={() => setDetayModal({ ...detayModal, aktif: false })} className={'flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition ' + (detayModal.aktif === false ? 'bg-red-500 text-white border-red-500' : 'text-slate-500 border-slate-200 bg-white')}>✕ Pasif</button>
                   </div>
                 ) : (
                   <span className={'inline-block text-sm font-semibold px-3 py-1.5 rounded-full ' + (detayModal.aktif !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600')}>
@@ -1007,8 +1046,6 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                   </span>
                 )}
               </div>
-
-              {/* Şifre — sadece Süper Yönetici */}
               {isSuperAdmin && (
                 <div>
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Şifre Bilgisi</p>
@@ -1016,13 +1053,8 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                     <div className="mb-3">
                       <p className="text-xs text-slate-400 mb-1.5">Mevcut Şifre</p>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-slate-700 flex-1 break-all">
-                          {detaySifreGoster ? (detayModal.sifre_acik || '(kayıtlı değil)') : '••••••••'}
-                        </span>
-                        <button onClick={() => setDetaySifreGoster(p => !p)}
-                          className="p-2 text-slate-400 hover:text-slate-600 bg-white border border-slate-200 rounded-lg flex-shrink-0">
-                          {detaySifreGoster ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
+                        <span className="font-mono text-sm bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-slate-700 flex-1 break-all">{detaySifreGoster ? (detayModal.sifre_acik || '(kayıtlı değil)') : '••••••••'}</span>
+                        <button onClick={() => setDetaySifreGoster(p => !p)} className="p-2 text-slate-400 hover:text-slate-600 bg-white border border-slate-200 rounded-lg flex-shrink-0">{detaySifreGoster ? <EyeOff size={14} /> : <Eye size={14} />}</button>
                       </div>
                     </div>
                     {detayDuzenle && (
@@ -1035,23 +1067,18 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                   </div>
                 </div>
               )}
-
-              {/* Kullanıcı Kısıtlamaları */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Kullanıcı Kısıtlamaları</p>
                   <span className="text-xs text-slate-400">{Object.values(detayKisitlamalar).filter(Boolean).length} / {Object.keys(KISITLAMA_TANIM).length} aktif</span>
                 </div>
-                {!detayDuzenle && Object.values(detayKisitlamalar).every(v => !v) && (
-                  <p className="text-xs text-slate-400 italic mb-3">Bu kullanıcıya hiçbir kısıtlama uygulanmamış.</p>
-                )}
+                {!detayDuzenle && Object.values(detayKisitlamalar).every(v => !v) && <p className="text-xs text-slate-400 italic mb-3">Bu kullanıcıya hiçbir kısıtlama uygulanmamış.</p>}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {Object.entries(KISITLAMA_TANIM).map(([key, tanim]) => {
                     const aktif = !!(detayKisitlamalar as any)[key];
                     return (
                       <label key={key} className={'flex items-center gap-3 p-3 border rounded-xl transition-colors ' + (detayDuzenle ? 'cursor-pointer ' : 'cursor-default ') + (aktif ? 'border-red-200 bg-red-50' : 'border-slate-100 bg-slate-50/50')}>
-                        <input type="checkbox" className="w-4 h-4 accent-red-500 flex-shrink-0" checked={aktif} disabled={!detayDuzenle}
-                          onChange={() => { if (!detayDuzenle) return; setDetayKisitlamalar(p => ({ ...p, [key]: !aktif })); }} />
+                        <input type="checkbox" className="w-4 h-4 accent-red-500 flex-shrink-0" checked={aktif} disabled={!detayDuzenle} onChange={() => { if (!detayDuzenle) return; setDetayKisitlamalar(p => ({ ...p, [key]: !aktif })); }} />
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <span className={aktif ? 'text-red-500 flex-shrink-0' : 'text-slate-400 flex-shrink-0'}>{tanim.ikon}</span>
                           <div className="min-w-0">
@@ -1065,40 +1092,13 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                   })}
                 </div>
               </div>
-
-              {/* Profil Bilgileri */}
-              {(detayModal.adres || detayModal.sehir || detayModal.bio || detayModal.avatar_url) && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Profil Bilgileri</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {detayModal.avatar_url && (
-                      <div className="bg-slate-50 rounded-xl p-3">
-                        <p className="text-xs text-slate-400 mb-2">Profil Resmi</p>
-                        <img src={detayModal.avatar_url} alt="Profil" className="w-14 h-14 rounded-full object-cover border border-slate-200" />
-                      </div>
-                    )}
-                    {[{ label: 'Şehir', value: detayModal.sehir }, { label: 'Adres', value: detayModal.adres }, { label: 'Hakkımda', value: detayModal.bio }].filter(i => i.value).map(item => (
-                      <div key={item.label} className="bg-slate-50 rounded-xl p-3">
-                        <p className="text-xs text-slate-400 mb-1">{item.label}</p>
-                        <p className="text-sm text-slate-700">{item.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
-
-            {/* Modal Alt Butonlar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 sm:p-5 border-t border-slate-100 bg-slate-50 rounded-b-2xl sticky bottom-0">
-              <button onClick={() => kullaniciSil(detayModal.id)} className={btnR + ' flex items-center justify-center gap-1.5 text-xs'}>
-                <Trash2 size={13} />Hesabı Kalıcı Sil
-              </button>
+              <button onClick={() => kullaniciSil(detayModal.id)} className={btnR + ' flex items-center justify-center gap-1.5 text-xs'}><Trash2 size={13} />Hesabı Kalıcı Sil</button>
               {detayDuzenle && (
                 <div className="flex gap-2">
-                  <button onClick={() => { setDetayDuzenle(false); setDetaySifre(''); setDetayKisitlamalar(detayModal.kisitlamalar || {}); }}
-                    className={btnS + ' flex items-center gap-1 text-xs py-2 flex-1 sm:flex-none justify-center'}><X size={13} />İptal</button>
-                  <button onClick={detayKaydet} disabled={detayKaydediyor}
-                    className={btnO + ' flex items-center gap-1 text-xs disabled:opacity-60 flex-1 sm:flex-none justify-center'}>
+                  <button onClick={() => { setDetayDuzenle(false); setDetaySifre(''); setDetayKisitlamalar(detayModal.kisitlamalar || {}); }} className={btnS + ' flex items-center gap-1 text-xs py-2 flex-1 sm:flex-none justify-center'}><X size={13} />İptal</button>
+                  <button onClick={detayKaydet} disabled={detayKaydediyor} className={btnO + ' flex items-center gap-1 text-xs disabled:opacity-60 flex-1 sm:flex-none justify-center'}>
                     {detayKaydediyor ? <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={13} />}
                     Değişiklikleri Kaydet
                   </button>
