@@ -1130,7 +1130,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                 {(selectedKategori === 'plaka_satiyorum' || selectedKategori === 'aracimi_satiyorum') && (
                   <div className="border border-slate-200 rounded-xl p-4 md:p-5">
                     <h3 className="font-semibold text-slate-700 mb-1">Konum Bilgisi</h3>
-                    <p className="text-xs text-orange-500 mb-4 font-medium">Aracin bulundugu sehir, ilce ve mahalleyi secin</p>
+                    <p className="text-xs text-orange-500 mb-4 font-medium">Plakanin bulundugu sehir, ilce ve mahalleyi secin</p>
                     <IlIlceMahalle
                       il={konumIl} ilce={konumIlce} mah={konumMah}
                       onIlChange={(v) => { setKonumIl(v); setKonumIlce(''); setKonumMah(''); }}
