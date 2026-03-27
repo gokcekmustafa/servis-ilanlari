@@ -356,16 +356,16 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
       }
     }
 
-    const ilanGuzergahlar = ['hostesim_is', 'soforum_is'].includes(selectedKategori!) ? [{
-      giris_saati: konumGiris,
+    const ilanGuzergahlar = ['hostesim_is', 'soforum_is', 'plaka_satiyorum', 'aracimi_satiyorum'].includes(selectedKategori!) ? [{
+      giris_saati: '',
       kalkis_il: konumIl,
       kalkis_ilce: konumIlce,
       kalkis_mah: konumMah,
       varis_il: '',
       varis_ilce: '',
       varis_mah: '',
-      cikis_saati: konumCikis,
-    }] : selectedKategori === 'aracimi_satiyorum' ? [] : guzergahlar;
+      cikis_saati: '',
+    }] : guzergahlar;
 
     let ekbilgiler: any = {};
     if (selectedKategori === 'isim_var_arac') {
@@ -1089,8 +1089,8 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                   </div>
                 )}
 
-                {/* GUZERGAH - aracimi_satiyorum için gösterilmez */}
-                {selectedKategori !== 'hostesim_is' && selectedKategori !== 'soforum_is' && selectedKategori !== 'aracimi_satiyorum' && (
+                {/* GUZERGAH - plaka/aracimi satiyorum ve hostes/sofor is için gösterilmez */}
+                {selectedKategori !== 'hostesim_is' && selectedKategori !== 'soforum_is' && selectedKategori !== 'aracimi_satiyorum' && selectedKategori !== 'plaka_satiyorum' && (
                   <div className="border border-slate-200 rounded-xl p-4 md:p-5">
                     <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
                       <div>
@@ -1113,7 +1113,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                   </div>
                 )}
 
-                {/* KONUM BİLGİSİ - sadece hostesim_is ve soforum_is için */}
+                {/* KONUM BİLGİSİ - hostesim_is ve soforum_is için saatli versiyon */}
                 {(selectedKategori === 'hostesim_is' || selectedKategori === 'soforum_is') && (
                   <KonumBilgisi
                     il={konumIl} ilce={konumIlce} mah={konumMah}
@@ -1124,6 +1124,20 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                     onGirisChange={setKonumGiris}
                     onCikisChange={setKonumCikis}
                   />
+                )}
+
+                {/* KONUM BİLGİSİ - plaka_satiyorum ve aracimi_satiyorum için sadece şehir/ilçe/mahalle */}
+                {(selectedKategori === 'plaka_satiyorum' || selectedKategori === 'aracimi_satiyorum') && (
+                  <div className="border border-slate-200 rounded-xl p-4 md:p-5">
+                    <h3 className="font-semibold text-slate-700 mb-1">Konum Bilgisi</h3>
+                    <p className="text-xs text-orange-500 mb-4 font-medium">Aracin bulundugu sehir, ilce ve mahalleyi secin</p>
+                    <IlIlceMahalle
+                      il={konumIl} ilce={konumIlce} mah={konumMah}
+                      onIlChange={(v) => { setKonumIl(v); setKonumIlce(''); setKonumMah(''); }}
+                      onIlceChange={(v) => { setKonumIlce(v); setKonumMah(''); }}
+                      onMahChange={setKonumMah}
+                    />
+                  </div>
                 )}
 
                 {/* PROFİL RESMİ - sadece hostesim_is ve soforum_is için */}
