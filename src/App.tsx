@@ -268,7 +268,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
         <IlanCard key={ilan.id} ilan={ilan} onDetay={() => onIlanDetay(ilan)} />
       );
       // Her 8 ilandan sonra (ve son eleman değilse) reklam ekle
-      if ((index + 1) % reklamSiklik === 0 && index < filtrelenmisIlanlar.length - 1) {
+      if ((index + 1) % reklamSiklik === 5 && index < filtrelenmisIlanlar.length - 1) {
         result.push(
           <ListeReklamKarti key={`reklam-${index}`} reklam={listeReklam || {}} />
         );
