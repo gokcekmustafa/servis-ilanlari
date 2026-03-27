@@ -71,7 +71,7 @@ const KATEGORILER = [
   },
   {
     id: 'sofor_ariyorum' as KategoriType,
-    label: 'Aracım Var Şoför Aranıyorum',
+    label: 'Aracım Var Şoför Arıyorum',
     aciklama: 'Profesyonel şoför arayan firmalar',
     icon: '👤',
     bg: 'bg-orange-50',
@@ -82,7 +82,7 @@ const KATEGORILER = [
   },
   {
     id: 'hostes_ariyorum' as KategoriType,
-    label: 'Aracım Var Hostes Aranıyorum',
+    label: 'Aracım Var Hostes Arıyorum',
     aciklama: 'Servis hostesi arayan ilanlar',
     icon: '👩',
     bg: 'bg-purple-50',
