@@ -174,11 +174,13 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
   const [listeReklam, setListeReklam] = useState<any>(null);
+  const [reklamSiklik, setReklamSiklik] = useState(8);
 
   useEffect(() => {
     ilanlarYukle();
     setDuyuru(null);
     listeReklamYukle();
+    reklamSiklikYukle();
   }, []);
 
   useEffect(() => {
@@ -202,6 +204,15 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
       .limit(1)
       .single();
     if (data) setListeReklam(data);
+  };
+
+  const reklamSiklikYukle = async () => {
+    const { data } = await supabase
+      .from('ayarlar')
+      .select('deger')
+      .eq('anahtar', 'reklam_siklik')
+      .single();
+    if (data?.deger) setReklamSiklik(Number(data.deger));
   };
 
   useEffect(() => {
@@ -257,7 +268,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
         <IlanCard key={ilan.id} ilan={ilan} onDetay={() => onIlanDetay(ilan)} />
       );
       // Her 8 ilandan sonra (ve son eleman değilse) reklam ekle
-      if ((index + 1) % 5 === 0 && index < filtrelenmisIlanlar.length - 1) {
+      if ((index + 1) % reklamSiklik === 0 && index < filtrelenmisIlanlar.length - 1) {
         result.push(
           <ListeReklamKarti key={`reklam-${index}`} reklam={listeReklam || {}} />
         );
