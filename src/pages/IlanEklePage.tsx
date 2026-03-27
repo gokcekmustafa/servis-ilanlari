@@ -1010,7 +1010,7 @@ const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(()
                         className="w-20 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400" />
                       <div className="flex items-center gap-2">
                         <input type="number" value={plakaSatiyorum.ucret} placeholder="1.000.000"
-                          onChange={(e) => setAracimiSatiyorum({ ...plakaSatiyorum, ucret: e.target.value })}
+                          onChange={(e) => setAracimiSatiyorum({ ...AracimiSatiyorum, ucret: e.target.value })}
                           className="w-36 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
                         <span className="text-sm text-slate-500 font-medium">TL</span>
                       </div>
@@ -1025,7 +1025,7 @@ const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(()
                         <label key={item.key} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
                           <input type="checkbox"
                             checked={(AracimiSatiyorum as any)[item.key]}
-                            onChange={(e) => setAracimiSatiyorum({ ...plakaSatiyorum, [item.key]: e.target.checked })}
+                            onChange={(e) => setAracimiSatiyorum({ ...AracimiSatiyorum, [item.key]: e.target.checked })}
                             className="accent-orange-500 w-4 h-4" />
                           {item.label}
                         </label>
