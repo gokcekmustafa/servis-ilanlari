@@ -1,79 +1,101 @@
-export interface NeighborhoodDistrict {
-  name: string;
-  neighborhoods: string[];
+import { mahalleler } from './mahalleler';
+import { ilceler } from './ilceler';
+
+export interface LocationData {
+  il: string;
+  yakalar?: {
+    ad: string;
+    ilceler: {
+      ad: string;
+      mahalleler: string[];
+    }[];
+  }[];
+  ilceler?: {
+    ad: string;
+    mahalleler: string[];
+  }[];
 }
 
-export interface Side {
-  name: string;
-  districts: NeighborhoodDistrict[];
-}
-
-export interface City {
-  city: string;
-  sides?: Side[];
-  districts?: NeighborhoodDistrict[];
-}
-
-export const locations: City[] = [
-  {
-    city: "İstanbul",
-    sides: [
-      {
-        name: "Avrupa Yakası",
-        districts: [
-          { name: "Beşiktaş", neighborhoods: ["Levent", "Etiler", "Ortaköy"] },
-          { name: "Şişli", neighborhoods: ["Nişantaşı", "Mecidiyeköy"] },
-          { name: "Bakırköy", neighborhoods: ["Yeşilköy", "Ataköy"] }
-        ]
-      },
-      {
-        name: "Anadolu Yakası",
-        districts: [
-          { name: "Kadıköy", neighborhoods: ["Moda", "Fenerbahçe", "Koşuyolu"] },
-          { name: "Üsküdar", neighborhoods: ["Çengelköy", "Beylerbeyi"] },
-          { name: "Ataşehir", neighborhoods: ["İçerenköy", "Kayışdağı"] }
-        ]
-      }
-    ]
-  },
-  {
-    city: "Ankara",
-    districts: [
-      { name: "Çankaya", neighborhoods: ["Kızılay", "Bahçelievler"] },
-      { name: "Keçiören", neighborhoods: ["Etlik", "Aktepe"] },
-      { name: "Yenimahalle", neighborhoods: ["Batıkent", "Demetevler"] }
-    ]
-  }
+// İstanbul ilçelerini yakaya göre grupla
+const istanbulAvrupa = [
+  'Adalar', 'Arnavutköy', 'Avcılar', 'Bağcılar', 'Bahçelievler',
+  'Bakırköy', 'Başakşehir', 'Bayrampaşa', 'Beşiktaş', 'Beylikdüzü',
+  'Beyoğlu', 'Büyükçekmece', 'Çatalca', 'Esenler', 'Esenyurt',
+  'Eyüpsultan', 'Fatih', 'Gaziosmanpaşa', 'Güngören', 'Kağıthane',
+  'Küçükçekmece', 'Sarıyer', 'Silivri', 'Sultangazi', 'Şişli',
+  'Zeytinburnu',
 ];
 
+const istanbulAnadolu = [
+  'Ataşehir', 'Beykoz', 'Çekmeköy', 'Kadıköy', 'Kartal',
+  'Maltepe', 'Pendik', 'Sancaktepe', 'Sultanbeyli', 'Şile',
+  'Tuzla', 'Ümraniye', 'Üsküdar',
+];
 
-// ✅ TÜM SORUNU ÇÖZEN FONKSİYON (EN ÖNEMLİ)
-export const getDistricts = (city: City): NeighborhoodDistrict[] => {
-  if (city.sides) {
-    return city.sides.flatMap(side => side.districts);
+// İlçe adına göre mahalle getir (mahalleler.ts'den)
+const getMahalleler = (ilce: string): string[] => {
+  return mahalleler[ilce] || [];
+};
+
+// İlçe listesini yapıya çevir
+const ilceleriDonustur = (ilceListesi: string[]) =>
+  ilceListesi.map((ad) => ({
+    ad,
+    mahalleler: getMahalleler(ad),
+  }));
+
+export const locations: LocationData[] = [
+  {
+    il: 'İstanbul',
+    yakalar: [
+      {
+        ad: 'Avrupa Yakası',
+        ilceler: ilceleriDonustur(istanbulAvrupa),
+      },
+      {
+        ad: 'Anadolu Yakası',
+        ilceler: ilceleriDonustur(istanbulAnadolu),
+      },
+    ],
+  },
+  ...Object.entries(ilceler)
+    .filter(([il]) => il !== 'Istanbul') // İstanbul'u atla, yukarıda hallettik
+    .map(([il, ilceListesi]) => ({
+      il,
+      ilceler: ilceListesi.map((ad) => ({
+        ad,
+        mahalleler: [], // İstanbul dışı için mahalle yok (Seçenek A)
+      })),
+    })),
+];
+
+// ─── Yardımcı Fonksiyonlar ───────────────────────────────────────
+
+export const getIller = (): string[] => locations.map((l) => l.il);
+
+export const getYakalar = (il: string) => {
+  const city = locations.find((l) => l.il === il);
+  return city?.yakalar || [];
+};
+
+export const getIlceler = (il: string, yaka?: string) => {
+  const city = locations.find((l) => l.il === il);
+  if (!city) return [];
+
+  if (city.yakalar) {
+    if (yaka) {
+      const yakaData = city.yakalar.find((y) => y.ad === yaka);
+      return yakaData?.ilceler || [];
+    }
+    // Yaka seçilmemişse tüm ilçeleri getir
+    return city.yakalar.flatMap((y) => y.ilceler);
   }
-  return city.districts || [];
+
+  return city.ilceler || [];
 };
 
-
-// ✅ YAKA BAZLI (İstanbul için)
-export const getDistrictsBySide = (
-  city: City,
-  sideName: string
-): NeighborhoodDistrict[] => {
-  if (!city.sides) return [];
-
-  const side = city.sides.find(s => s.name === sideName);
-  return side?.districts || [];
-};
-
-
-// ✅ MAHALLE GETİRME
-export const getNeighborhoods = (
-  city: City,
-  districtName: string
-): string[] => {
-  const districts = getDistricts(city);
-  const district = districts.find(d => d.name === districtName);
-  return district?.neighborhoods || [];
+export const getMahallelerByIlce = (il: string, ilce: string, yaka?: string) => {
+  const ilceler = getIlceler(il, yaka);
+  const ilceData = ilceler.find((i) => i.ad === ilce);
+  return ilceData?.mahalleler || [];
 };
