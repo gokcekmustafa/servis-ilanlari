@@ -203,7 +203,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
       if (aktifKategori && ilan.kategori !== aktifKategori) return false;
       if (selectedSehir && !ilan.guzergahlar.some(g => g.kalkis_il === selectedSehir)) return false;
       if (selectedIlce && !ilan.guzergahlar.some(g => g.kalkis_ilce === selectedIlce)) return false;
-      if (selectedMahalle && !ilan.guzergahlar.some(g => g.kalkis_mahalle === selectedMahalle)) return false;
+      if (selectedMahalle && !ilan.guzergahlar.some(g => g.kalkis_mah === selectedMahalle)) return false;
       return true;
     })
     .sort((a, b) =>
