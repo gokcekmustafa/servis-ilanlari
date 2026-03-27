@@ -10,10 +10,10 @@ type IlanCardProps = {
 const badges: Record<KategoriType, { label: string; bg: string; text: string; border: string }> = {
   isim_var_arac:    { label: 'İşim Var Araç Arıyorum',       bg: 'bg-blue-50',   text: 'text-blue-700',   border: 'border-blue-200' },
   aracim_var_is:    { label: 'Aracım Var İş Arıyorum',          bg: 'bg-green-50',  text: 'text-green-700',  border: 'border-green-200' },
-  sofor_ariyorum:   { label: 'Şoför Aranıyor',       bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
-  hostes_ariyorum:  { label: 'Hostes Aranıyor',      bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
-  hostesim_is:      { label: 'Hostesim İş Arıyor',     bg: 'bg-pink-50',   text: 'text-pink-700',   border: 'border-pink-200' },
-  soforum_is:       { label: 'Şoförüm İş Arıyor',      bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' },
+  sofor_ariyorum:   { label: 'Aracım Var Şoför Arıyorum',       bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
+  hostes_ariyorum:  { label: 'Aracım Var Hostes Arıyorum',      bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+  hostesim_is:      { label: 'Hostesim İş Arıyorum',     bg: 'bg-pink-50',   text: 'text-pink-700',   border: 'border-pink-200' },
+  soforum_is:       { label: 'Şoförüm İş Arıyorum',      bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' },
   plaka_satiyorum:  { label: 'Plakamı Satıyorum',        bg: 'bg-red-50',    text: 'text-red-700',    border: 'border-red-200' },
   aracimi_satiyorum:{ label: 'Aracımı Satıyorum',         bg: 'bg-teal-50',   text: 'text-teal-700',   border: 'border-teal-200' },
 };
