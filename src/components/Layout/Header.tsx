@@ -56,7 +56,7 @@ export default function Header({
   ];
 
   return (
-    <header className="bg-slate-100 pt-3 px-4 sm:px-6">
+    <header className="bg-slate-100 pt-3 px-3 sm:px-4">
       <div className="max-w-5xl mx-auto">
 
         {/* 1. ÜST ŞERİT — Kayıtlı kişi + Ücretsiz İlan Ver + kullanıcı butonları */}
