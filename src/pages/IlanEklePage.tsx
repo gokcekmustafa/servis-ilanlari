@@ -376,6 +376,8 @@ const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(()
     ekbilgiler = { ...soforumIs, profil_resmi: resimUrl };
   } else if (selectedKategori === '') {
     ekbilgiler = plakaSatiyorum;
+  } else if (selectedKategori === '') {
+    ekbilgiler = AracimiSatiyorum;
   }
 
   const { error } = await ilanEkle({
