@@ -361,26 +361,26 @@ const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(()
     cikis_saati: konumCikis,
   }] : guzergahlar;
 
-  let ekbilgiler: any = {};
-  if (selectedKategori === 'isim_var_arac') {
-    ekbilgiler = isimVarArac;
-  } else if (selectedKategori === 'aracim_var_is') {
-    ekbilgiler = aracimVarIs;
-  } else if (selectedKategori === 'sofor_ariyorum') {
-    ekbilgiler = soforAriyorum;
-  } else if (selectedKategori === 'hostes_ariyorum') {
-    ekbilgiler = hostesAriyorum;
-  } else if (selectedKategori === 'hostesim_is') {
-    ekbilgiler = { ...hostesimIs, profil_resmi: resimUrl };
-  } else if (selectedKategori === 'soforum_is') {
-    ekbilgiler = { ...soforumIs, profil_resmi: resimUrl };
-  } else if (selectedKategori === 'plaka_satiyorum') {
+ let ekbilgiler: any = {};
+
+if (selectedKategori === 'isim_var_arac') {
+  ekbilgiler = isimVarArac;
+} else if (selectedKategori === 'aracim_var_is') {
+  ekbilgiler = aracimVarIs;
+} else if (selectedKategori === 'sofor_ariyorum') {
+  ekbilgiler = soforAriyorum;
+} else if (selectedKategori === 'hostes_ariyorum') {
+  ekbilgiler = hostesAriyorum;
+} else if (selectedKategori === 'hostesim_is') {
+  ekbilgiler = { ...hostesimIs, profil_resmi: resimUrl };
+} else if (selectedKategori === 'soforum_is') {
+  ekbilgiler = { ...soforumIs, profil_resmi: resimUrl };
+} else if (selectedKategori === 'plaka_satiyorum') {
   ekbilgiler = plakaSatiyorum;
-}
-  } else if (selectedKategori === 'aracimi_satiyorum') {
+} else if (selectedKategori === 'aracimi_satiyorum') {
   ekbilgiler = aracimiSatiyorum;
 }
-
+    
   const { error } = await ilanEkle({
     kategori: selectedKategori!,
     servis_turu: isimVarArac.servis_turu,
