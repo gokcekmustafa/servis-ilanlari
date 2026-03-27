@@ -297,20 +297,21 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
   key={kat.id}
   onClick={() => setAktifKategori(isSelected ? null : kat.id)}
   className={
-    "flex flex-col items-center gap-1.5 px-2 py-2 rounded-lg border text-center transition-all " +
+    "flex flex-col items-center gap-1.5 px-2 py-2.5 rounded-lg text-center transition-all " +
     (isSelected
-      ? "border-[#f7971e] bg-orange-50 shadow-sm shadow-orange-100"
-      : "border-gray-100 bg-gray-50 hover:border-orange-200 hover:bg-orange-50")
+      ? "border-2 border-[#f7971e] bg-orange-50 shadow-sm shadow-orange-100"
+      : "border-2 border-gray-200 bg-gray-50 hover:border-orange-300 hover:bg-orange-50")
   }
 >
-  {/* İkon — küçültüldü: w-9 h-9, text-xl */}
-  <div className={"w-9 h-9 rounded-lg flex items-center justify-center text-xl flex-shrink-0 " + kat.iconBg}>
+  {/* İkon — w-10 h-10, text-[22px] */}
+  <div className={"w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 " + kat.iconBg}
+    style={{ fontSize: '22px' }}>
     {kat.icon}
   </div>
-  {/* Başlık */}
-  <div className="text-[10px] font-semibold text-gray-700 leading-snug">{kat.label}</div>
+  {/* Başlık — font büyütüldü, koyu renk */}
+  <div className="text-[11.5px] font-bold text-gray-800 leading-snug">{kat.label}</div>
   {/* Sayı badge */}
-  <div className={"inline-flex items-center justify-center text-xs font-bold px-2 py-0.5 rounded-full " +
+  <div className={"inline-flex items-center justify-center text-[11px] font-bold px-2.5 py-0.5 rounded-full " +
     (isSelected ? "bg-[#f7971e] text-white" : kat.iconBg + " " + kat.numColor)}>
     {sayi}
   </div>
