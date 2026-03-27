@@ -624,7 +624,11 @@ export default function App() {
   );
 
   if (currentPage === 'detay' && selectedIlan) return withLayout(<IlanDetayPage ilan={selectedIlan} onGoBack={goBack} onGoLogin={() => setCurrentPage('login')} isLoggedIn={isLoggedIn} />);
-  if (currentPage === 'ilan-ekle') return withLayout(<IlanEklePage onGoBack={goBack} onSuccess={handleIlanSuccess} userId={userId || ''} />);
+  if (currentPage === 'ilan-ekle') return withLayout(<IlanEklePage
+  userId={userId || ''}
+  onGoBack={() => setCurrentPage('home')}
+  onSuccess={() => setCurrentPage('home')}
+/>);
   if (currentPage === 'panel') return withLayout(<PanelPage onLogout={handleLogout} onIlanEkle={handleIlanEkle} onIlanDetay={handleIlanDetay} userId={userId || ''} />);
   if (currentPage === 'admin') {
     if (!isAdmin) { setCurrentPage('home'); return null; }
