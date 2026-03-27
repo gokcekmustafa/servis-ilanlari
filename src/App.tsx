@@ -49,7 +49,7 @@ const validPages: Page[] = [
 const KATEGORILER = [
   {
     id: 'isim_var_arac' as KategoriType,
-    label: 'Araç Arıyorum',
+    label: 'İşim Var Araç Arıyorum',
     aciklama: 'Personel veya öğrenci servisi için araç',
     icon: '🔍',
     bg: 'bg-blue-50',
@@ -60,7 +60,7 @@ const KATEGORILER = [
   },
   {
     id: 'aracim_var_is' as KategoriType,
-    label: 'İş Arıyorum',
+    label: 'Aracım Var İş Arıyorum',
     aciklama: 'Aracıyla birlikte iş arayan taşımacılar',
     icon: '🚌',
     bg: 'bg-green-50',
@@ -71,7 +71,7 @@ const KATEGORILER = [
   },
   {
     id: 'sofor_ariyorum' as KategoriType,
-    label: 'Şoför Aranıyor',
+    label: 'Aracım Var Şoför Arıyorum',
     aciklama: 'Profesyonel şoför arayan firmalar',
     icon: '👤',
     bg: 'bg-orange-50',
@@ -82,7 +82,7 @@ const KATEGORILER = [
   },
   {
     id: 'hostes_ariyorum' as KategoriType,
-    label: 'Hostes Aranıyor',
+    label: 'Aracım Var Hostes Arıyorum',
     aciklama: 'Servis hostesi arayan ilanlar',
     icon: '👩',
     bg: 'bg-purple-50',
@@ -93,7 +93,7 @@ const KATEGORILER = [
   },
   {
     id: 'soforum_is' as KategoriType,
-    label: 'Şoför İş Arıyor',
+    label: 'Şoförüm İş Arıyorum',
     aciklama: 'Deneyimli şoförler iş arıyor',
     icon: '🚗',
     bg: 'bg-yellow-50',
@@ -104,7 +104,7 @@ const KATEGORILER = [
   },
   {
     id: 'hostesim_is' as KategoriType,
-    label: 'Hostes İş Arıyor',
+    label: 'Hostesim İş Arıyorum',
     aciklama: 'Hostes iş ilanları',
     icon: '💼',
     bg: 'bg-pink-50',
@@ -115,7 +115,7 @@ const KATEGORILER = [
   },
   {
     id: 'plaka_satiyorum' as KategoriType,
-    label: 'Plaka Satılık',
+    label: 'Plakamı Satıyorum',
     aciklama: 'Satılık servis plaka ilanları',
     icon: '🪧',
     bg: 'bg-red-50',
@@ -126,7 +126,7 @@ const KATEGORILER = [
   },
   {
     id: 'aracimi_satiyorum' as KategoriType,
-    label: 'Araç Satılık',
+    label: 'Aracımı Satıyorum',
     aciklama: 'Satılık servis araçları',
     icon: '🚐',
     bg: 'bg-teal-50',
