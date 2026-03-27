@@ -1,15 +1,23 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { KategoriType, Ilan } from '../../types';
+import {
+  getIller,
+  getYakalar,
+  getIlceler,
+  getMahallelerByIlce,
+} from '../data/locations';
 
 type ImprovedSidebarProps = {
   selectedKategoriler: KategoriType[];
   selectedSehir: string;
   selectedIlce: string;
   selectedYaka: string;
+  selectedMahalle: string;
   onSehirChange: (sehir: string) => void;
   onIlceChange: (ilce: string) => void;
   onYakaChange: (yaka: string) => void;
+  onMahalleChange: (mahalle: string) => void;
   onFilter: () => void;
   onClear: () => void;
   ilanlar: Ilan[];
@@ -19,45 +27,30 @@ export default function ImprovedSidebar({
   selectedSehir,
   selectedIlce,
   selectedYaka,
+  selectedMahalle,
   onSehirChange,
   onIlceChange,
   onYakaChange,
+  onMahalleChange,
   onFilter,
   onClear,
   ilanlar,
 }: ImprovedSidebarProps) {
   const [konumAcik, setKonumAcik] = useState(true);
 
-  // Şehir ve ilçeleri hesapla
-  const sehirler = useMemo(() => {
-    const sayac: Record<string, number> = {};
-    ilanlar.forEach((ilan) => {
-      ilan.guzergahlar.forEach((g) => {
-        if (g.kalkis_il) sayac[g.kalkis_il] = (sayac[g.kalkis_il] || 0) + 1;
-      });
-    });
-    return Object.entries(sayac)
-      .sort(([, a], [, b]) => b - a)
-      .map(([city]) => city);
-  }, [ilanlar]);
+  const iller = getIller();
+  const yakalar = selectedSehir ? getYakalar(selectedSehir) : [];
+  const ilceler = selectedSehir ? getIlceler(selectedSehir, selectedYaka) : [];
+  const mahalleler = selectedIlce
+    ? getMahallelerByIlce(selectedSehir, selectedIlce, selectedYaka)
+    : [];
 
-  const ilceler = useMemo(() => {
-    if (!selectedSehir) return [];
-    const sayac: Record<string, number> = {};
-    ilanlar.forEach((ilan) => {
-      ilan.guzergahlar.forEach((g) => {
-        if (g.kalkis_il === selectedSehir && g.kalkis_ilce) {
-          sayac[g.kalkis_ilce] = (sayac[g.kalkis_ilce] || 0) + 1;
-        }
-      });
-    });
-    return Object.keys(sayac).sort();
-  }, [ilanlar, selectedSehir]);
-
-  const aktivFiltreVar = selectedSehir || selectedIlce || selectedYaka;
+  const istanbulMu = selectedSehir === 'İstanbul';
+  const aktivFiltreVar = selectedSehir || selectedIlce || selectedYaka || selectedMahalle;
 
   return (
     <aside className="w-full bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+
       {/* Başlık */}
       <div className="px-4 py-4 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between">
@@ -89,7 +82,8 @@ export default function ImprovedSidebar({
 
         {konumAcik && (
           <div className="px-4 pb-4 space-y-3">
-            {/* Şehir Seçimi */}
+
+            {/* Şehir */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Şehir Seçiniz
@@ -98,43 +92,21 @@ export default function ImprovedSidebar({
                 value={selectedSehir}
                 onChange={(e) => {
                   onSehirChange(e.target.value);
-                  onIlceChange('');
                   onYakaChange('');
+                  onIlceChange('');
+                  onMahalleChange('');
                 }}
                 className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
               >
                 <option value="">Tüm Şehirler</option>
-                {sehirler.map((sehir) => (
-                  <option key={sehir} value={sehir}>
-                    {sehir}
-                  </option>
+                {iller.map((il) => (
+                  <option key={il} value={il}>{il}</option>
                 ))}
               </select>
             </div>
 
-            {/* İlçe Seçimi */}
-            {selectedSehir && ilceler.length > 0 && (
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  İlçe Seçiniz
-                </label>
-                <select
-                  value={selectedIlce}
-                  onChange={(e) => onIlceChange(e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
-                >
-                  <option value="">Tüm İlçeler</option>
-                  {ilceler.map((ilce) => (
-                    <option key={ilce} value={ilce}>
-                      {ilce}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Yaka Seçimi (İstanbul için) */}
-            {selectedSehir === 'Istanbul' && (
+            {/* Yaka — sadece İstanbul */}
+            {istanbulMu && (
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-2">
                   Yakasını Seçiniz
@@ -144,12 +116,59 @@ export default function ImprovedSidebar({
                   onChange={(e) => {
                     onYakaChange(e.target.value);
                     onIlceChange('');
+                    onMahalleChange('');
                   }}
                   className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
                 >
                   <option value="">Tüm Yakalar</option>
-                  <option value="avrupa">Avrupa Yakası</option>
-                  <option value="anadolu">Anadolu Yakası</option>
+                  {yakalar.map((y) => (
+                    <option key={y.ad} value={y.ad}>{y.ad}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* İlçe */}
+            {selectedSehir && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  İlçe Seçiniz
+                </label>
+                <select
+                  value={selectedIlce}
+                  onChange={(e) => {
+                    onIlceChange(e.target.value);
+                    onMahalleChange('');
+                  }}
+                  disabled={istanbulMu && !selectedYaka}
+                  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Tüm İlçeler</option>
+                  {ilceler.map((i) => (
+                    <option key={i.ad} value={i.ad}>{i.ad}</option>
+                  ))}
+                </select>
+                {istanbulMu && !selectedYaka && (
+                  <p className="text-xs text-gray-400 mt-1">Önce yaka seçiniz</p>
+                )}
+              </div>
+            )}
+
+            {/* Mahalle — sadece İstanbul ilçesi seçilmişse */}
+            {selectedIlce && mahalleler.length > 0 && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  Mahalle Seçiniz
+                </label>
+                <select
+                  value={selectedMahalle}
+                  onChange={(e) => onMahalleChange(e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+                >
+                  <option value="">Tüm Mahalleler</option>
+                  {mahalleler.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
                 </select>
               </div>
             )}
@@ -157,7 +176,7 @@ export default function ImprovedSidebar({
         )}
       </div>
 
-      {/* Uygula Butonu */}
+      {/* Uygula */}
       <div className="p-4 bg-gray-50 border-t border-gray-200">
         <button
           onClick={onFilter}
