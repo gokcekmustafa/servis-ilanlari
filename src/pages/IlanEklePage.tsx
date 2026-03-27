@@ -1,101 +1,61 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { kategoriFormSchema } from '../config/kategoriFormSchema';
 
-export default function IlanEklePage() {
-  const [selectedKategori, setSelectedKategori] = useState<string>('');
+type Props = {
+  onGoBack?: () => void;
+  onSuccess?: () => void;
+  userId?: string;
+};
+
+export default function IlanEklePage({ onGoBack, onSuccess, userId }: Props) {
+  const [selectedKategori, setSelectedKategori] = useState('');
   const [baslik, setBaslik] = useState('');
-  const [aciklama, setAciklama] = useState('');
-  const [resimUrl, setResimUrl] = useState('');
+  const [formData, setFormData] = useState<Record<string, any>>({});
 
-  // kategori özel state’ler (senin projene göre genişletebilirsin)
-  const [isimVarArac, setIsimVarArac] = useState({});
-  const [aracimVarIs, setAracimVarIs] = useState({});
-  const [soforAriyorum, setSoforAriyorum] = useState({});
-  const [hostesAriyorum, setHostesAriyorum] = useState({});
-  const [hostesimIs, setHostesimIs] = useState({});
-  const [soforumIs, setSoforumIs] = useState({});
-  const [plakaSatiyorum, setPlakaSatiyorum] = useState({});
-  const [aracimiSatiyorum, setAracimiSatiyorum] = useState({});
+  const handleChange = (name: string, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const handleSubmit = async () => {
-    try {
-      let ekbilgiler: any = {};
+    const { error } = await supabase.from('ilanlar').insert([
+      {
+        kategori: selectedKategori,
+        baslik,
+        ekbilgiler: formData,
+        user_id: userId || null,
+        created_at: new Date().toISOString(),
+      },
+    ]);
 
-      switch (selectedKategori) {
-        case 'isim_var_arac':
-          ekbilgiler = isimVarArac;
-          break;
-
-        case 'aracim_var_is':
-          ekbilgiler = aracimVarIs;
-          break;
-
-        case 'sofor_ariyorum':
-          ekbilgiler = soforAriyorum;
-          break;
-
-        case 'hostes_ariyorum':
-          ekbilgiler = hostesAriyorum;
-          break;
-
-        case 'hostesim_is':
-          ekbilgiler = {
-            ...hostesimIs,
-            profil_resmi: resimUrl,
-          };
-          break;
-
-        case 'soforum_is':
-          ekbilgiler = {
-            ...soforumIs,
-            profil_resmi: resimUrl,
-          };
-          break;
-
-        case 'plaka_satiyorum':
-          ekbilgiler = plakaSatiyorum;
-          break;
-
-        case 'aracimi_satiyorum':
-          ekbilgiler = aracimiSatiyorum;
-          break;
-
-        default:
-          ekbilgiler = {};
-      }
-
-      const { error } = await supabase.from('ilanlar').insert([
-        {
-          kategori: selectedKategori,
-          baslik,
-          aciklama,
-          resim_url: resimUrl,
-          ekbilgiler,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-
-      if (error) {
-        console.error('Supabase error:', error);
-        alert('İlan eklenemedi');
-        return;
-      }
-
-      alert('İlan başarıyla eklendi');
-
-      // reset
-      setBaslik('');
-      setAciklama('');
-      setSelectedKategori('');
-      setResimUrl('');
-    } catch (err) {
-      console.error(err);
-      alert('Beklenmeyen hata oluştu');
+    if (error) {
+      console.error(error);
+      alert('İlan eklenemedi');
+      return;
     }
+
+    alert('İlan eklendi');
+
+    if (onSuccess) onSuccess();
   };
+
+  const fields = kategoriFormSchema[selectedKategori] || [];
 
   return (
     <div className="p-4 max-w-xl mx-auto space-y-4">
+
+      {/* GERİ */}
+      {onGoBack && (
+        <button
+          onClick={onGoBack}
+          className="text-sm text-blue-600"
+        >
+          ← Geri
+        </button>
+      )}
 
       {/* KATEGORİ */}
       <select
@@ -122,30 +82,34 @@ export default function IlanEklePage() {
         className="w-full border p-2 rounded"
       />
 
-      {/* AÇIKLAMA */}
-      <textarea
-        value={aciklama}
-        onChange={(e) => setAciklama(e.target.value)}
-        placeholder="Açıklama"
-        className="w-full border p-2 rounded"
-      />
+      {/* DİNAMİK FORM */}
+      {fields.map((field) => (
+        <div key={field.name}>
+          <label className="text-sm">{field.label}</label>
 
-      {/* RESİM */}
-      <input
-        value={resimUrl}
-        onChange={(e) => setResimUrl(e.target.value)}
-        placeholder="Resim URL"
-        className="w-full border p-2 rounded"
-      />
+          {field.type === 'text' && (
+            <input
+              className="w-full border p-2 rounded"
+              onChange={(e) => handleChange(field.name, e.target.value)}
+            />
+          )}
 
-      {/* KATEGORİ ÖZEL ALAN (SAFE) */}
-      {selectedKategori === 'aracimi_satiyorum' && (
-        <div className="border p-3 rounded">
-          <p className="text-sm text-gray-500">
-            Araç satış alanları buraya eklenecek
-          </p>
+          {field.type === 'number' && (
+            <input
+              type="number"
+              className="w-full border p-2 rounded"
+              onChange={(e) => handleChange(field.name, Number(e.target.value))}
+            />
+          )}
+
+          {field.type === 'textarea' && (
+            <textarea
+              className="w-full border p-2 rounded"
+              onChange={(e) => handleChange(field.name, e.target.value)}
+            />
+          )}
         </div>
-      )}
+      ))}
 
       {/* SUBMIT */}
       <button
