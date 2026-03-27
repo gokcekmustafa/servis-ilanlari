@@ -20,6 +20,7 @@ import { mevcutKullanici, cikisYap } from './lib/auth';
 import { ilanlariGetir } from './lib/ilanlar';
 import { supabase } from './lib/supabase';
 import { SlidersHorizontal, X } from 'lucide-react';
+import { getIller, getIlceler, getMahallelerByIlce } from './data/locations';
 
 type Page =
   | 'home' | 'login' | 'register' | 'detay' | 'ilan-ekle'
@@ -45,7 +46,6 @@ const validPages: Page[] = [
   'kisisel-veriler', 'kunye',
 ];
 
-// Kategori yapılandırması
 const KATEGORILER = [
   {
     id: 'isim_var_arac' as KategoriType,
@@ -137,13 +137,14 @@ const KATEGORILER = [
   },
 ] as const;
 
-// HOME PAGE COMPONENT — sahibinden.com tarzı
 function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void }) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
   const [selectedSehir, setSelectedSehir] = useState('');
+  const [selectedYaka, setSelectedYaka] = useState('');
   const [selectedIlce, setSelectedIlce] = useState('');
+  const [selectedMahalle, setSelectedMahalle] = useState('');
   const [siralama, setSiralama] = useState('yeni');
   const [duyuru, setDuyuru] = useState<any>(null);
   const [popupAcik, setPopupAcik] = useState(false);
@@ -175,20 +176,23 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
     return () => clearTimeout(timer);
   }, [popupAcik, duyuru]);
 
-  const sehirler = Array.from(new Set(
-    ilanlar.flatMap(i => i.guzergahlar.map(g => g.kalkis_il).filter(Boolean))
-  )).sort();
-
+  // Lokasyon verileri — locations.ts'den geliyor
+  const iller = getIller();
+  const istanbulMu = selectedSehir === 'İstanbul';
+  const yakalar = istanbulMu ? ['Avrupa Yakası', 'Anadolu Yakası'] : [];
   const ilceler = selectedSehir
-    ? Array.from(new Set(
-        ilanlar.flatMap(i => i.guzergahlar.filter(g => g.kalkis_il === selectedSehir).map(g => g.kalkis_ilce)).filter(Boolean)
-      )).sort()
+    ? getIlceler(selectedSehir, selectedYaka).map(i => i.ad)
+    : [];
+  const mahalleler = selectedIlce
+    ? getMahallelerByIlce(selectedSehir, selectedIlce, selectedYaka)
     : [];
 
   const handleClear = () => {
     setAktifKategori(null);
     setSelectedSehir('');
+    setSelectedYaka('');
     setSelectedIlce('');
+    setSelectedMahalle('');
     setSiralama('yeni');
   };
 
@@ -199,6 +203,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
       if (aktifKategori && ilan.kategori !== aktifKategori) return false;
       if (selectedSehir && !ilan.guzergahlar.some(g => g.kalkis_il === selectedSehir)) return false;
       if (selectedIlce && !ilan.guzergahlar.some(g => g.kalkis_ilce === selectedIlce)) return false;
+      if (selectedMahalle && !ilan.guzergahlar.some(g => g.kalkis_mahalle === selectedMahalle)) return false;
       return true;
     })
     .sort((a, b) =>
@@ -207,7 +212,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
         : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
-  const aktivFiltreVar = !!aktifKategori || !!selectedSehir || !!selectedIlce;
+  const aktivFiltreVar = !!aktifKategori || !!selectedSehir || !!selectedIlce || !!selectedMahalle || !!selectedYaka;
 
   return (
     <div className="bg-[#f4f4f4] min-h-screen">
@@ -260,6 +265,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
         </div>
 
         <div className="flex gap-4">
+
           {/* SOL: FİLTRELER */}
           <div className="hidden lg:block w-52 flex-shrink-0">
             <div className="bg-white border border-gray-200 rounded overflow-hidden sticky top-4">
@@ -268,6 +274,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                 <span className="text-sm font-bold text-white">Filtrele</span>
               </div>
 
+              {/* Kategori Filtresi */}
               <div className="border-b border-gray-100">
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Kategori</span>
@@ -295,27 +302,74 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                 })}
               </div>
 
+              {/* Konum Filtresi */}
               <div>
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Konum</span>
                 </div>
                 <div className="p-3 space-y-2">
+
+                  {/* Şehir */}
                   <select
                     value={selectedSehir}
-                    onChange={(e) => { setSelectedSehir(e.target.value); setSelectedIlce(''); }}
+                    onChange={(e) => {
+                      setSelectedSehir(e.target.value);
+                      setSelectedYaka('');
+                      setSelectedIlce('');
+                      setSelectedMahalle('');
+                    }}
                     className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
                   >
                     <option value="">Tüm Şehirler</option>
-                    {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
+                    {iller.map(il => <option key={il} value={il}>{il}</option>)}
                   </select>
-                  {selectedSehir && ilceler.length > 0 && (
+
+                  {/* Yaka — sadece İstanbul */}
+                  {istanbulMu && (
+                    <select
+                      value={selectedYaka}
+                      onChange={(e) => {
+                        setSelectedYaka(e.target.value);
+                        setSelectedIlce('');
+                        setSelectedMahalle('');
+                      }}
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                    >
+                      <option value="">Tüm Yakalar</option>
+                      {yakalar.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                  )}
+
+                  {/* İlçe */}
+                  {selectedSehir && (
                     <select
                       value={selectedIlce}
-                      onChange={(e) => setSelectedIlce(e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                      onChange={(e) => {
+                        setSelectedIlce(e.target.value);
+                        setSelectedMahalle('');
+                      }}
+                      disabled={istanbulMu && !selectedYaka}
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700 disabled:opacity-50"
                     >
                       <option value="">Tüm İlçeler</option>
                       {ilceler.map(i => <option key={i} value={i}>{i}</option>)}
+                    </select>
+                  )}
+
+                  {/* İstanbul yaka uyarısı */}
+                  {istanbulMu && !selectedYaka && (
+                    <p className="text-[10px] text-gray-400">Önce yaka seçiniz</p>
+                  )}
+
+                  {/* Mahalle — sadece İstanbul + ilçe seçilmişse */}
+                  {selectedIlce && mahalleler.length > 0 && (
+                    <select
+                      value={selectedMahalle}
+                      onChange={(e) => setSelectedMahalle(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                    >
+                      <option value="">Tüm Mahalleler</option>
+                      {mahalleler.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   )}
                 </div>
@@ -357,7 +411,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
 
             {yukleniyor ? (
               <div className="space-y-2">
-                {[1,2,3,4].map(i => (
+                {[1, 2, 3, 4].map(i => (
                   <div key={i} className="bg-white border border-gray-200 rounded p-4 animate-pulse">
                     <div className="h-3 bg-gray-100 rounded w-1/4 mb-2" />
                     <div className="h-4 bg-gray-100 rounded w-2/3 mb-2" />
@@ -395,6 +449,8 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
               <button onClick={() => setFiltreAcik(false)} className="text-white/80 hover:text-white"><X size={20} /></button>
             </div>
             <div className="p-4 space-y-4">
+
+              {/* Kategori */}
               <div>
                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Kategori</p>
                 <div className="space-y-1">
@@ -417,28 +473,95 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                   ))}
                 </div>
               </div>
+
+              {/* Şehir */}
               <div>
                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Şehir</p>
-                <select value={selectedSehir} onChange={(e) => { setSelectedSehir(e.target.value); setSelectedIlce(''); }}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                <select
+                  value={selectedSehir}
+                  onChange={(e) => {
+                    setSelectedSehir(e.target.value);
+                    setSelectedYaka('');
+                    setSelectedIlce('');
+                    setSelectedMahalle('');
+                  }}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white"
+                >
                   <option value="">Tüm Şehirler</option>
-                  {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
+                  {iller.map(il => <option key={il} value={il}>{il}</option>)}
                 </select>
               </div>
-              {selectedSehir && ilceler.length > 0 && (
+
+              {/* Yaka — sadece İstanbul */}
+              {istanbulMu && (
                 <div>
-                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">İlçe</p>
-                  <select value={selectedIlce} onChange={(e) => setSelectedIlce(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
-                    <option value="">Tüm İlçeler</option>
-                    {ilceler.map(i => <option key={i} value={i}>{i}</option>)}
+                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Yaka</p>
+                  <select
+                    value={selectedYaka}
+                    onChange={(e) => {
+                      setSelectedYaka(e.target.value);
+                      setSelectedIlce('');
+                      setSelectedMahalle('');
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white"
+                  >
+                    <option value="">Tüm Yakalar</option>
+                    {yakalar.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
                 </div>
               )}
+
+              {/* İlçe */}
+              {selectedSehir && (
+                <div>
+                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">İlçe</p>
+                  <select
+                    value={selectedIlce}
+                    onChange={(e) => {
+                      setSelectedIlce(e.target.value);
+                      setSelectedMahalle('');
+                    }}
+                    disabled={istanbulMu && !selectedYaka}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white disabled:opacity-50"
+                  >
+                    <option value="">Tüm İlçeler</option>
+                    {ilceler.map(i => <option key={i} value={i}>{i}</option>)}
+                  </select>
+                  {istanbulMu && !selectedYaka && (
+                    <p className="text-[10px] text-gray-400 mt-1">Önce yaka seçiniz</p>
+                  )}
+                </div>
+              )}
+
+              {/* Mahalle */}
+              {selectedIlce && mahalleler.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Mahalle</p>
+                  <select
+                    value={selectedMahalle}
+                    onChange={(e) => setSelectedMahalle(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white"
+                  >
+                    <option value="">Tüm Mahalleler</option>
+                    {mahalleler.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+              )}
+
               <div className="pt-2 space-y-2">
-                <button onClick={() => setFiltreAcik(false)} className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white font-bold py-2.5 rounded transition text-sm">Uygula</button>
+                <button
+                  onClick={() => setFiltreAcik(false)}
+                  className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white font-bold py-2.5 rounded transition text-sm"
+                >
+                  Uygula
+                </button>
                 {aktivFiltreVar && (
-                  <button onClick={handleClear} className="w-full bg-gray-100 text-gray-600 py-2 rounded text-sm font-medium transition hover:bg-gray-200">Temizle</button>
+                  <button
+                    onClick={handleClear}
+                    className="w-full bg-gray-100 text-gray-600 py-2 rounded text-sm font-medium transition hover:bg-gray-200"
+                  >
+                    Temizle
+                  </button>
                 )}
               </div>
             </div>
@@ -448,16 +571,24 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
 
       {/* DUYURU POPUP */}
       {popupAcik && duyuru && (
-        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4"
-          onClick={() => { setPopupAcik(false); if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer); }}>
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl overflow-hidden"
-            onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4"
+          onClick={() => { setPopupAcik(false); if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer); }}
+        >
+          <div
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
             {duyuru.resim_url && <img src={duyuru.resim_url} alt={duyuru.baslik || 'Duyuru'} className="w-full h-48 object-cover" />}
             <div className="p-5">
               {duyuru.baslik && <h2 className="text-base font-bold text-gray-900 mb-2">{duyuru.baslik}</h2>}
               {duyuru.mesaj && <p className="text-sm text-gray-600 mb-4">{duyuru.mesaj}</p>}
-              <button onClick={() => { setPopupAcik(false); if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer); }}
-                className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white py-2.5 rounded font-bold transition">Kapat</button>
+              <button
+                onClick={() => { setPopupAcik(false); if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer); }}
+                className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white py-2.5 rounded font-bold transition"
+              >
+                Kapat
+              </button>
             </div>
           </div>
         </div>
