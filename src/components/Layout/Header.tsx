@@ -171,7 +171,7 @@ export default function Header({
             </div>
 
             {/* REKLAM ALANI — genişletilmiş, flex-1 ile tüm kalan alanı kaplar */}
-            <div className="hidden sm:block flex-1 h-40 sm:h-48">
+            <div className="block flex-1 h-24 sm:h-48">
               {headerReklam ? (
                 <div
                   onClick={() => headerReklam.link_url && window.open(headerReklam.link_url, '_blank')}
