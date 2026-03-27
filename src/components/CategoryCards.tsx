@@ -72,6 +72,15 @@ const kategoriData = [
     textColor: 'text-cyan-700',
     hoverColor: 'hover:bg-cyan-100',
   },
+  {
+    kategori: 'aracimi_satiyorum' as KategoriType,
+    label: 'Aracımı\nSatıyorum',
+    icon: ShoppingCart,
+    color: 'bg-cyan-50',
+    borderColor: 'border-cyan-200',
+    textColor: 'text-cyan-700',
+    hoverColor: 'hover:bg-cyan-100',
+  },
 ];
 
 export default function CategoryCards({
