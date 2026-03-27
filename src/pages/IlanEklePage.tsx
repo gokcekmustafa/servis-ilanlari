@@ -1029,7 +1029,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                         </select>
                       </div>
                       <div>
-                        <label className={lb}>Plaka</label>
+                        <label className={lb}>Plaka (Plakaniz Gizlenecektir)</label>
                         <input value={aracimiSatiyorum.plaka} placeholder="34 ABC 123"
                           onChange={(e) => setAracimiSatiyorum({ ...aracimiSatiyorum, plaka: e.target.value })} className={ic} />
                       </div>
