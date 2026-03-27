@@ -37,7 +37,6 @@ export default function Header({
     }
   }, [isLoggedIn]);
 
-  // Menü açıkken sayfanın scroll'unu kilitle
   useEffect(() => {
     document.body.style.overflow = menuAcik ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -60,25 +59,98 @@ export default function Header({
     <header className="bg-slate-100 pt-3 px-3 sm:px-4">
       <div className="max-w-5xl mx-auto">
 
-        {/* 1. ÜST ŞERİT */}
-        <div className="bg-slate-600 rounded-t-lg px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2">
-          <span className="text-slate-300 text-xs truncate">
+        {/* 1. ÜST ŞERİT — Kayıtlı kişi + Ücretsiz İlan Ver + kullanıcı butonları */}
+        <div className="bg-slate-600 rounded-t-lg px-3 sm:px-4 py-1.5 flex items-center gap-2">
+          {/* Sol: Kayıtlı kişi sayısı */}
+          <span className="text-slate-300 text-xs truncate flex-shrink-0">
             Kayıtlı Kişi:{' '}
             <span className="text-white font-bold">
               {sayi !== null ? sayi.toLocaleString('tr-TR') : '...'}
             </span>
           </span>
-          <button
-            onClick={onIlanEkle}
-            className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded transition whitespace-nowrap flex-shrink-0"
-          >
-            Ücretsiz İlan Ver
-          </button>
+
+          {/* Orta: Ücretsiz İlan Ver — esnek alanda biraz sola yaslanmış */}
+          <div className="flex-1 flex justify-center">
+            <button
+              onClick={onIlanEkle}
+              className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded transition whitespace-nowrap"
+            >
+              Ücretsiz İlan Ver
+            </button>
+          </div>
+
+          {/* Sağ: Kullanıcı butonları (masaüstü) */}
+          <div className="hidden md:flex items-center gap-1.5 flex-shrink-0">
+            {isLoggedIn ? (
+              <>
+                {/* Bildirim zili */}
+                <button onClick={onGoPanel} className="relative p-1.5 text-slate-300 hover:text-white transition">
+                  <Bell size={17} />
+                  {okunmamis > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                      {okunmamis}
+                    </span>
+                  )}
+                </button>
+                {/* Panelim */}
+                <button
+                  onClick={onGoPanel}
+                  className="flex items-center gap-1 text-slate-200 hover:text-white border border-slate-400 hover:border-slate-200 text-xs font-medium px-2.5 py-1 rounded transition"
+                >
+                  <LayoutDashboard size={13} />
+                  {isAdmin ? 'Admin' : 'Panelim'}
+                </button>
+                {/* Çıkış */}
+                <button
+                  onClick={onLogout}
+                  className="flex items-center gap-1 text-slate-300 hover:text-red-400 text-xs px-2.5 py-1 rounded transition hover:bg-slate-700"
+                >
+                  <LogOut size={13} /> Çıkış
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={onGoLogin}
+                  className="text-slate-200 hover:text-white border border-slate-400 hover:border-slate-200 text-xs font-medium px-2.5 py-1 rounded transition"
+                >
+                  Giriş Yap
+                </button>
+                <button
+                  onClick={onIlanEkle}
+                  className="text-slate-200 hover:text-white border border-slate-400 hover:border-slate-200 text-xs font-medium px-2.5 py-1 rounded transition"
+                >
+                  Kayıt Ol
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Mobil: hamburger */}
+          <div className="flex md:hidden items-center gap-1 flex-shrink-0">
+            {isLoggedIn && (
+              <button onClick={onGoPanel} className="relative p-1.5 text-slate-300">
+                <Bell size={18} />
+                {okunmamis > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {okunmamis}
+                  </span>
+                )}
+              </button>
+            )}
+            <button
+              onClick={() => setMenuAcik(!menuAcik)}
+              className="p-1.5 text-slate-300 hover:text-white transition"
+              aria-label="Menü"
+            >
+              {menuAcik ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
 
-        {/* 2. LOGO + REKLAM + BUTONLAR */}
+        {/* 2. LOGO + REKLAM — genişletilmiş */}
         <div className="bg-white border-x border-slate-200 px-3 sm:px-4 py-3">
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-stretch gap-3 sm:gap-4">
 
             {/* LOGO */}
             <div
@@ -98,15 +170,21 @@ export default function Header({
               </div>
             </div>
 
-            {/* REKLAM ALANI — sadece md+ */}
-            <div className="hidden sm:block flex-1 h-14 sm:h-16 ml-1 sm:ml-2">
+            {/* REKLAM ALANI — genişletilmiş, flex-1 ile tüm kalan alanı kaplar */}
+            <div className="hidden sm:block flex-1 h-20 sm:h-24">
               {headerReklam ? (
                 <div
                   onClick={() => headerReklam.link_url && window.open(headerReklam.link_url, '_blank')}
                   className="cursor-pointer w-full h-full rounded-lg overflow-hidden relative"
                 >
-                  <img src={headerReklam.resim_url} alt={headerReklam.baslik || 'Reklam'} className="w-full h-full object-cover rounded-lg" />
-                  <span className="absolute top-1 right-1 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">Reklam</span>
+                  <img
+                    src={headerReklam.resim_url}
+                    alt={headerReklam.baslik || 'Reklam'}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                  <span className="absolute top-1 right-1 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">
+                    Reklam
+                  </span>
                 </div>
               ) : (
                 <div className="w-full h-full bg-slate-50 border border-dashed border-slate-200 rounded-lg flex items-center justify-center">
@@ -115,57 +193,6 @@ export default function Header({
               )}
             </div>
 
-            {/* SAĞ BUTONLAR — masaüstü */}
-            <div className="hidden md:flex items-center gap-2 flex-shrink-0">
-              {isLoggedIn ? (
-                <>
-                  <button onClick={onIlanEkle} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
-                    İlan Ver
-                  </button>
-                  <button onClick={onGoPanel} className="relative p-2 text-slate-400 hover:text-slate-600 transition">
-                    <Bell size={20} />
-                    {okunmamis > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{okunmamis}</span>
-                    )}
-                  </button>
-                  <button onClick={onGoPanel} className="flex items-center gap-1.5 text-slate-600 hover:text-slate-800 border border-slate-200 hover:border-slate-300 text-sm font-medium px-3 py-2 rounded-lg transition">
-                    <LayoutDashboard size={15} />
-                    {isAdmin ? 'Admin' : 'Panelim'}
-                  </button>
-                  <button onClick={onLogout} className="flex items-center gap-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 text-sm px-3 py-2 rounded-lg transition">
-                    <LogOut size={15} />Çıkış
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button onClick={onGoLogin} className="text-slate-600 hover:text-slate-800 border border-slate-200 hover:border-slate-300 text-sm font-medium px-4 py-2 rounded-lg transition">
-                    Giriş Yap
-                  </button>
-                  <button onClick={onIlanEkle} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
-                    Kayıt Ol
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* MOBİL SAĞ — bildirim + hamburger */}
-            <div className="flex md:hidden items-center gap-1 flex-shrink-0 ml-auto">
-              {isLoggedIn && (
-                <button onClick={onGoPanel} className="relative p-2 text-slate-400">
-                  <Bell size={20} />
-                  {okunmamis > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{okunmamis}</span>
-                  )}
-                </button>
-              )}
-              <button
-                onClick={() => setMenuAcik(!menuAcik)}
-                className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition"
-                aria-label="Menü"
-              >
-                {menuAcik ? <X size={22} /> : <Menu size={22} />}
-              </button>
-            </div>
           </div>
         </div>
 
@@ -177,17 +204,11 @@ export default function Header({
               {item.label}
             </button>
           ))}
-          {isLoggedIn && (
-            <button onClick={onIlanEkle} className="ml-auto text-orange-300 hover:text-orange-200 text-sm font-medium px-4 py-2.5 transition">
-              + İlan Ver
-            </button>
-          )}
         </nav>
 
         {/* MOBİL MENÜ — tam ekran overlay */}
         {menuAcik && (
           <div className="md:hidden fixed inset-0 top-0 z-50 bg-white flex flex-col">
-            {/* Menü başlık */}
             <div className="flex items-center justify-between px-4 py-4 border-b border-slate-100 bg-slate-800">
               <div className="flex items-center gap-2">
                 <div className="bg-orange-500 rounded-lg p-1.5">
@@ -201,7 +222,6 @@ export default function Header({
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
-              {/* Nav linkleri */}
               <div className="mb-4">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 px-1">Sayfalar</p>
                 <div className="flex flex-col gap-1">
@@ -215,7 +235,6 @@ export default function Header({
                 </div>
               </div>
 
-              {/* Eylem butonları */}
               <div className="border-t border-slate-100 pt-4">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 px-1">Hesap</p>
                 {isLoggedIn ? (
