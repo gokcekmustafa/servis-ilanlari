@@ -6,7 +6,7 @@ import {
   getYakalar,
   getIlceler,
   getMahallelerByIlce,
-} from '../data/locations';
+} from '../../data/locations';
 
 type ImprovedSidebarProps = {
   selectedKategoriler: KategoriType[];
