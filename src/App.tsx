@@ -168,7 +168,11 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
   const [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
   const [selectedSehir, setSelectedSehir] = useState('');
   const [selectedIlce, setSelectedIlce] = useState('');
-  const [selectedVaris, setSelectedVaris] = useState('');
+  const [selectedVarisIl, setSelectedVarisIl] = useState('');
+  const [selectedVarisIlce, setSelectedVarisIlce] = useState('');
+  const [selectedVarisMah, setSelectedVarisMah] = useState('');
+  const [selectedKalkisIlce, setSelectedKalkisIlce] = useState('');
+  const [selectedKalkisMah, setSelectedKalkisMah] = useState('');
   const [siralama, setSiralama] = useState('yeni');
   const [duyuru, setDuyuru] = useState<any>(null);
   const [popupAcik, setPopupAcik] = useState(false);
@@ -228,20 +232,54 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
   }, [popupAcik, duyuru]);
 
   const sehirler = Array.from(new Set(
-    ilanlar.flatMap(i => i.guzergahlar.map(g => g.kalkis_il).filter(Boolean))
-  )).sort();
+  ilanlar.flatMap(i => i.guzergahlar.map(g => g.kalkis_il).filter(Boolean))
+)).sort();
 
-  const ilceler = selectedSehir
-    ? Array.from(new Set(
-        ilanlar.flatMap(i => i.guzergahlar.filter(g => g.kalkis_il === selectedSehir).map(g => g.kalkis_ilce)).filter(Boolean)
-      )).sort()
-    : [];
+const kalkisIlceler = selectedSehir
+  ? Array.from(new Set(
+      ilanlar.flatMap(i => i.guzergahlar
+        .filter(g => g.kalkis_il === selectedSehir)
+        .map(g => g.kalkis_ilce).filter(Boolean))
+    )).sort()
+  : [];
+
+const kalkisMahalleler = selectedKalkisIlce
+  ? Array.from(new Set(
+      ilanlar.flatMap(i => i.guzergahlar
+        .filter(g => g.kalkis_ilce === selectedKalkisIlce)
+        .map(g => g.kalkis_mah).filter(Boolean))
+    )).sort()
+  : [];
+
+const varisSehirleri = Array.from(new Set(
+  ilanlar.flatMap(i => i.guzergahlar.map(g => g.varis_il).filter(Boolean))
+)).sort();
+
+const varisIlceler = selectedVarisIl
+  ? Array.from(new Set(
+      ilanlar.flatMap(i => i.guzergahlar
+        .filter(g => g.varis_il === selectedVarisIl)
+        .map(g => g.varis_ilce).filter(Boolean))
+    )).sort()
+  : [];
+
+const varisMahalleler = selectedVarisIlce
+  ? Array.from(new Set(
+      ilanlar.flatMap(i => i.guzergahlar
+        .filter(g => g.varis_ilce === selectedVarisIlce)
+        .map(g => g.varis_mah).filter(Boolean))
+    )).sort()
+  : [];
 
   const handleClear = () => {
   setAktifKategori(null);
   setSelectedSehir('');
   setSelectedIlce('');
-  setSelectedVaris('');
+  setSelectedKalkisIlce('');
+  setSelectedKalkisMah('');
+  setSelectedVarisIl('');
+  setSelectedVarisIlce('');
+  setSelectedVarisMah('');
   setSiralama('yeni');
 };
 
@@ -252,6 +290,11 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
       if (aktifKategori && ilan.kategori !== aktifKategori) return false;
       if (selectedSehir && !ilan.guzergahlar.some(g => g.kalkis_il === selectedSehir)) return false;
       if (selectedIlce && !ilan.guzergahlar.some(g => g.kalkis_ilce === selectedIlce)) return false;
+      if (selectedKalkisIlce && !ilan.guzergahlar.some(g => g.kalkis_ilce === selectedKalkisIlce)) return false;
+     if (selectedKalkisMah && !ilan.guzergahlar.some(g => g.kalkis_mah === selectedKalkisMah)) return false;
+     if (selectedVarisIl && !ilan.guzergahlar.some(g => g.varis_il === selectedVarisIl)) return false;
+     if (selectedVarisIlce && !ilan.guzergahlar.some(g => g.varis_ilce === selectedVarisIlce)) return false;
+     if (selectedVarisMah && !ilan.guzergahlar.some(g => g.varis_mah === selectedVarisMah)) return false;
       return true;
     })
     .sort((a, b) =>
@@ -260,7 +303,9 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
         : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
-  const aktivFiltreVar = !!aktifKategori || !!selectedSehir || !!selectedIlce || !!selectedVaris;
+  const aktivFiltreVar = !!aktifKategori || !!selectedSehir || !!selectedIlce
+  || !!selectedKalkisIlce || !!selectedKalkisMah
+  || !!selectedVarisIl || !!selectedVarisIlce || !!selectedVarisMah;
 
   // İlan listesini her 8 elemandan sonra reklam ekleyerek oluştur
   const ilanListesiWithAds = () => {
@@ -377,28 +422,71 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
 
               <div>
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Konum</span>
-                </div>
-                <div className="p-3 space-y-2">
-                  <select
-                    value={selectedSehir}
-                    onChange={(e) => { setSelectedSehir(e.target.value); setSelectedIlce(''); }}
-                    className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
-                  >
-                    <option value="">Tüm Şehirler</option>
-                    {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                  {selectedSehir && ilceler.length > 0 && (
-                    <select
-                      value={selectedIlce}
-                      onChange={(e) => setSelectedIlce(e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
-                    >
-                      <option value="">Tüm İlçeler</option>
-                      {ilceler.map(i => <option key={i} value={i}>{i}</option>)}
-                    </select>
-                  )}
-                </div>
+  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Kalkış</span>
+</div>
+<div className="p-3 space-y-2">
+  <select
+    value={selectedSehir}
+    onChange={(e) => { setSelectedSehir(e.target.value); setSelectedIlce(''); setSelectedKalkisIlce(''); setSelectedKalkisMah(''); }}
+    className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+  >
+    <option value="">Tüm Şehirler</option>
+    {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
+  </select>
+  {selectedSehir && kalkisIlceler.length > 0 && (
+    <select
+      value={selectedKalkisIlce}
+      onChange={(e) => { setSelectedKalkisIlce(e.target.value); setSelectedKalkisMah(''); }}
+      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+    >
+      <option value="">Tüm İlçeler</option>
+      {kalkisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
+    </select>
+  )}
+  {selectedKalkisIlce && kalkisMahalleler.length > 0 && (
+    <select
+      value={selectedKalkisMah}
+      onChange={(e) => setSelectedKalkisMah(e.target.value)}
+      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+    >
+      <option value="">Tüm Mahalleler</option>
+      {kalkisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
+    </select>
+  )}
+</div>
+<div className="px-3 py-2 bg-gray-50 border-b border-gray-100 border-t border-gray-100">
+  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Varış</span>
+</div>
+<div className="p-3 space-y-2">
+  <select
+    value={selectedVarisIl}
+    onChange={(e) => { setSelectedVarisIl(e.target.value); setSelectedVarisIlce(''); setSelectedVarisMah(''); }}
+    className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+  >
+    <option value="">Tüm Şehirler</option>
+    {varisSehirleri.map(s => <option key={s} value={s}>{s}</option>)}
+  </select>
+  {selectedVarisIl && varisIlceler.length > 0 && (
+    <select
+      value={selectedVarisIlce}
+      onChange={(e) => { setSelectedVarisIlce(e.target.value); setSelectedVarisMah(''); }}
+      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+    >
+      <option value="">Tüm İlçeler</option>
+      {varisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
+    </select>
+  )}
+  {selectedVarisIlce && varisMahalleler.length > 0 && (
+    <select
+      value={selectedVarisMah}
+      onChange={(e) => setSelectedVarisMah(e.target.value)}
+      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+    >
+      <option value="">Tüm Mahalleler</option>
+      {varisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
+    </select>
+  )}
+</div>
               </div>
 
               {aktivFiltreVar && (
@@ -496,34 +584,62 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                 </div>
               </div>
               <div>
-                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Şehir</p>
-                <select value={selectedSehir} onChange={(e) => { setSelectedSehir(e.target.value); setSelectedIlce(''); }}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
-                  <option value="">Tüm Şehirler</option>
-                  {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              {selectedSehir && ilceler.length > 0 && (
                 <div>
-                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">İlçe</p>
-                  <select value={selectedIlce} onChange={(e) => setSelectedIlce(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
-                    <option value="">Tüm İlçeler</option>
-                    {ilceler.map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
-                </div>
-              )}
-              <div>
-  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Varış Şehri</p>
-  <select
-    value={selectedVaris}
-    onChange={(e) => setSelectedVaris(e.target.value)}
-    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white"
-  >
-    <option value="">Tümü</option>
+  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Kalkış Şehri</p>
+  <select value={selectedSehir} onChange={(e) => { setSelectedSehir(e.target.value); setSelectedKalkisIlce(''); setSelectedKalkisMah(''); }}
+    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+    <option value="">Tüm Şehirler</option>
     {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
   </select>
 </div>
+{selectedSehir && kalkisIlceler.length > 0 && (
+  <div>
+    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Kalkış İlçesi</p>
+    <select value={selectedKalkisIlce} onChange={(e) => { setSelectedKalkisIlce(e.target.value); setSelectedKalkisMah(''); }}
+      className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+      <option value="">Tüm İlçeler</option>
+      {kalkisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
+    </select>
+  </div>
+)}
+{selectedKalkisIlce && kalkisMahalleler.length > 0 && (
+  <div>
+    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Kalkış Mahallesi</p>
+    <select value={selectedKalkisMah} onChange={(e) => setSelectedKalkisMah(e.target.value)}
+      className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+      <option value="">Tüm Mahalleler</option>
+      {kalkisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
+    </select>
+  </div>
+)}
+<div>
+  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Varış Şehri</p>
+  <select value={selectedVarisIl} onChange={(e) => { setSelectedVarisIl(e.target.value); setSelectedVarisIlce(''); setSelectedVarisMah(''); }}
+    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+    <option value="">Tüm Şehirler</option>
+    {varisSehirleri.map(s => <option key={s} value={s}>{s}</option>)}
+  </select>
+</div>
+{selectedVarisIl && varisIlceler.length > 0 && (
+  <div>
+    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Varış İlçesi</p>
+    <select value={selectedVarisIlce} onChange={(e) => { setSelectedVarisIlce(e.target.value); setSelectedVarisMah(''); }}
+      className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+      <option value="">Tüm İlçeler</option>
+      {varisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
+    </select>
+  </div>
+)}
+{selectedVarisIlce && varisMahalleler.length > 0 && (
+  <div>
+    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Varış Mahallesi</p>
+    <select value={selectedVarisMah} onChange={(e) => setSelectedVarisMah(e.target.value)}
+      className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+      <option value="">Tüm Mahalleler</option>
+      {varisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
+    </select>
+  </div>
+)}
               <div className="pt-2 space-y-2">
                 <button onClick={() => setFiltreAcik(false)} className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white font-bold py-2.5 rounded transition text-sm">Uygula</button>
                 {aktivFiltreVar && (
