@@ -1,10 +1,8 @@
-type FieldType = 'text' | 'number' | 'textarea';
-
-interface FormField {
+export type FormField = {
   name: string;
   label: string;
-  type: FieldType;
-}
+  type: 'text' | 'number' | 'textarea';
+};
 
 export const kategoriFormSchema: Record<string, FormField[]> = {
   isim_var_arac: [
