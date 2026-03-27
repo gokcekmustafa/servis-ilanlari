@@ -374,7 +374,7 @@ const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(()
     ekbilgiler = { ...hostesimIs, profil_resmi: resimUrl };
   } else if (selectedKategori === 'soforum_is') {
     ekbilgiler = { ...soforumIs, profil_resmi: resimUrl };
-  } else if (selectedKategori === 'plaka_satiyorum') {
+  } else if (selectedKategori === '') {
     ekbilgiler = plakaSatiyorum;
   }
 
@@ -987,6 +987,45 @@ const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(()
                           <input type="checkbox"
                             checked={(plakaSatiyorum as any)[item.key]}
                             onChange={(e) => setPlakaSatiyorum({ ...plakaSatiyorum, [item.key]: e.target.checked })}
+                            className="accent-orange-500 w-4 h-4" />
+                          {item.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* ARACIMI SATIYORUM */}
+                {selectedKategori === 'aracimi_satiyorum' && (
+                  <div className="border border-slate-200 rounded-xl p-4 md:p-5">
+                    <h3 className="font-semibold text-slate-700 mb-4">Arac Plakasi (Plakaniz Gizlenecektir)</h3>
+                    <div className="flex items-center gap-2 mb-4 flex-wrap">
+                      <input value={AracimiSatiyorum.plaka_il} placeholder="34" maxLength={2}
+                        onChange={(e) => setAracimiSatiyorum({ ...plakaSatiyorum, plaka_il: e.target.value })}
+                        className="w-16 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                      <input value={plakaSatiyorum.plaka_harf} placeholder="LAL" maxLength={3}
+                        onChange={(e) => setAracimiSatiyorum({ ...plakaSatiyorum, plaka_harf: e.target.value.toUpperCase() })}
+                        className="w-20 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                      <input value={plakaSatiyorum.plaka_no} placeholder="454" maxLength={4}
+                        onChange={(e) => setAracimiSatiyorum({ ...plakaSatiyorum, plaka_no: e.target.value })}
+                        className="w-20 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                      <div className="flex items-center gap-2">
+                        <input type="number" value={plakaSatiyorum.ucret} placeholder="1.000.000"
+                          onChange={(e) => setAracimiSatiyorum({ ...plakaSatiyorum, ucret: e.target.value })}
+                          className="w-36 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                        <span className="text-sm text-slate-500 font-medium">TL</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-4">
+                      {[
+                        { key: 'plakayla_birlikte', label: 'Plakayla Birlikte' },
+                        { key: 'yol_belgesi_var', label: 'Yol Belgesi Var' },
+                        { key: 'noter_satisi', label: 'Noter Satisi' },
+                        { key: 'hisseli', label: 'Hisseli' },
+                      ].map((item) => (
+                        <label key={item.key} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                          <input type="checkbox"
+                            checked={(AracimiSatiyorum as any)[item.key]}
+                            onChange={(e) => setAracimiSatiyorum({ ...plakaSatiyorum, [item.key]: e.target.checked })}
                             className="accent-orange-500 w-4 h-4" />
                           {item.label}
                         </label>
