@@ -390,10 +390,10 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                 </div>
                 <button
                   onClick={() => setAktifKategori(null)}
-                  className={"w-full flex items-center justify-between px-3 py-2 text-xs transition hover:bg-orange-50 " + (!aktifKategori ? "text-[#f7971e] font-semibold bg-orange-50 border-l-4 border-[#f7971e]" : "text-gray-600")}
+                  className={"w-full flex items-center justify-between px-3 py-1.5 text-xs transition hover:bg-orange-50 " + (!aktifKategori ? "text-[#f7971e] font-semibold bg-orange-50 border-l-4 border-[#f7971e]" : "text-gray-600")}
                 >
-                  <span>Tüm Kategoriler</span>
-                  <span className={"text-[10px] px-1.5 py-0.5 rounded " + (!aktifKategori ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-500")}>{ilanlar.length}</span>
+                  <span className="truncate">Tüm Kategoriler</span>
+                  <span className={"flex-shrink-0 ml-1 text-[10px] px-1.5 py-0.5 rounded " + (!aktifKategori ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-500")}>{ilanlar.length}</span>
                 </button>
                 {KATEGORILER.map(kat => {
                   const sayi = kategoriSayisi(kat.id);
@@ -402,36 +402,42 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                     <button
                       key={kat.id}
                       onClick={() => setAktifKategori(isActive ? null : kat.id)}
-                      className={"w-full flex items-center justify-between px-3 py-2 text-xs transition hover:bg-orange-50 border-t border-gray-50 " + (isActive ? "text-[#f7971e] font-semibold bg-orange-50 border-l-4 border-[#f7971e]" : "text-gray-600")}
+                      className={"w-full flex items-center justify-between px-3 py-1.5 text-xs transition hover:bg-orange-50 border-t border-gray-50 " + (isActive ? "text-[#f7971e] font-semibold bg-orange-50 border-l-4 border-[#f7971e]" : "text-gray-600")}
                     >
-                      <span className="flex items-center gap-1.5"><span>{kat.icon}</span>{kat.label}</span>
-                      <span className={"text-[10px] px-1.5 py-0.5 rounded " + (isActive ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-500")}>{sayi}</span>
+                      <span className="flex items-center gap-1 min-w-0">
+                        <span className="flex-shrink-0">{kat.icon}</span>
+                        <span className="truncate">{kat.label}</span>
+                      </span>
+                      <span className={"flex-shrink-0 ml-1 text-[10px] px-1.5 py-0.5 rounded " + (isActive ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-500")}>{sayi}</span>
                     </button>
                   );
                 })}
               </div>
 
-              {/* KALKIŞ */}
+              {/* KONUMA GÖRE */}
               <div className="border-b border-gray-100">
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Kalkış</span>
+                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Konuma Göre</span>
                 </div>
-                <div className="p-3 space-y-2">
+                <div className="px-3 pt-2 pb-1">
+                  <span className="text-[10px] font-semibold text-orange-500 uppercase tracking-wide">📍 Kalkış</span>
+                </div>
+                <div className="px-3 pb-2 space-y-1.5">
                   <select
                     value={selectedSehir}
                     onChange={(e) => { setSelectedSehir(e.target.value); setSelectedKalkisIlce(''); setSelectedKalkisMah(''); }}
-                    className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                    className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
                   >
-                    <option value="">Tüm Şehirler</option>
+                    <option value="">Şehir</option>
                     {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                   {selectedSehir && kalkisIlceler.length > 0 && (
                     <select
                       value={selectedKalkisIlce}
                       onChange={(e) => { setSelectedKalkisIlce(e.target.value); setSelectedKalkisMah(''); }}
-                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
                     >
-                      <option value="">Tüm İlçeler</option>
+                      <option value="">İlçe</option>
                       {kalkisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
                     </select>
                   )}
@@ -439,36 +445,32 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                     <select
                       value={selectedKalkisMah}
                       onChange={(e) => setSelectedKalkisMah(e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
                     >
-                      <option value="">Tüm Mahalleler</option>
+                      <option value="">Mahalle</option>
                       {kalkisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   )}
                 </div>
-              </div>
-
-              {/* VARIŞ */}
-              <div className="border-b border-gray-100">
-                <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Varış</span>
+                <div className="px-3 pt-1 pb-1 border-t border-gray-50">
+                  <span className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide">🏁 Varış</span>
                 </div>
-                <div className="p-3 space-y-2">
+                <div className="px-3 pb-3 space-y-1.5">
                   <select
                     value={selectedVarisIl}
                     onChange={(e) => { setSelectedVarisIl(e.target.value); setSelectedVarisIlce(''); setSelectedVarisMah(''); }}
-                    className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                    className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
                   >
-                    <option value="">Tüm Şehirler</option>
+                    <option value="">Şehir</option>
                     {varisSehirleri.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                   {selectedVarisIl && varisIlceler.length > 0 && (
                     <select
                       value={selectedVarisIlce}
                       onChange={(e) => { setSelectedVarisIlce(e.target.value); setSelectedVarisMah(''); }}
-                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
                     >
-                      <option value="">Tüm İlçeler</option>
+                      <option value="">İlçe</option>
                       {varisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
                     </select>
                   )}
@@ -476,9 +478,9 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                     <select
                       value={selectedVarisMah}
                       onChange={(e) => setSelectedVarisMah(e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
                     >
-                      <option value="">Tüm Mahalleler</option>
+                      <option value="">Mahalle</option>
                       {varisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   )}
@@ -582,69 +584,62 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                 </div>
               </div>
 
-              {/* Kalkış Şehri */}
-              <div>
-                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Kalkış Şehri</p>
-                <select value={selectedSehir} onChange={(e) => { setSelectedSehir(e.target.value); setSelectedKalkisIlce(''); setSelectedKalkisMah(''); }}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
-                  <option value="">Tüm Şehirler</option>
-                  {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+              {/* Konuma Göre */}
+              <div className="border border-gray-100 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 px-3 py-2 border-b border-gray-100">
+                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Konuma Göre</p>
+                </div>
+                {/* Kalkış */}
+                <div className="p-3 pb-2">
+                  <p className="text-[10px] font-semibold text-orange-500 uppercase tracking-wide mb-1.5">📍 Kalkış</p>
+                  <div className="space-y-1.5">
+                    <select value={selectedSehir} onChange={(e) => { setSelectedSehir(e.target.value); setSelectedKalkisIlce(''); setSelectedKalkisMah(''); }}
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                      <option value="">Şehir</option>
+                      {sehirler.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    {selectedSehir && kalkisIlceler.length > 0 && (
+                      <select value={selectedKalkisIlce} onChange={(e) => { setSelectedKalkisIlce(e.target.value); setSelectedKalkisMah(''); }}
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                        <option value="">İlçe</option>
+                        {kalkisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
+                      </select>
+                    )}
+                    {selectedKalkisIlce && kalkisMahalleler.length > 0 && (
+                      <select value={selectedKalkisMah} onChange={(e) => setSelectedKalkisMah(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                        <option value="">Mahalle</option>
+                        {kalkisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    )}
+                  </div>
+                </div>
+                {/* Varış */}
+                <div className="px-3 pt-2 pb-3 border-t border-gray-100">
+                  <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide mb-1.5">🏁 Varış</p>
+                  <div className="space-y-1.5">
+                    <select value={selectedVarisIl} onChange={(e) => { setSelectedVarisIl(e.target.value); setSelectedVarisIlce(''); setSelectedVarisMah(''); }}
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                      <option value="">Şehir</option>
+                      {varisSehirleri.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    {selectedVarisIl && varisIlceler.length > 0 && (
+                      <select value={selectedVarisIlce} onChange={(e) => { setSelectedVarisIlce(e.target.value); setSelectedVarisMah(''); }}
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                        <option value="">İlçe</option>
+                        {varisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
+                      </select>
+                    )}
+                    {selectedVarisIlce && varisMahalleler.length > 0 && (
+                      <select value={selectedVarisMah} onChange={(e) => setSelectedVarisMah(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                        <option value="">Mahalle</option>
+                        {varisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    )}
+                  </div>
+                </div>
               </div>
-
-              {selectedSehir && kalkisIlceler.length > 0 && (
-                <div>
-                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Kalkış İlçesi</p>
-                  <select value={selectedKalkisIlce} onChange={(e) => { setSelectedKalkisIlce(e.target.value); setSelectedKalkisMah(''); }}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
-                    <option value="">Tüm İlçeler</option>
-                    {kalkisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
-                </div>
-              )}
-
-              {selectedKalkisIlce && kalkisMahalleler.length > 0 && (
-                <div>
-                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Kalkış Mahallesi</p>
-                  <select value={selectedKalkisMah} onChange={(e) => setSelectedKalkisMah(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
-                    <option value="">Tüm Mahalleler</option>
-                    {kalkisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                </div>
-              )}
-
-              {/* Varış Şehri */}
-              <div>
-                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Varış Şehri</p>
-                <select value={selectedVarisIl} onChange={(e) => { setSelectedVarisIl(e.target.value); setSelectedVarisIlce(''); setSelectedVarisMah(''); }}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
-                  <option value="">Tüm Şehirler</option>
-                  {varisSehirleri.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-
-              {selectedVarisIl && varisIlceler.length > 0 && (
-                <div>
-                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Varış İlçesi</p>
-                  <select value={selectedVarisIlce} onChange={(e) => { setSelectedVarisIlce(e.target.value); setSelectedVarisMah(''); }}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
-                    <option value="">Tüm İlçeler</option>
-                    {varisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
-                </div>
-              )}
-
-              {selectedVarisIlce && varisMahalleler.length > 0 && (
-                <div>
-                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Varış Mahallesi</p>
-                  <select value={selectedVarisMah} onChange={(e) => setSelectedVarisMah(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
-                    <option value="">Tüm Mahalleler</option>
-                    {varisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                </div>
-              )}
 
               <div className="pt-2 space-y-2">
                 <button onClick={() => setFiltreAcik(false)} className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white font-bold py-2.5 rounded transition text-sm">Uygula</button>
