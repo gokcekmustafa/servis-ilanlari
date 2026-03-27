@@ -15,6 +15,7 @@ const kategoriler = [
   { id: 'hostesim_is' as KategoriType, label: 'Hostesim Is Ariyorum', color: 'border-pink-400 bg-pink-50 text-pink-700' },
   { id: 'soforum_is' as KategoriType, label: 'Soforum Is Ariyorum', color: 'border-yellow-400 bg-yellow-50 text-yellow-700' },
   { id: 'plaka_satiyorum' as KategoriType, label: 'Plakami Satiyorum', color: 'border-red-400 bg-red-50 text-red-700' },
+  { id: 'aracimi_satiyorum_satiyorum' as KategoriType, label: 'Aracimi Satiyorum', color: 'border-red-400 bg-red-50 text-red-700' },
 ];
 
 const kategoriRenk: Record<string, string> = {
