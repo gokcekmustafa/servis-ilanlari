@@ -150,18 +150,18 @@ export default function Header({
 
         {/* 2. LOGO + REKLAM — genişletilmiş */}
         <div className="bg-white border-x border-slate-200 px-3 sm:px-4 py-3">
-          <div className="flex items-stretch gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
 
             {/* LOGO */}
             <div
               className="flex items-center gap-1.5 sm:gap-2 cursor-pointer flex-shrink-0"
               onClick={() => onNavigate('home')}
             >
-              <div className="bg-orange-500 rounded-lg p-1.5 sm:p-2">
-                <Truck className="text-white" size={20} />
+              <div className="bg-orange-500 rounded-lg p-1 sm:p-1.5">
+                <Truck className="text-white" size={16} />
               </div>
               <div className="leading-tight">
-                <div className="text-slate-800 font-bold text-lg sm:text-2xl tracking-tight">
+                <div className="text-slate-800 font-bold text-base sm:text-xl tracking-tight">
                   salonum<span className="text-orange-500">.site</span>
                 </div>
                 <div className="text-slate-400 text-[10px] sm:text-xs hidden sm:block">
@@ -171,7 +171,7 @@ export default function Header({
             </div>
 
             {/* REKLAM ALANI — genişletilmiş, flex-1 ile tüm kalan alanı kaplar */}
-            <div className="block flex-1 h-24 sm:h-48">
+            <div className="block flex-1 h-20 sm:h-48">
               {headerReklam ? (
                 <div
                   onClick={() => headerReklam.link_url && window.open(headerReklam.link_url, '_blank')}
