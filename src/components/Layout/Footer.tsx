@@ -12,7 +12,7 @@ export default function Footer({ onNavigate }: FooterProps) {
 
         {/* ANA FOOTER */}
         <div className="bg-slate-700 rounded-t-lg px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
 
             {/* LOGO + ACIKLAMA */}
             <div className="md:col-span-1">
@@ -31,32 +31,6 @@ export default function Footer({ onNavigate }: FooterProps) {
                 Servis araci ve sofor ilanlari platformu. Turkiye genelinde
                 binlerce ilan ile hizmetinizdeyiz.
               </p>
-            </div>
-
-            {/* ARAC DURUMUNA GORE */}
-            <div>
-              <h3 className="text-orange-400 font-semibold text-xs uppercase tracking-wider mb-3">
-                Arac Durumuna Gore
-              </h3>
-              <ul className="space-y-2">
-                {[
-                  'Isime Arac Ariyorum',
-                  'Aracima Is Ariyorum',
-                  'Sofor Ariyorum',
-                  'Soforum Is Ariyorum',
-                  'Hostesim Is Ariyorum',
-                  'Hostes Ariyorum',
-                ].map((item) => (
-                  <li key={item}>
-                    <button
-                      onClick={() => onNavigate('home')}
-                      className="text-slate-400 hover:text-white text-xs transition"
-                    >
-                      {item}
-                    </button>
-                  </li>
-                ))}
-              </ul>
             </div>
 
             {/* GIZLILIK */}
