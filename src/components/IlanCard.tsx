@@ -88,7 +88,7 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
             </div>
             {ucret && (
               <div className="flex-shrink-0 text-right">
-                <span className="text-base font-bold text-[#f7971e]">
+                <span className="text-base font-bold text-[#e05a2b]">
                   {Number(ucret).toLocaleString('tr-TR')} ₺
                 </span>
                 <span className="text-xs text-gray-400 ml-1">/{ucretTipi}</span>
@@ -124,8 +124,9 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
           {/* Alt bilgi */}
           <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-400">
             {konum && (
-              <span className="flex items-center gap-1"><MapPin size={11} /> {konum}</span>
-            )}
+              <span className="flex items-center gap-1">
+  <MapPin size={11} /> {konum || 'Konum belirtilmemiş'}
+</span>
             {kapasite && (
               <span className="flex items-center gap-1"><Tag size={11} /> {kapasite} kişi</span>
             )}
@@ -148,9 +149,9 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
                 e.stopPropagation();
                 if (telefon) window.open(`https://wa.me/90${telefon.replace(/\D/g, '').replace(/^0/, '')}`, '_blank');
               }}
-              className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1db954] text-white text-[11px] font-semibold px-3 py-1.5 rounded transition"
-            >
-              <MessageCircle size={12} /> WhatsApp
+              className="flex items-center justify-center gap-1.5 bg-white hover:bg-gray-50 text-[#25D366] border border-[#25D366] text-[11px] font-semibold px-3 py-1.5 rounded transition"
+>
+  <MessageCircle size={12} className="text-[#25D366]" /> WhatsApp
             </button>
             <button
               onClick={(e) => {
@@ -169,9 +170,9 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
       <div className="sm:hidden flex border-t border-gray-100 divide-x divide-gray-100">
         <button
           onClick={(e) => { e.stopPropagation(); if (telefon) window.open(`https://wa.me/90${telefon.replace(/\D/g,'').replace(/^0/,'')}`, '_blank'); }}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-white bg-[#25D366] hover:bg-[#1db954] transition"
-        >
-          <MessageCircle size={12} /> WhatsApp
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-[#25D366] bg-white hover:bg-gray-50 border-r border-[#25D366] transition"
+>
+  <MessageCircle size={12} className="text-[#25D366]" /> WhatsApp
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); if (telefon) window.location.href = `tel:${telefon}`; }}
