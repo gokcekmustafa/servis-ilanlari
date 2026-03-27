@@ -168,6 +168,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
   const [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
   const [selectedSehir, setSelectedSehir] = useState('');
   const [selectedIlce, setSelectedIlce] = useState('');
+  const [selectedVaris, setSelectedVaris] = useState('');
   const [siralama, setSiralama] = useState('yeni');
   const [duyuru, setDuyuru] = useState<any>(null);
   const [popupAcik, setPopupAcik] = useState(false);
@@ -237,11 +238,12 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
     : [];
 
   const handleClear = () => {
-    setAktifKategori(null);
-    setSelectedSehir('');
-    setSelectedIlce('');
-    setSiralama('yeni');
-  };
+  setAktifKategori(null);
+  setSelectedSehir('');
+  setSelectedIlce('');
+  setSelectedVaris('');
+  setSiralama('yeni');
+};
 
   const kategoriSayisi = (id: KategoriType) => ilanlar.filter(i => i.kategori === id).length;
 
@@ -258,7 +260,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
         : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
-  const aktivFiltreVar = !!aktifKategori || !!selectedSehir || !!selectedIlce;
+  const aktivFiltreVar = !!aktifKategori || !!selectedSehir || !!selectedIlce || !!selectedVaris;
 
   // İlan listesini her 8 elemandan sonra reklam ekleyerek oluştur
   const ilanListesiWithAds = () => {
