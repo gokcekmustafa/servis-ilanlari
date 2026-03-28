@@ -181,27 +181,28 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
   return (
     <div className="px-3 py-2">
       {hata && <p className="text-red-500 text-[11px] mb-1.5">{hata}</p>}
+
       {/* Masaüstü: tek satır */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-          <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-3 py-2 border-r border-gray-200">GSM</span>
+      <div className="hidden sm:flex items-center gap-2">
+        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-1">
+          <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-3 py-2 border-r border-gray-200 whitespace-nowrap">GSM</span>
           <input
             type="tel"
             value={telefon}
             onChange={e => setTelefon(e.target.value)}
             placeholder="GSM numaranızı yazın"
-            className="text-xs px-3 py-2 w-44 focus:outline-none text-gray-700"
+            className="text-xs px-3 py-2 flex-1 min-w-0 focus:outline-none text-gray-700"
           />
         </div>
-        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-          <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-3 py-2 border-r border-gray-200">Şifre</span>
+        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-1">
+          <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-3 py-2 border-r border-gray-200 whitespace-nowrap">Şifre</span>
           <input
             type={goster ? 'text' : 'password'}
             value={sifre}
             onChange={e => setSifre(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            placeholder="Lütfen şifrenizi yazın"
-            className="text-xs px-3 py-2 w-40 focus:outline-none text-gray-700"
+            placeholder="Şifrenizi yazın"
+            className="text-xs px-3 py-2 flex-1 min-w-0 focus:outline-none text-gray-700"
           />
           <button onClick={() => setGoster(!goster)} className="px-2 text-gray-400 hover:text-gray-600">
             {goster ? '🙈' : '👁️'}
@@ -218,50 +219,55 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
         >
           {yukleniyor ? '...' : 'Giriş'}
         </button>
-        <div className="flex flex-col text-right ml-auto flex-shrink-0">
+        <div className="flex flex-col text-right flex-shrink-0">
           <button className="text-[11px] text-gray-500 hover:text-gray-700 transition">Şifremi Unuttum</button>
           <button onClick={onGoRegister} className="text-[11px] text-[#f7971e] hover:underline font-medium">Kayıt Ol</button>
         </div>
       </div>
+
       {/* Mobil: iki satır */}
-      <div className="hidden flex flex-col gap-2">
+      <div className="sm:hidden flex flex-col gap-2">
         <div className="flex gap-2">
-          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-1">
-            <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-2 border-r border-gray-200">GSM</span>
+          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-1 min-w-0">
+            <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-2 border-r border-gray-200 whitespace-nowrap">GSM</span>
             <input
               type="tel"
               value={telefon}
               onChange={e => setTelefon(e.target.value)}
               placeholder="GSM numaranızı yazın"
-              className="text-xs px-2 py-2 flex-1 focus:outline-none text-gray-700 min-w-0"
+              className="text-xs px-2 py-2 flex-1 min-w-0 focus:outline-none text-gray-700"
             />
           </div>
-          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-1">
-            <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-2 border-r border-gray-200">Şifre</span>
+          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-1 min-w-0">
+            <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-2 border-r border-gray-200 whitespace-nowrap">Şifre</span>
             <input
               type={goster ? 'text' : 'password'}
               value={sifre}
               onChange={e => setSifre(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleLogin()}
               placeholder="Şifrenizi yazın"
-              className="text-xs px-2 py-2 flex-1 focus:outline-none text-gray-700 min-w-0"
+              className="text-xs px-2 py-2 flex-1 min-w-0 focus:outline-none text-gray-700"
             />
+            <button onClick={() => setGoster(!goster)} className="px-2 text-gray-400 hover:text-gray-600">
+              {goster ? '🙈' : '👁️'}
+            </button>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer flex-shrink-0">
             <input type="checkbox" className="accent-orange-500 w-3.5 h-3.5" />
             Beni Hatırla
           </label>
           <button
             onClick={handleLogin}
             disabled={yukleniyor}
-            className="bg-[#f7971e] hover:bg-[#e8881a] text-white text-xs font-bold px-5 py-2 rounded-lg transition disabled:opacity-50 flex-1"
+            className="bg-[#f7971e] hover:bg-[#e8881a] text-white text-xs font-bold px-4 py-2 rounded-lg transition disabled:opacity-50 flex-1"
           >
             {yukleniyor ? '...' : 'Giriş'}
           </button>
-          <button className="text-[11px] text-gray-500 hover:text-gray-700">Şifremi Unuttum</button>
-          <button onClick={onGoRegister} className="text-[11px] text-[#f7971e] hover:underline font-medium">Kayıt Ol</button>
+          <button onClick={onGoRegister} className="text-[11px] text-[#f7971e] hover:underline font-medium flex-shrink-0">
+            Kayıt Ol
+          </button>
         </div>
       </div>
     </div>
