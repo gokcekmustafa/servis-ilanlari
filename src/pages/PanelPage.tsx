@@ -33,7 +33,7 @@ const MAX_RESIM = 6;
 // Konum (il/ilçe/mahalle) gösterir mi?
 const KONUMLU_KATEGORILER = ['hostesim_is', 'soforum_is', 'plaka_satiyorum', 'aracimi_satiyorum'];
 // Resim yükleme gerektiren kategoriler
-const RESIMLI_KATEGORILER = ['aracimi_satiyorum', 'aracim_var_is'];
+const RESIMLI_KATEGORILER = ['aracimi_satiyorum', 'aracim_var_is', 'hostesim_is', 'soforum_is'];
 
 const ic = 'w-full border border-slate-200 rounded-xl px-3 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
 const lb = 'text-xs font-medium text-slate-500 mb-1 block';
@@ -283,6 +283,9 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
   const [konumIl, setKonumIl] = useState(konumGuzergah.kalkis_il || '');
   const [konumIlce, setKonumIlce] = useState(konumGuzergah.kalkis_ilce || '');
   const [konumMah, setKonumMah] = useState(konumGuzergah.kalkis_mah || '');
+  const [guzergahlar, setGuzergahlar] = useState<any[]>(
+  ilan.guzergahlar && ilan.guzergahlar.length > 0 ? ilan.guzergahlar : [{ giris_saati: '', kalkis_il: '', kalkis_ilce: '', kalkis_mah: '', varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }]
+);
 
   const handleKaydet = async () => {
     let yeniEkbilgiler: any = { ...ek };
@@ -301,6 +304,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
 
     if (kategori === 'isim_var_arac') {
       yeniEkbilgiler = { ...isimVarArac };
+      yeniGuzergahlar = guzergahlar;
     } else if (kategori === 'aracim_var_is') {
       yeniEkbilgiler = { ...aracimVarIs, resimler: yuklenenUrller };
     } else if (kategori === 'sofor_ariyorum') {
@@ -308,10 +312,10 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
     } else if (kategori === 'hostes_ariyorum') {
       yeniEkbilgiler = { ...hostesAriyorum };
     } else if (kategori === 'hostesim_is') {
-      yeniEkbilgiler = { ...hostesimIs };
+  yeniEkbilgiler = { ...hostesimIs, resimler: yuklenenUrller };
       yeniGuzergahlar = [{ giris_saati: '', kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah, varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }];
     } else if (kategori === 'soforum_is') {
-      yeniEkbilgiler = { ...soforumIs };
+  yeniEkbilgiler = { ...soforumIs, resimler: yuklenenUrller };
       yeniGuzergahlar = [{ giris_saati: '', kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah, varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }];
     } else if (kategori === 'plaka_satiyorum') {
       yeniEkbilgiler = { ...plakaSatiyorum };
@@ -369,6 +373,39 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
             </div>
           </div>
         </div>
+      {kategori === 'isim_var_arac' && (
+  <div className="border border-slate-200 rounded-xl p-4">
+    <div className="flex items-center justify-between mb-3">
+      <h3 className="font-semibold text-slate-700 text-sm">Güzergahlar</h3>
+      <button type="button" onClick={() => setGuzergahlar([...guzergahlar, { giris_saati: '', kalkis_il: '', kalkis_ilce: '', kalkis_mah: '', varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }])}
+        className="text-xs bg-slate-800 text-white px-3 py-1.5 rounded-lg">+ Güzergah Ekle</button>
+    </div>
+    {guzergahlar.map((g, i) => (
+      <div key={i} className="border border-slate-100 rounded-xl p-3 mb-3 bg-slate-50">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-xs font-semibold text-slate-500">Güzergah {i + 1}</span>
+          {guzergahlar.length > 1 && (
+            <button onClick={() => setGuzergahlar(guzergahlar.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600"><X size={14} /></button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <div><label className={lb}>Giriş Saati</label><input type="time" value={g.giris_saati} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, giris_saati: e.target.value} : x))} className={ic}/></div>
+          <div><label className={lb}>Çıkış Saati</label><input type="time" value={g.cikis_saati} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, cikis_saati: e.target.value} : x))} className={ic}/></div>
+        </div>
+        <p className="text-xs font-semibold text-slate-400 mb-1">Kalkış</p>
+        <IlIlceMahalle il={g.kalkis_il} ilce={g.kalkis_ilce} mah={g.kalkis_mah}
+          onIlChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, kalkis_il: v, kalkis_ilce: '', kalkis_mah: ''} : x))}
+          onIlceChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, kalkis_ilce: v, kalkis_mah: ''} : x))}
+          onMahChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, kalkis_mah: v} : x))} />
+        <p className="text-xs font-semibold text-slate-400 mb-1 mt-2">Varış</p>
+        <IlIlceMahalle il={g.varis_il} ilce={g.varis_ilce} mah={g.varis_mah}
+          onIlChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, varis_il: v, varis_ilce: '', varis_mah: ''} : x))}
+          onIlceChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, varis_ilce: v, varis_mah: ''} : x))}
+          onMahChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, varis_mah: v} : x))} />
+      </div>
+    ))}
+  </div>
+)}
       )}
 
       {/* ARACIM VAR İŞ */}
