@@ -146,7 +146,7 @@ function ListeReklamKarti({ reklam }: { reklam: any }) {
         <img
           src={reklam.resim_url}
           alt={reklam.baslik || 'Reklam'}
-          className="w-full h-28 sm:h-36 object-cover"
+          className="w-full h-28 sm:h-36 object-contain"
         />
       ) : (
         <div className="w-full h-28 sm:h-36 bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center">
