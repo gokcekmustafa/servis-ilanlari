@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   kullaniciIlanlari, ilanSil, ilanGuncelle, araclarGetir, aracEkle, aracSil,
   favorileriGetir, favoriKaldir, gelenMesajlar, okunmamisMesajSayisi,
@@ -10,7 +10,7 @@ import { mevcutKullanici } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import {
   Eye, Trash2, Plus, Heart, Car, MessageSquare,
-  HelpCircle, User, LogOut, Bell, ChevronLeft, Menu, X, Pencil, Save, ChevronDown, ChevronUp
+  HelpCircle, User, LogOut, Bell, Menu, X, Pencil, Save, Camera
 } from 'lucide-react';
 
 type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'favoriler' | 'destek';
@@ -26,6 +26,153 @@ const iller = Object.keys(ilceler).sort();
 const aracTipleri = ['Minibus 16+1', 'Midibus 27+1', 'Otobüs 45+1', 'Sedan', 'Van'];
 const markalar = ['Mercedes', 'Ford', 'Volkswagen', 'Renault', 'Peugeot', 'Citroen', 'Iveco', 'Temsa', 'Isuzu'];
 
+// ─── Profil Resmi Bileşeni ────────────────────────────────────────────────────
+function ProfilResmiWidget({ userId, mevcutUrl, onGuncelle }: {
+  userId: string;
+  mevcutUrl: string;
+  onGuncelle: (url: string) => void;
+}) {
+  const [yukleniyor, setYukleniyor] = useState(false);
+  const [hata, setHata] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleDosyaSec = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Dosya boyutu kontrolü (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setHata('Dosya 5MB\'dan küçük olmalıdır.');
+      return;
+    }
+
+    setHata('');
+    setYukleniyor(true);
+
+    try {
+      const dosyaAdi = `profil-${userId}-${Date.now()}`;
+
+      // Eski resmi sil (varsa)
+      if (mevcutUrl) {
+        const eskiPath = mevcutUrl.split('/profil-resimleri/')[1];
+        if (eskiPath) {
+          await supabase.storage.from('profil-resimleri').remove([eskiPath]);
+        }
+      }
+
+      // Yeni resmi yükle
+      const { data, error } = await supabase.storage
+        .from('profil-resimleri')
+        .upload(dosyaAdi, file, { upsert: true });
+
+      if (error) { setHata('Yükleme hatası: ' + error.message); setYukleniyor(false); return; }
+
+      const { data: urlData } = supabase.storage
+        .from('profil-resimleri')
+        .getPublicUrl(data.path);
+
+      const yeniUrl = urlData.publicUrl;
+
+      // Profili güncelle
+      await supabase.from('profiles').update({ avatar_url: yeniUrl }).eq('id', userId);
+
+      // LocalStorage güncelle
+      const user = mevcutKullanici();
+      if (user) {
+        localStorage.setItem('user', JSON.stringify({ ...user, avatar_url: yeniUrl }));
+      }
+
+      onGuncelle(yeniUrl);
+    } catch {
+      setHata('Beklenmeyen bir hata oluştu.');
+    }
+
+    setYukleniyor(false);
+    e.target.value = '';
+  };
+
+  const handleResimSil = async () => {
+    if (!mevcutUrl) return;
+    if (!confirm('Profil resminizi silmek istiyor musunuz?')) return;
+
+    setYukleniyor(true);
+    const eskiPath = mevcutUrl.split('/profil-resimleri/')[1];
+    if (eskiPath) {
+      await supabase.storage.from('profil-resimleri').remove([eskiPath]);
+    }
+    await supabase.from('profiles').update({ avatar_url: null }).eq('id', userId);
+
+    const user = mevcutKullanici();
+    if (user) {
+      const { avatar_url, ...rest } = user as any;
+      localStorage.setItem('user', JSON.stringify(rest));
+    }
+
+    onGuncelle('');
+    setYukleniyor(false);
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      {/* Avatar */}
+      <div className="relative">
+        <div className="w-24 h-24 rounded-full bg-slate-100 border-4 border-white shadow-md overflow-hidden flex items-center justify-center">
+          {mevcutUrl ? (
+            <img src={mevcutUrl} alt="Profil" className="w-full h-full object-cover" />
+          ) : (
+            <User size={36} className="text-slate-300" />
+          )}
+        </div>
+
+        {/* Kamera butonu */}
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={yukleniyor}
+          className="absolute bottom-0 right-0 w-8 h-8 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-lg transition disabled:opacity-50"
+          title="Fotoğraf değiştir"
+        >
+          {yukleniyor ? (
+            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Camera size={13} />
+          )}
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          onChange={handleDosyaSec}
+          className="hidden"
+        />
+      </div>
+
+      {/* Butonlar */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={yukleniyor}
+          className="text-xs text-orange-500 hover:text-orange-700 font-semibold border border-orange-200 hover:border-orange-400 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+        >
+          {mevcutUrl ? 'Değiştir' : 'Fotoğraf Ekle'}
+        </button>
+        {mevcutUrl && (
+          <button
+            onClick={handleResimSil}
+            disabled={yukleniyor}
+            className="text-xs text-red-400 hover:text-red-600 font-semibold border border-red-100 hover:border-red-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+          >
+            Sil
+          </button>
+        )}
+      </div>
+
+      {hata && <p className="text-xs text-red-500 text-center">{hata}</p>}
+      <p className="text-[11px] text-slate-400 text-center">JPEG, PNG, WEBP · Maks 5MB</p>
+    </div>
+  );
+}
+
+// ─── Ana Bileşen ──────────────────────────────────────────────────────────────
 export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }: PanelPageProps) {
   const [aktifSekme, setAktifSekme] = useState<Sekme>('profil');
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
@@ -40,9 +187,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
   const [destekGonderildi, setDestekGonderildi] = useState(false);
   const [destekForm, setDestekForm] = useState({ konu: '', mesaj: '' });
   const [aracForm, setAracForm] = useState({ marka: '', model: '', yil: '', plaka: '', koltuk_sayisi: '', arac_tipi: '' });
-  // Mobilde sidebar drawer
   const [menuAcik, setMenuAcik] = useState(false);
-  // Düzenleme modalı
   const [duzenleIlan, setDuzenleIlan] = useState<Ilan | null>(null);
   const [duzenleForm, setDuzenleForm] = useState({
     aciklama: '',
@@ -54,12 +199,13 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
   const [duzenleYukleniyor, setDuzenleYukleniyor] = useState(false);
 
   const user = mevcutKullanici();
+  const [avatarUrl, setAvatarUrl] = useState<string>((user as any)?.avatar_url || '');
   const [profil, setProfil] = useState({
     ad: user?.full_name || '',
     telefon: user?.phone_number || '',
-    adres: user?.adres || '',
-    il: user?.il || '',
-    ilce: user?.ilce || '',
+    adres: (user as any)?.adres || '',
+    il: (user as any)?.il || '',
+    ilce: (user as any)?.ilce || '',
     yeniSifre: '',
   });
 
@@ -132,7 +278,13 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
     }
     const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
     if (error) { setHata('Güncelleme sırasında hata oluştu.'); }
-    else { const u = { ...user, ...updates }; localStorage.setItem('user', JSON.stringify(u)); setBasari('Bilgileriniz başarıyla güncellendi!'); setProfil({ ...profil, yeniSifre: '' }); }
+    else {
+      const u = { ...user, ...updates };
+      localStorage.setItem('user', JSON.stringify(u));
+      setBasari('Bilgileriniz başarıyla güncellendi!');
+      setProfil({ ...profil, yeniSifre: '' });
+      setTimeout(() => setBasari(''), 3000);
+    }
   };
 
   const handleHesapSil = async () => {
@@ -194,37 +346,38 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
   };
 
   const servisTurleri = ['Klima', 'USB Şarj', 'Güvenlik Kamerası', 'WiFi', 'Engelli Erişimi', 'Çocuk Koltuğu'];
-
-  const sekmeSecildi = (id: Sekme) => {
-    setAktifSekme(id);
-    setMenuAcik(false);
-  };
-
+  const sekmeSecildi = (id: Sekme) => { setAktifSekme(id); setMenuAcik(false); };
   const ilceleri = profil.il ? (ilceler[profil.il] || []) : [];
   const ic = 'w-full border border-slate-200 rounded-xl px-3 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
   const btnO = 'bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition';
   const btnS = 'bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 text-sm font-medium px-4 py-3 rounded-xl transition';
 
   const menuItems = [
-    { id: 'profil',    label: 'Profilim',     icon: User },
-    { id: 'ilanlar',   label: 'İlanlarım',    icon: Eye },
-    { id: 'araclar',   label: 'Araçlarım',    icon: Car },
-    { id: 'mesajlar',  label: 'Mesajlar',     icon: MessageSquare, badge: okunmamisSayi },
-    { id: 'favoriler', label: 'Favorilerim',  icon: Heart },
-    { id: 'destek',    label: 'Destek',       icon: HelpCircle },
+    { id: 'profil',    label: 'Profilim',    icon: User },
+    { id: 'ilanlar',   label: 'İlanlarım',   icon: Eye },
+    { id: 'araclar',   label: 'Araçlarım',   icon: Car },
+    { id: 'mesajlar',  label: 'Mesajlar',    icon: MessageSquare, badge: okunmamisSayi },
+    { id: 'favoriler', label: 'Favorilerim', icon: Heart },
+    { id: 'destek',    label: 'Destek',      icon: HelpCircle },
   ];
 
   const sekmeBulunan = menuItems.find(m => m.id === aktifSekme);
 
-  // ── Sidebar içeriği (hem drawer hem masaüstü) ─────────────────────────────
   const SidebarIcerik = () => (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div className="bg-slate-800 px-4 py-4">
-        <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mb-2">
-          <User size={18} className="text-white" />
+      <div className="bg-slate-800 px-4 py-5 flex flex-col items-center text-center">
+        {/* Profil resmi sidebar'da */}
+        <div className="relative mb-3">
+          <div className="w-16 h-16 rounded-full bg-slate-600 border-2 border-slate-500 overflow-hidden flex items-center justify-center">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profil" className="w-full h-full object-cover" />
+            ) : (
+              <User size={24} className="text-slate-300" />
+            )}
+          </div>
         </div>
-        <p className="text-white font-semibold text-sm truncate">{user?.full_name || 'Kullanıcı'}</p>
-        <p className="text-slate-400 text-xs truncate">{user?.phone_number}</p>
+        <p className="text-white font-semibold text-sm truncate w-full">{user?.full_name || 'Kullanıcı'}</p>
+        <p className="text-slate-400 text-xs truncate w-full">{user?.phone_number}</p>
       </div>
       <nav className="py-2">
         {menuItems.map(item => {
@@ -287,13 +440,9 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
           <div className="w-72 bg-slate-100 h-full overflow-y-auto shadow-xl flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 bg-slate-800">
               <span className="text-white font-semibold text-sm">Hesabım</span>
-              <button onClick={() => setMenuAcik(false)} className="p-1 text-slate-300 hover:text-white">
-                <X size={20} />
-              </button>
+              <button onClick={() => setMenuAcik(false)} className="p-1 text-slate-300 hover:text-white"><X size={20} /></button>
             </div>
-            <div className="p-3 flex-1">
-              <SidebarIcerik />
-            </div>
+            <div className="p-3 flex-1"><SidebarIcerik /></div>
           </div>
         </div>
       )}
@@ -312,10 +461,21 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
             {/* PROFİL */}
             {aktifSekme === 'profil' && (
               <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
-                <h2 className="font-bold text-slate-800 text-base mb-4">Profil Bilgilerim</h2>
+                <h2 className="font-bold text-slate-800 text-base mb-5">Profil Bilgilerim</h2>
+
                 {basari && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{basari}</div>}
                 {hata && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-4 text-sm">{hata}</div>}
 
+                {/* ── PROFİL RESMİ ── */}
+                <div className="flex flex-col items-center mb-6 pb-6 border-b border-slate-100">
+                  <ProfilResmiWidget
+                    userId={userId}
+                    mevcutUrl={avatarUrl}
+                    onGuncelle={(url) => setAvatarUrl(url)}
+                  />
+                </div>
+
+                {/* ── PROFİL BİLGİLERİ ── */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className="text-xs font-semibold text-slate-500 mb-1 block">Ad Soyad</label>
@@ -372,6 +532,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                     <Plus size={13} /> Yeni İlan
                   </button>
                 </div>
+                {basari && <div className="mx-4 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">{basari}</div>}
                 {yukleniyor ? (
                   <div className="p-4 flex flex-col gap-3">{[1,2,3].map(i => <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />)}</div>
                 ) : ilanlar.length === 0 ? (
@@ -380,24 +541,17 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                     <button onClick={onIlanEkle} className={btnO}>İlan Ver</button>
                   </div>
                 ) : (
-                  /* Mobilde kart görünümü, masaüstünde tablo */
                   <>
-                    {/* MOBİL KART GÖRÜNÜMÜ */}
+                    {/* MOBİL */}
                     <div className="sm:hidden divide-y divide-slate-100">
                       {ilanlar.map(ilan => (
                         <div key={ilan.id} className="p-4">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <p className="text-slate-700 font-medium text-sm line-clamp-2 flex-1">{ilan.aciklama}</p>
                             <div className="flex gap-1 flex-shrink-0">
-                              <button onClick={() => onIlanDetay(ilan)} className="p-2 text-slate-400 hover:text-blue-500 bg-slate-50 rounded-lg">
-                                <Eye size={14} />
-                              </button>
-                              <button onClick={() => handleDuzenlemeAc(ilan)} className="p-2 text-slate-400 hover:text-orange-500 bg-slate-50 rounded-lg">
-                                <Pencil size={14} />
-                              </button>
-                              <button onClick={() => handleIlanSil(ilan.id)} className="p-2 text-slate-400 hover:text-red-500 bg-slate-50 rounded-lg">
-                                <Trash2 size={14} />
-                              </button>
+                              <button onClick={() => onIlanDetay(ilan)} className="p-2 text-slate-400 hover:text-blue-500 bg-slate-50 rounded-lg"><Eye size={14} /></button>
+                              <button onClick={() => handleDuzenlemeAc(ilan)} className="p-2 text-slate-400 hover:text-orange-500 bg-slate-50 rounded-lg"><Pencil size={14} /></button>
+                              <button onClick={() => handleIlanSil(ilan.id)} className="p-2 text-slate-400 hover:text-red-500 bg-slate-50 rounded-lg"><Trash2 size={14} /></button>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
@@ -410,7 +564,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                         </div>
                       ))}
                     </div>
-                    {/* MASAÜSTÜ TABLO */}
+                    {/* MASAÜSTÜ */}
                     <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
@@ -634,55 +788,33 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
           </main>
         </div>
       </div>
+
       {/* DÜZENLEME MODALI */}
       {duzenleIlan && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4">
           <div className="bg-white w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh] flex flex-col">
-            {/* Modal Başlık */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-orange-500 rounded-t-2xl sm:rounded-t-2xl flex-shrink-0">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-orange-500 rounded-t-2xl flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Pencil size={16} className="text-white" />
                 <h3 className="font-bold text-white text-sm">İlanı Düzenle</h3>
               </div>
-              <button onClick={() => setDuzenleIlan(null)} className="text-white/80 hover:text-white transition">
-                <X size={20} />
-              </button>
+              <button onClick={() => setDuzenleIlan(null)} className="text-white/80 hover:text-white transition"><X size={20} /></button>
             </div>
-
-            {/* Modal İçerik */}
             <div className="overflow-y-auto flex-1 p-5 space-y-5">
-
-              {/* Açıklama */}
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">Açıklama</label>
-                <textarea
-                  className={ic + ' resize-none'}
-                  rows={3}
-                  value={duzenleForm.aciklama}
-                  onChange={e => setDuzenleForm({ ...duzenleForm, aciklama: e.target.value })}
-                  placeholder="İlan açıklaması..."
-                />
+                <textarea className={ic + ' resize-none'} rows={3} value={duzenleForm.aciklama}
+                  onChange={e => setDuzenleForm({ ...duzenleForm, aciklama: e.target.value })} placeholder="İlan açıklaması..." />
               </div>
-
-              {/* Ücret */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">Ücret (₺)</label>
-                  <input
-                    type="number"
-                    className={ic}
-                    value={duzenleForm.ucret}
-                    onChange={e => setDuzenleForm({ ...duzenleForm, ucret: e.target.value })}
-                    placeholder="örn. 45000"
-                  />
+                  <input type="number" className={ic} value={duzenleForm.ucret}
+                    onChange={e => setDuzenleForm({ ...duzenleForm, ucret: e.target.value })} placeholder="örn. 45000" />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">Ücret Tipi</label>
-                  <select
-                    className={ic}
-                    value={duzenleForm.ucret_tipi}
-                    onChange={e => setDuzenleForm({ ...duzenleForm, ucret_tipi: e.target.value })}
-                  >
+                  <select className={ic} value={duzenleForm.ucret_tipi} onChange={e => setDuzenleForm({ ...duzenleForm, ucret_tipi: e.target.value })}>
                     <option value="ay">Aylık</option>
                     <option value="gün">Günlük</option>
                     <option value="sefer">Sefer Başı</option>
@@ -690,8 +822,6 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                   </select>
                 </div>
               </div>
-
-              {/* Güzergahlar */}
               {duzenleForm.guzergahlar.length > 0 && (
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 block">
@@ -704,39 +834,19 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="text-[11px] text-slate-400 mb-1 block">Giriş Saati</label>
-                            <input
-                              type="time"
-                              className={ic}
-                              value={g.giris_saati || ''}
-                              onChange={e => handleGuzergahGuncelle(idx, 'giris_saati', e.target.value)}
-                            />
+                            <input type="time" className={ic} value={g.giris_saati || ''} onChange={e => handleGuzergahGuncelle(idx, 'giris_saati', e.target.value)} />
                           </div>
                           <div>
                             <label className="text-[11px] text-slate-400 mb-1 block">Çıkış Saati</label>
-                            <input
-                              type="time"
-                              className={ic}
-                              value={g.cikis_saati || ''}
-                              onChange={e => handleGuzergahGuncelle(idx, 'cikis_saati', e.target.value)}
-                            />
+                            <input type="time" className={ic} value={g.cikis_saati || ''} onChange={e => handleGuzergahGuncelle(idx, 'cikis_saati', e.target.value)} />
                           </div>
                           <div>
                             <label className="text-[11px] text-slate-400 mb-1 block">Kalkış Mahalle</label>
-                            <input
-                              className={ic}
-                              value={g.kalkis_mah || ''}
-                              onChange={e => handleGuzergahGuncelle(idx, 'kalkis_mah', e.target.value)}
-                              placeholder="Mahalle"
-                            />
+                            <input className={ic} value={g.kalkis_mah || ''} onChange={e => handleGuzergahGuncelle(idx, 'kalkis_mah', e.target.value)} placeholder="Mahalle" />
                           </div>
                           <div>
                             <label className="text-[11px] text-slate-400 mb-1 block">Varış Mahalle</label>
-                            <input
-                              className={ic}
-                              value={g.varis_mah || ''}
-                              onChange={e => handleGuzergahGuncelle(idx, 'varis_mah', e.target.value)}
-                              placeholder="Mahalle"
-                            />
+                            <input className={ic} value={g.varis_mah || ''} onChange={e => handleGuzergahGuncelle(idx, 'varis_mah', e.target.value)} placeholder="Mahalle" />
                           </div>
                         </div>
                       </div>
@@ -744,29 +854,15 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                   </div>
                 </div>
               )}
-
-              {/* Servis Türü */}
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 block">Özellikler</label>
                 <div className="flex flex-wrap gap-2">
                   {servisTurleri.map(tur => {
                     const secili = duzenleForm.servis_turu.includes(tur);
                     return (
-                      <button
-                        key={tur}
-                        type="button"
-                        onClick={() => setDuzenleForm({
-                          ...duzenleForm,
-                          servis_turu: secili
-                            ? duzenleForm.servis_turu.filter(t => t !== tur)
-                            : [...duzenleForm.servis_turu, tur]
-                        })}
-                        className={`text-xs px-3 py-1.5 rounded-lg border transition font-medium ${
-                          secili
-                            ? 'bg-orange-500 text-white border-orange-500'
-                            : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'
-                        }`}
-                      >
+                      <button key={tur} type="button"
+                        onClick={() => setDuzenleForm({ ...duzenleForm, servis_turu: secili ? duzenleForm.servis_turu.filter(t => t !== tur) : [...duzenleForm.servis_turu, tur] })}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition font-medium ${secili ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'}`}>
                         {tur}
                       </button>
                     );
@@ -774,25 +870,11 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                 </div>
               </div>
             </div>
-
-            {/* Modal Alt Butonlar */}
             <div className="flex gap-3 px-5 py-4 border-t border-slate-100 flex-shrink-0 bg-white rounded-b-2xl">
-              <button
-                onClick={() => setDuzenleIlan(null)}
-                className={btnS + ' flex-1'}
-              >
-                İptal
-              </button>
-              <button
-                onClick={handleDuzenleKaydet}
-                disabled={duzenleYukleniyor}
-                className={btnO + ' flex-1 flex items-center justify-center gap-2 disabled:opacity-60'}
-              >
-                {duzenleYukleniyor ? (
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Save size={14} />
-                )}
+              <button onClick={() => setDuzenleIlan(null)} className={btnS + ' flex-1'}>İptal</button>
+              <button onClick={handleDuzenleKaydet} disabled={duzenleYukleniyor}
+                className={btnO + ' flex-1 flex items-center justify-center gap-2 disabled:opacity-60'}>
+                {duzenleYukleniyor ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={14} />}
                 {duzenleYukleniyor ? 'Kaydediliyor...' : 'Kaydet'}
               </button>
             </div>
