@@ -201,7 +201,7 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
             e.stopPropagation();
             if (telefon) window.location.href = `tel:${telefon}`;
           }}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-gray-700 bg-white hover:bg-gray-50 transition"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-gray-700 bg-blue hover:bg-gray-50 transition"
         >
           <Phone size={12} className="text-[#f7971e]" /> Ara
         </button>
