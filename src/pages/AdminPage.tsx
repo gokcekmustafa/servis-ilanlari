@@ -40,6 +40,7 @@ type AdminPageProps = {
   onIlanDetay: (ilan: Ilan) => void;
   isSuperAdmin: boolean;
   yetkiler: PersonelYetkiler;
+  defaultSekme?: Sekme;
 };
 
 type Sekme = 'istatistik' | 'ilanlar' | 'kullanicilar' | 'reklamlar' | 'duyurular' | 'destek' | 'personel';
@@ -78,8 +79,8 @@ const KISITLAMA_TANIM: Record<string, { label: string; aciklama: string; ikon: R
 
 // ─── ANA COMPONENT ────────────────────────────────────────────────────────────
 
-export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkiler }: AdminPageProps) {
-  const [aktifSekme, setAktifSekme]       = useState<Sekme>('istatistik');
+export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkiler, defaultSekme }: AdminPageProps) {
+  const [aktifSekme, setAktifSekme] = useState<Sekme>(defaultSekme || 'istatistik');
   const [ilanlar, setIlanlar]             = useState<any[]>([]);
   const [kullanicilar, setKullanicilar]   = useState<any[]>([]);
   const [reklamlar, setReklamlar]         = useState<any[]>([]);
