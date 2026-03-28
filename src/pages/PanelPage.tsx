@@ -406,7 +406,6 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
     ))}
   </div>
 )}
-      )}
 
       {/* ARACIM VAR İŞ */}
       {kategori === 'aracim_var_is' && (
