@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Truck, Eye, EyeOff } from 'lucide-react';
 import { girisYap } from '../lib/auth';
+import { supabase } from '../lib/supabase';
 
 type LoginPageProps = {
   onLogin: () => void;
