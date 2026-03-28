@@ -662,6 +662,8 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                     <option value="header">Üst Alan</option>
                     <option value="kenar_kucuk">Yan Alan - Küçük (8cm)</option>
                     <option value="kenar_buyuk">Yan Alan - Büyük (12cm)</option>
+                    <option value="kenar_sol">Dikey Sol Kenar</option>
+                    <option value="kenar_sag">Dikey Sağ Kenar</option>
                   </select>
                   {yeniReklam.resim_url ? (
                     <div className="mb-3 relative">
@@ -953,10 +955,12 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
               <input className={ic} placeholder="Başlık (opsiyonel)" value={duzenleForm.baslik} onChange={e => setDuzenleForm({ ...duzenleForm, baslik: e.target.value })} />
               <input className={ic} placeholder="Tıklama linki" value={duzenleForm.link_url} onChange={e => setDuzenleForm({ ...duzenleForm, link_url: e.target.value })} />
               <select className={ic} value={duzenleForm.konum} onChange={e => setDuzenleForm({ ...duzenleForm, konum: e.target.value })}>
-                <option value="liste">Liste Arası</option>
+              <option value="liste">Liste Arası</option>
               <option value="header">Üst Alan</option>
               <option value="kenar_kucuk">Yan Alan - Küçük (8cm)</option>
               <option value="kenar_buyuk">Yan Alan - Büyük (12cm)</option>
+              <option value="kenar_sol">Dikey Sol Kenar</option>
+              <option value="kenar_sag">Dikey Sağ Kenar</option>
             </select>
               {/* Resim önizleme + değiştirme */}
               <div>
