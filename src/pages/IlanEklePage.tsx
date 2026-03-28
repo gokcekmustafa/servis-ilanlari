@@ -50,6 +50,73 @@ const bosGuzergah = (): Guzergah => ({
 const ic = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
 const lb = 'text-xs font-medium text-slate-500 mb-1 block';
 
+// Güzel saat-dakika seçici bileşeni
+function SaatSecici({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const [saat, setSaat] = React.useState(() => value ? value.split(':')[0] : '');
+  const [dakika, setDakika] = React.useState(() => value ? value.split(':')[1] : '');
+
+  const saatler = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  const dakikalar = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
+
+  const handleSaatChange = (s: string) => {
+    setSaat(s);
+    if (s && dakika) onChange(`${s}:${dakika}`);
+    else if (!s) onChange('');
+  };
+
+  const handleDakikaChange = (d: string) => {
+    setDakika(d);
+    if (saat && d) onChange(`${saat}:${d}`);
+  };
+
+  React.useEffect(() => {
+    if (value) {
+      const parts = value.split(':');
+      setSaat(parts[0] || '');
+      setDakika(parts[1] || '');
+    } else {
+      setSaat('');
+      setDakika('');
+    }
+  }, [value]);
+
+  return (
+    <div>
+      <label className={lb}>{label}</label>
+      <div className="flex items-center gap-1.5">
+        <select
+          value={saat}
+          onChange={(e) => handleSaatChange(e.target.value)}
+          className="flex-1 border border-slate-200 rounded-lg px-2 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white text-center font-semibold"
+        >
+          <option value="">--</option>
+          {saatler.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <span className="text-slate-400 font-bold text-base select-none">:</span>
+        <select
+          value={dakika}
+          onChange={(e) => handleDakikaChange(e.target.value)}
+          disabled={!saat}
+          className="flex-1 border border-slate-200 rounded-lg px-2 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white text-center font-semibold disabled:bg-slate-50 disabled:text-slate-300"
+        >
+          <option value="">--</option>
+          {dakikalar.map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+      </div>
+      {saat && dakika && (
+        <div className="mt-1 flex items-center gap-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+          <span className="text-[11px] text-orange-500 font-semibold">{saat}:{dakika}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function IlIlceMahalle({ il, ilce, mah, onIlChange, onIlceChange, onMahChange }: {
   il: string; ilce: string; mah: string;
   onIlChange: (v: string) => void;
@@ -109,18 +176,16 @@ function GuzergahSatiri({ guzergah, index, onGuncelle, onRemove, showRemove }: {
         )}
       </div>
       <div className="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label className={lb}>Giris Saati</label>
-          <input type="time" value={guzergah.giris_saati}
-            onChange={(e) => onGuncelle(index, { ...guzergah, giris_saati: e.target.value })}
-            className={ic} />
-        </div>
-        <div>
-          <label className={lb}>Cikis Saati</label>
-          <input type="time" value={guzergah.cikis_saati}
-            onChange={(e) => onGuncelle(index, { ...guzergah, cikis_saati: e.target.value })}
-            className={ic} />
-        </div>
+        <SaatSecici
+          label="Giriş Saati"
+          value={guzergah.giris_saati}
+          onChange={(v) => onGuncelle(index, { ...guzergah, giris_saati: v })}
+        />
+        <SaatSecici
+          label="Çıkış Saati"
+          value={guzergah.cikis_saati}
+          onChange={(v) => onGuncelle(index, { ...guzergah, cikis_saati: v })}
+        />
       </div>
       <div className="mb-3">
         <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Kalkis</p>
@@ -157,14 +222,16 @@ function KonumBilgisi({ il, ilce, mah, giris, cikis, onIlChange, onIlceChange, o
         LUTFEN ASAGIDA BOS OLDUGUNUZ YERLERI VE SAATLERI EKLEYINIZ
       </p>
       <div className="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label className={lb}>Baslangic Saati</label>
-          <input type="time" value={giris} onChange={(e) => onGirisChange(e.target.value)} className={ic} />
-        </div>
-        <div>
-          <label className={lb}>Bitis Saati</label>
-          <input type="time" value={cikis} onChange={(e) => onCikisChange(e.target.value)} className={ic} />
-        </div>
+        <SaatSecici
+          label="Başlangıç Saati"
+          value={giris}
+          onChange={onGirisChange}
+        />
+        <SaatSecici
+          label="Bitiş Saati"
+          value={cikis}
+          onChange={onCikisChange}
+        />
       </div>
       <IlIlceMahalle
         il={il} ilce={ilce} mah={mah}
