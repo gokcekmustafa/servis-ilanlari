@@ -131,12 +131,13 @@ const [popupGonderildi, setPopupGonderildi] = useState(false);
 }} className="text-xs text-slate-400 hover:text-slate-600 transition">
   Sifremi Unuttum
 </button>
-                onClick={handleLogin}
-                disabled={yukleniyor}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-50"
-              >
-                {yukleniyor ? 'Giris yapiliyor...' : 'Giris Yap'}
-              </button>
+<button
+  onClick={handleLogin}
+  disabled={yukleniyor}
+  className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-50"
+>
+  {yukleniyor ? 'Giris yapiliyor...' : 'Giris Yap'}
+</button>
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
