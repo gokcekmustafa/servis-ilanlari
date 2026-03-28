@@ -443,6 +443,12 @@ function HomePage({ onGoLogin, onIlanDetay, isLoggedIn }: { onGoLogin: () => voi
             <InlineGiris onLogin={onGoLogin} onGoRegister={onGoLogin} />
           </div>
         )}
+        {/* GİRİŞ ÇUBUĞU */}
+        {!isLoggedIn && (
+          <div className="mb-3 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            <InlineGiris onLogin={onGoLogin} onGoRegister={onGoLogin} />
+          </div>
+        )}
         {/* KATEGORİ KARTLARI */}
         <div className="mb-4">
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
