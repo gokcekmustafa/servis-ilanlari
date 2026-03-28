@@ -195,7 +195,7 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
             {ucret && (
   <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
     <span className="text-sm text-blue-700 font-medium flex items-center gap-2">
-      <Tag size={15} /> Fiyat
+      <Tag size={15} /> {ilan.kategori === 'plaka_satiyorum' || ilan.kategori === 'aracimi_satiyorum' ? 'Fiyat' : 'Ücret'}
     </span>
     <span className="text-xl font-bold text-blue-600">
       {Number(ucret).toLocaleString('tr-TR')} TL
