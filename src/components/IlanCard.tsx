@@ -18,7 +18,7 @@ const kategoriConfig: Record<KategoriType, { label: string; bg: string; text: st
   hostes_ariyorum:   { label: 'ARACIM VAR HOSTES ARIYORUM', bg: 'bg-purple-500', text: 'text-white', serit: 'bg-purple-500' },
   hostesim_is:       { label: 'HOSTESİM İŞ ARIYORUM',       bg: 'bg-pink-500',   text: 'text-white', serit: 'bg-pink-500' },
   soforum_is:        { label: 'ŞOFÖRÜM İŞ ARIYORUM',        bg: 'bg-yellow-500', text: 'text-white', serit: 'bg-yellow-500' },
-  plaka_satiyorum:   { label: 'PLAKami SATIYORUM',           bg: 'bg-red-500',    text: 'text-white', serit: 'bg-red-500' },
+  plaka_satiyorum:   { label: 'PLAKIMI SATIYORUM',           bg: 'bg-red-500',    text: 'text-white', serit: 'bg-red-500' },
   aracimi_satiyorum: { label: 'ARACIMI SATIYORUM',           bg: 'bg-teal-500',   text: 'text-white', serit: 'bg-teal-500' },
 };
 
@@ -182,14 +182,27 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
 
         {/* GÜZERGAH TABLOSU */}
         {ilan.guzergahlar && ilan.guzergahlar.length > 0 && (
-          <div className="mb-3">
-            <GuzergahBasliklari kategori={ilan.kategori} />
-            <div className="divide-y divide-gray-50">
-              {ilan.guzergahlar.slice(0, 2).map((g, i) => (
-                <GuzergahSatiri key={i} g={g} kategori={ilan.kategori} />
-              ))}
+          ilan.kategori === 'plaka_satiyorum' || ilan.kategori === 'aracimi_satiyorum' ? (
+            <div className="mb-3 flex items-center gap-1.5 text-xs text-gray-600 border-t border-gray-100 pt-2">
+              <MapPin size={13} className="text-gray-400 flex-shrink-0" />
+              <span>
+                {[
+                  ilan.guzergahlar[0].kalkis_mah,
+                  ilan.guzergahlar[0].kalkis_ilce,
+                  ilan.guzergahlar[0].kalkis_il,
+                ].filter(Boolean).join(', ')}
+              </span>
             </div>
-          </div>
+          ) : (
+            <div className="mb-3">
+              <GuzergahBasliklari kategori={ilan.kategori} />
+              <div className="divide-y divide-gray-50">
+                {ilan.guzergahlar.slice(0, 2).map((g, i) => (
+                  <GuzergahSatiri key={i} g={g} kategori={ilan.kategori} />
+                ))}
+              </div>
+            </div>
+          )
         )}
 
         {/* AYIRICI */}
