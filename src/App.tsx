@@ -338,17 +338,17 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
   );
 }
 function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void; onLoginSuccess: () => void; isLoggedIn: boolean }) {
-   [ilanlar, setIlanlar] = useState<Ilan[]>([]);
-   [yukleniyor, setYukleniyor] = useState(true);
-   [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
-   [selectedSehir, setSelectedSehir] = useState('');
-   [selectedKalkisIlce, setSelectedKalkisIlce] = useState('');
-   [selectedKalkisMah, setSelectedKalkisMah] = useState('');
-   [selectedVarisIl, setSelectedVarisIl] = useState('');
-   [selectedVarisIlce, setSelectedVarisIlce] = useState('');
-   [selectedVarisMah, setSelectedVarisMah] = useState('');
-   [siralama, setSiralama] = useState('yeni');
-   [duyuru, setDuyuru] = useState<any>(null);
+  const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
+  const [yukleniyor, setYukleniyor] = useState(true);
+  const [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
+  const [selectedSehir, setSelectedSehir] = useState('');
+  const [selectedKalkisIlce, setSelectedKalkisIlce] = useState('');
+  const [selectedKalkisMah, setSelectedKalkisMah] = useState('');
+  const [selectedVarisIl, setSelectedVarisIl] = useState('');
+  const [selectedVarisIlce, setSelectedVarisIlce] = useState('');
+  const [selectedVarisMah, setSelectedVarisMah] = useState('');
+  const [siralama, setSiralama] = useState('yeni');
+  const [duyuru, setDuyuru] = useState<any>(null);
   const [popupAcik, setPopupAcik] = useState(false);
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
