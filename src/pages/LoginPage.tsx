@@ -15,6 +15,9 @@ export default function LoginPage({ onLogin, onGoRegister, onGoHome }: LoginPage
   const [goster, setGoster] = useState(false);
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
+  const [sifrePopup, setSifrePopup] = useState(false);
+const [popupTelefon, setPopupTelefon] = useState('');
+const [popupGonderildi, setPopupGonderildi] = useState(false);
 
   const handleLogin = async () => {
     if (!telefon || !sifre) {
@@ -115,9 +118,9 @@ export default function LoginPage({ onLogin, onGoRegister, onGoHome }: LoginPage
                   />
                   Beni Hatirla
                 </label>
-                <button className="text-xs text-slate-400 hover:text-slate-600 transition">
-                  Sifremi Unuttum
-                </button>
+                <button onClick={() => setSifrePopup(true)} className="text-xs text-slate-400 hover:text-slate-600 transition">
+  Sifremi Unuttum
+</button>
               </div>
 
               <button
