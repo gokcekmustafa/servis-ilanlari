@@ -21,6 +21,46 @@ import { ilanlariGetir } from './lib/ilanlar';
 import { supabase } from './lib/supabase';
 import { SlidersHorizontal, X } from 'lucide-react';
 
+function ReklamBanner({ konum }: { konum: 'kenar_sol' | 'kenar_sag' }) {
+  const [reklam, setReklam] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    supabase
+      .from('reklamlar')
+      .select('*')
+      .eq('aktif', true)
+      .eq('konum', konum)
+      .limit(1)
+      .single()
+      .then(({ data }) => { if (data) setReklam(data); });
+  }, [konum]);
+
+  const taraf = konum === 'kenar_sol' ? 'left' : 'right';
+
+  return (
+    <div
+      className="hidden xl:block fixed top-1/2 -translate-y-1/2 z-20"
+      style={{ [taraf]: 'calc((100vw - 1024px) / 2 - 136px)' }}
+    >
+      <div
+        onClick={() => reklam?.link_url && window.open(reklam.link_url, '_blank')}
+        className={`relative w-32 rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm ${reklam?.link_url ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+        style={{ height: '480px' }}
+      >
+        {reklam?.resim_url ? (
+          <img src={reklam.resim_url} alt={reklam.baslik || 'Reklam'} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-100">
+            <span className="text-gray-200 text-3xl">📢</span>
+            <span className="text-gray-300 text-[10px] text-center px-2 leading-tight">Reklam<br/>Alanı</span>
+          </div>
+        )}
+        <span className="absolute bottom-1 right-1 bg-black/30 text-white text-[9px] px-1 py-0.5 rounded">Reklam</span>
+      </div>
+    </div>
+  );
+}
+
 type Page =
   | 'home' | 'login' | 'register' | 'detay' | 'ilan-ekle'
   | 'panel' | 'admin' | 'hakkimizda' | 'nasil-isliyor'
@@ -1112,12 +1152,14 @@ export default function App() {
   if (currentPage === 'register') return <RegisterPage onRegister={handleLogin} onGoLogin={() => setCurrentPage('login')} onGoHome={() => setCurrentPage('home')} />;
 
   const withLayout = (content: React.ReactNode) => (
-    <div className="min-h-screen bg-[#f8fafc]">
-      <Header {...headerProps} />
-      {content}
-      <Footer {...footerProps} />
-    </div>
-  );
+  <div className="min-h-screen bg-[#f8fafc]">
+    <Header {...headerProps} />
+    <ReklamBanner konum="kenar_sol" />
+    <ReklamBanner konum="kenar_sag" />
+    {content}
+    <Footer {...footerProps} />
+  </div>
+);
 
   if (currentPage === 'detay' && selectedIlan) return withLayout(<IlanDetayPage ilan={selectedIlan} onGoBack={goBack} onGoLogin={() => setCurrentPage('login')} isLoggedIn={isLoggedIn} />);
   if (currentPage === 'ilan-ekle') return withLayout(<IlanEklePage
