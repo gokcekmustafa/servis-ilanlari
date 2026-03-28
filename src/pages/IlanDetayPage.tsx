@@ -184,16 +184,18 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
                 <span className={badge.color + ' text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide'}>
                   {badge.label}
                 </span>
-                <button
-                  onClick={handleFavori}
-                  className={'hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex-shrink-0 ' +
-                    (isFavori
-                      ? 'bg-red-50 border-red-200 text-red-500'
-                      : 'bg-white border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-400')}
-                >
-                  <Heart size={13} className={isFavori ? 'fill-red-500 text-red-500' : ''} />
-                  {isFavori ? 'Favoride' : 'Favoriye Ekle'}
-                </button>
+                {!kendiIlani && (
+                  <button
+                    onClick={handleFavori}
+                    className={'hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex-shrink-0 ' +
+                      (isFavori
+                        ? 'bg-red-50 border-red-200 text-red-500'
+                        : 'bg-white border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-400')}
+                  >
+                    <Heart size={13} className={isFavori ? 'fill-red-500 text-red-500' : ''} />
+                    {isFavori ? 'Favoride' : 'Favoriye Ekle'}
+                  </button>
+                )}
               </div>
               {ilan.aciklama && (
                 <p className="text-slate-600 text-sm leading-relaxed">{ilan.aciklama}</p>
@@ -330,14 +332,16 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
 
       {/* MOBİL ALT BAR */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3 flex gap-3 z-30 shadow-lg">
-        <button
-          onClick={handleFavori}
-          className={'flex-1 py-3 rounded-xl font-semibold text-sm border transition flex items-center justify-center gap-2 ' +
-            (isFavori ? 'bg-red-50 border-red-200 text-red-500' : 'bg-white border-slate-200 text-slate-500')}
-        >
-          <Heart size={15} className={isFavori ? 'fill-red-500' : ''} />
-          {isFavori ? 'Favoride' : 'Favori'}
-        </button>
+        {!kendiIlani && (
+          <button
+            onClick={handleFavori}
+            className={'flex-1 py-3 rounded-xl font-semibold text-sm border transition flex items-center justify-center gap-2 ' +
+              (isFavori ? 'bg-red-50 border-red-200 text-red-500' : 'bg-white border-slate-200 text-slate-500')}
+          >
+            <Heart size={15} className={isFavori ? 'fill-red-500' : ''} />
+            {isFavori ? 'Favoride' : 'Favori'}
+          </button>
+        )}
         <button
           onClick={() => setIletisimAcik(true)}
           className="flex-[2] bg-orange-500 text-white py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 active:bg-orange-600"
