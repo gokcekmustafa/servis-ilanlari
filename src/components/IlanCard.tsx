@@ -1,6 +1,5 @@
-import { MapPin, Phone, MessageCircle, Clock, ArrowRight } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-import { Phone, MessageCircle, Clock, ArrowRight, Heart } from 'lucide-react';
+import { MapPin, Phone, MessageCircle, Clock, ArrowRight } from 'lucide-react';
 import { Ilan, KategoriType } from '../types';
 import { favoriEkle, favoriKaldir, favoriKontrol } from '../lib/ilanlar';
 import { mevcutKullanici } from '../lib/auth';
