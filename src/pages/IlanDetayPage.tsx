@@ -35,6 +35,7 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
 
   const ucret = ilan.ekbilgiler?.ucret;
   const plakaSatiyormu = ilan.kategori === 'plaka_satiyorum';
+  const kendiIlani = isLoggedIn && user?.id === ilan.user_id;
 
   useEffect(() => {
     if (isLoggedIn && user) {
@@ -132,12 +133,18 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
     </p>
   )}
 </div>
-          <button
-            onClick={() => setMesajFormuAcik(true)}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
-          >
-            <MessageSquare size={15} /> Mesaj Gonder
-          </button>
+          {kendiIlani ? (
+            <div className="w-full bg-slate-100 text-slate-400 py-3 rounded-xl text-sm text-center">
+              Bu sizin ilanınız
+            </div>
+          ) : (
+            <button
+              onClick={() => setMesajFormuAcik(true)}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+            >
+              <MessageSquare size={15} /> Mesaj Gonder
+            </button>
+          )}
           <button
             onClick={handleFavori}
             className={'w-full py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2 border ' +
