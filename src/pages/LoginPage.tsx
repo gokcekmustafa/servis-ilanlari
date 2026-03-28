@@ -118,12 +118,18 @@ const [popupGonderildi, setPopupGonderildi] = useState(false);
                   />
                   Beni Hatirla
                 </label>
-                <button onClick={() => setSifrePopup(true)} className="text-xs text-slate-400 hover:text-slate-600 transition">
+                <button onClick={async () => {
+  const tel = prompt('Telefon numaranızı girin:');
+  if (!tel) return;
+  await supabase.from('destek').insert({
+    konu: 'Şifre Sıfırlama Talebi',
+    mesaj: `Şifresini unuttu, aranmak istiyor. Telefon: ${tel}`,
+    durum: 'bekliyor',
+  });
+  alert('Talebiniz alındı, en kısa sürede arayacağız.');
+}} className="text-xs text-slate-400 hover:text-slate-600 transition">
   Sifremi Unuttum
 </button>
-              </div>
-
-              <button
                 onClick={handleLogin}
                 disabled={yukleniyor}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-50"
