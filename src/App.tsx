@@ -160,7 +160,7 @@ function ListeReklamKarti({ reklam }: { reklam: any }) {
   );
 }
 
-function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void }) {
+function HomePage({ onGoLogin, onIlanDetay, isLoggedIn }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void; isLoggedIn: boolean }) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
@@ -315,7 +315,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
     const result: React.ReactNode[] = [];
     filtrelenmisIlanlar.forEach((ilan, index) => {
       result.push(
-        <IlanCard key={ilan.id} ilan={ilan} onDetay={() => onIlanDetay(ilan)} />
+        <IlanCard key={ilan.id} ilan={ilan} onDetay={() => onIlanDetay(ilan)} isLoggedIn={!!isLoggedIn} onGoLogin={onGoLogin} />
       );
       if ((index + 1) % reklamSiklik === 5 && index < filtrelenmisIlanlar.length - 1) {
         result.push(
@@ -905,6 +905,7 @@ export default function App() {
       <HomePage
         onGoLogin={() => setCurrentPage('login')}
         onIlanDetay={handleIlanDetay}
+        isLoggedIn={isLoggedIn}
       />
     </>
   );
