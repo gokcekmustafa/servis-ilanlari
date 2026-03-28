@@ -129,8 +129,6 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
       return;
     }
     const user = mevcutKullanici();
-    if (user?.id === ilan.user_id) return;
-    const user = mevcutKullanici();
     if (!user) return;
     if (isFavori) {
       await favoriKaldir(user.id, ilan.id);
