@@ -277,7 +277,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
       updates.sifre_acik = profil.yeniSifre;
     }
     const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
-    if (error) { setHata('Güncelleme sırasında hata oluştu.'); }
+    if (error) { setHata('Yükleme hatası: ' + error.message); }
     else {
       const u = { ...user, ...updates };
       localStorage.setItem('user', JSON.stringify(u));
