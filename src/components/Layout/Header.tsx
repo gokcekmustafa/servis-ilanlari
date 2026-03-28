@@ -24,20 +24,26 @@ export default function Header({
   const [menuAcik, setMenuAcik] = useState(false);
   const [headerReklam, setHeaderReklam] = useState<any>(null);
 
+  const bildirimleriYukle = () => {
+    if (!isLoggedIn) return;
+    const user = mevcutKullanici();
+    if (!user) return;
+    okunmamisMesajSayisi(user.id).then(({ count }) => { setOkunmamis(count ?? 0); });
+    if (isAdmin) {
+      okunmamisDestekSayisi().then(({ count }) => { setBekleyenDestek(count ?? 0); });
+    }
+  };
+
   useEffect(() => {
     kullaniciSayisi().then(({ count }) => { if (count !== null) setSayi(count); });
     headerReklamYukle();
   }, []);
 
   useEffect(() => {
-    if (isLoggedIn) {
-  const user = mevcutKullanici();
-  if (user) {
-    okunmamisMesajSayisi(user.id).then(({ count }) => { if (count) setOkunmamis(count); });
-    okunmamisDestekSayisi().then(({ count }) => { if (count) setBekleyenDestek(count); });
-  }
-}
-  }, [isLoggedIn]);
+    bildirimleriYukle();
+    const interval = setInterval(bildirimleriYukle, 30000);
+    return () => clearInterval(interval);
+  }, [isLoggedIn, isAdmin]);
 
   useEffect(() => {
     document.body.style.overflow = menuAcik ? 'hidden' : '';
@@ -48,6 +54,16 @@ export default function Header({
     const { data } = await supabase.from('reklamlar').select('*').eq('aktif', true).eq('konum', 'header').limit(1).single();
     if (data) setHeaderReklam(data);
   };
+
+  const handleZilTikla = () => {
+    if (isAdmin) {
+      onNavigate('admin');
+    } else {
+      onGoPanel();
+    }
+  };
+
+  const toplamBildirim = okunmamis + bekleyenDestek;
 
   const navLinks = [
     { label: 'Anasayfa', page: 'home' },
@@ -61,9 +77,8 @@ export default function Header({
     <header className="bg-slate-100 pt-3 px-3 sm:px-4">
       <div className="max-w-5xl mx-auto">
 
-        {/* 1. ÜST ŞERİT — Kayıtlı kişi + Ücretsiz İlan Ver + kullanıcı butonları */}
+        {/* 1. ÜST ŞERİT */}
         <div className="bg-slate-600 rounded-t-lg px-3 sm:px-4 py-1.5 flex items-center gap-2">
-          {/* Sol: Kayıtlı kişi sayısı */}
           <span className="text-slate-300 text-xs truncate flex-shrink-0">
             Kayıtlı Kişi:{' '}
             <span className="text-white font-bold">
@@ -71,7 +86,6 @@ export default function Header({
             </span>
           </span>
 
-          {/* Orta: Ücretsiz İlan Ver — esnek alanda biraz sola yaslanmış */}
           <div className="flex-1 flex justify-end pr-2">
             <button
               onClick={onIlanEkle}
@@ -81,20 +95,21 @@ export default function Header({
             </button>
           </div>
 
-          {/* Sağ: Kullanıcı butonları (masaüstü) */}
+          {/* Masaüstü: kullanıcı butonları */}
           <div className="hidden md:flex items-center gap-1.5 flex-shrink-0">
             {isLoggedIn ? (
               <>
-                {/* Bildirim zili */}
-                <button onClick={() => bekleyenDestek > 0 ? onNavigate('admin') : onGoPanel()} className="relative p-1.5 text-slate-300 hover:text-white transition">
+                <button
+                  onClick={handleZilTikla}
+                  className="relative p-1.5 text-slate-300 hover:text-white transition"
+                >
                   <Bell size={17} />
-                  {(okunmamis + bekleyenDestek) > 0 && (
-  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-    {okunmamis + bekleyenDestek}
-  </span>
-)}
+                  {toplamBildirim > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                      {toplamBildirim}
+                    </span>
+                  )}
                 </button>
-                {/* Panelim */}
                 <button
                   onClick={onGoPanel}
                   className="flex items-center gap-1 text-slate-200 hover:text-white border border-slate-400 hover:border-slate-200 text-xs font-medium px-2.5 py-1 rounded transition"
@@ -102,7 +117,6 @@ export default function Header({
                   <LayoutDashboard size={13} />
                   {isAdmin ? 'Admin' : 'Panelim'}
                 </button>
-                {/* Çıkış */}
                 <button
                   onClick={onLogout}
                   className="flex items-center gap-1 text-slate-300 hover:text-red-400 text-xs px-2.5 py-1 rounded transition hover:bg-slate-700"
@@ -131,14 +145,14 @@ export default function Header({
           {/* Mobil: hamburger */}
           <div className="flex md:hidden items-center gap-1 flex-shrink-0">
             {isLoggedIn && (
-              <button onClick={() => bekleyenDestek > 0 ? onNavigate('admin') : onGoPanel()} className="relative p-1.5 text-slate-300">
-  <Bell size={18} />
-  {(okunmamis + bekleyenDestek) > 0 && (
-    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-      {okunmamis + bekleyenDestek}
-    </span>
-  )}
-</button>
+              <button onClick={handleZilTikla} className="relative p-1.5 text-slate-300 hover:text-white transition">
+                <Bell size={18} />
+                {toplamBildirim > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                    {toplamBildirim}
+                  </span>
+                )}
+              </button>
             )}
             <button
               onClick={() => setMenuAcik(!menuAcik)}
@@ -150,13 +164,9 @@ export default function Header({
           </div>
         </div>
 
-        {/* 2. LOGO + REKLAM — genişletilmiş */}
+        {/* 2. LOGO + REKLAM */}
         <div className="bg-white border-x border-slate-200 px-3 sm:px-4 py-3">
-
-          {/* Masaüstü: yan yana | Mobil: üst alta */}
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
-
-            {/* LOGO */}
             <div
               className="flex items-center gap-1.5 sm:gap-2 cursor-pointer flex-shrink-0 w-full sm:w-auto justify-center sm:justify-start"
               onClick={() => onNavigate('home')}
@@ -174,7 +184,6 @@ export default function Header({
               </div>
             </div>
 
-            {/* REKLAM ALANI */}
             <div className="w-full sm:flex-1 h-32 sm:h-48">
               {headerReklam ? (
                 <div
@@ -196,7 +205,6 @@ export default function Header({
                 </div>
               )}
             </div>
-
           </div>
         </div>
 
@@ -210,7 +218,7 @@ export default function Header({
           ))}
         </nav>
 
-        {/* MOBİL MENÜ — tam ekran overlay */}
+        {/* MOBİL MENÜ */}
         {menuAcik && (
           <div className="md:hidden fixed inset-0 top-0 z-50 bg-white flex flex-col">
             <div className="flex items-center justify-between px-4 py-4 border-b border-slate-100 bg-slate-800">
