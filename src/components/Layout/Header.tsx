@@ -13,10 +13,11 @@ type HeaderProps = {
   onIlanEkle: () => void;
   onGoPanel: () => void;
   onNavigate: (page: any) => void;
+  onGoDestek: () => void;
 };
 
 export default function Header({
-  isLoggedIn, isAdmin, onGoLogin, onLogout, onIlanEkle, onGoPanel, onNavigate,
+  isLoggedIn, isAdmin, onGoLogin, onLogout, onIlanEkle, onGoPanel, onNavigate, onGoDestek,
 }: HeaderProps) {
   const [sayi, setSayi] = useState<number | null>(null);
   const [okunmamis, setOkunmamis] = useState(0);
@@ -57,8 +58,7 @@ export default function Header({
 
   const handleZilTikla = () => {
   if (isAdmin) {
-    onNavigate('admin');
-    onGoPanel(); // admin sayfasını yeniden tetikle
+    onGoDestek();
   } else {
     onGoPanel();
   }
