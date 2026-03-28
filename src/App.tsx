@@ -171,11 +171,11 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
   const [popupTelefon, setPopupTelefon] = React.useState('');
   const [popupGonderildi, setPopupGonderildi] = React.useState(false);
 
-   handleLogin = async () => {
+   const handleLogin = async () => {
     if (!telefon || !sifre) { setHata('Telefon ve şifre boş bırakılamaz.'); return; }
     setYukleniyor(true);
     setHata('');
-     { error } = await girisYap(telefon, sifre);
+     const { error } = await girisYap(telefon, sifre);
     setYukleniyor(false);
     if (error) { setHata('Telefon veya şifre hatalı.'); return; }
     onLogin();
