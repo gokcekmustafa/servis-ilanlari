@@ -150,11 +150,13 @@ export default function Header({
 
         {/* 2. LOGO + REKLAM — genişletilmiş */}
         <div className="bg-white border-x border-slate-200 px-3 sm:px-4 py-3">
-          <div className="flex items-center gap-2 sm:gap-4">
+
+          {/* Masaüstü: yan yana | Mobil: üst alta */}
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
 
             {/* LOGO */}
             <div
-              className="flex items-center gap-1.5 sm:gap-2 cursor-pointer flex-shrink-0"
+              className="flex items-center gap-1.5 sm:gap-2 cursor-pointer flex-shrink-0 w-full sm:w-auto justify-center sm:justify-start"
               onClick={() => onNavigate('home')}
             >
               <div className="bg-orange-500 rounded-lg p-1 sm:p-1.5">
@@ -170,8 +172,8 @@ export default function Header({
               </div>
             </div>
 
-            {/* REKLAM ALANI — genişletilmiş, flex-1 ile tüm kalan alanı kaplar */}
-            <div className="block flex-1 h-20 sm:h-48">
+            {/* REKLAM ALANI */}
+            <div className="w-full sm:flex-1 h-32 sm:h-48">
               {headerReklam ? (
                 <div
                   onClick={() => headerReklam.link_url && window.open(headerReklam.link_url, '_blank')}
