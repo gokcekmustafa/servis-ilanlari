@@ -42,7 +42,7 @@ function ReklamBanner({ konum }: { konum: 'kenar_sol' | 'kenar_sag' }) {
       className="hidden xl:block fixed z-0"  // z-0 yaptık
       style={{
         [taraf]: 0,
-        top: '120px',
+        top: '40px',
         bottom: 0,
         width: 'calc((98vw - 1024px) / 2)',
       }}
