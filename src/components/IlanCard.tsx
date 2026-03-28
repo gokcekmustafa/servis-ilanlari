@@ -69,7 +69,7 @@ function GuzergahBasliklari({ kategori }: { kategori: KategoriType }) {
 
 // Kategoriye göre güzergah satırı
 function GuzergahSatiri({ g, kategori }: { g: any; kategori: KategoriType }) {
-  if (kategori === 'aracim_var_is' || kategori === 'soforum_is' || kategori === 'hostesim_is') {
+  if (kategori === 'cim_var_is' || kategori === 'soforum_is' || kategori === 'hostesim_is') {
     return (
       <div className="grid grid-cols-3 text-center items-center py-2">
         <span className="text-sm font-bold text-gray-800">{g.giris_saati || '—'}</span>
@@ -138,7 +138,7 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
 
         {/* GÜZERGAH TABLOSU */}
         {ilan.guzergahlar && ilan.guzergahlar.length > 0 && (
-          ilan.kategori === 'plaka_satiyorum' || ilan.kategori === 'aracimi_satiyorum' ? (
+          ilan.kategori === 'plaka_satiyorum' || ilan.kategori === 'cimi_satiyorum' ? (
             <div className="mb-3 flex items-center gap-1.5 text-xs text-gray-600 border-t border-gray-100 pt-2">
               <MapPin size={13} className="text-gray-400 flex-shrink-0" />
               <span>
@@ -201,7 +201,7 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
             e.stopPropagation();
             if (telefon) window.location.href = `tel:${telefon}`;
           }}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-gray-700 bg-blue hover:bg-gray-50 transition"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-gray-700 bg-white hover:bg-gray-50 transition"
         >
           <Phone size={12} className="text-[#f7971e]" /> Ara
         </button>
