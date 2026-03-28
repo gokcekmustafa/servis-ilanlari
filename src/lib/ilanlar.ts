@@ -205,3 +205,11 @@ export async function destekDurumGuncelle(id: string, durum: string, cevap?: str
     .eq('id', id);
   return { error };
 }
+
+export async function okunmamisDestekSayisi() {
+  const { count, error } = await supabase
+    .from('destek')
+    .select('*', { count: 'exact', head: true })
+    .eq('durum', 'beklemede');
+  return { count, error };
+}
