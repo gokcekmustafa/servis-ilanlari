@@ -328,7 +328,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
               <h2 className="text-sm font-bold text-white tracking-wide">İlan Kategorileri</h2>
               <span className="text-xs text-white/80 font-medium">{ilanlar.length} aktif ilan</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-2 sm:gap-3 sm:p-3">
+            <div className="flex overflow-x-auto gap-1.5 p-2 scrollbar-hide">
               {KATEGORILER.map((kat) => {
                 const sayi = kategoriSayisi(kat.id);
                 const isSelected = aktifKategori === kat.id;
@@ -337,17 +337,17 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                     key={kat.id}
                     onClick={() => setAktifKategori(isSelected ? null : kat.id)}
                     className={
-                      "flex flex-col items-center gap-1.5 px-2 py-1.5 sm:py-2.5 rounded-lg text-center transition-all " +
+                      "flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg text-center transition-all flex-shrink-0 w-[calc(12.5%-6px)] min-w-[80px] " +
                       (isSelected
                         ? "border-2 border-[#f7971e] bg-orange-50 shadow-sm shadow-orange-100"
                         : "border-2 border-gray-200 bg-gray-50 hover:border-orange-300 hover:bg-orange-50")
                     }
                   >
-                    <div className={"w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 " + kat.iconBg}
-                      style={{ fontSize: '22px' }}>
+                    <div className={"w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 " + kat.iconBg}
+                      style={{ fontSize: '16px' }}>
                       {kat.icon}
                     </div>
-                    <div className="text-[11.5px] font-bold text-gray-800 leading-snug">{kat.label}</div>
+                    <div className="text-[10px] font-bold text-gray-800 leading-snug">{kat.label}</div>
                     <div className={"inline-flex items-center justify-center text-[11px] font-bold px-2.5 py-0.5 rounded-full " +
                       (isSelected ? "bg-[#f7971e] text-white" : kat.iconBg + " " + kat.numColor)}>
                       {sayi}
