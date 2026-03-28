@@ -166,12 +166,11 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
   const [sifre, setSifre] = React.useState('');
   const [goster, setGoster] = React.useState(false);
   const [hata, setHata] = React.useState('');
-  const [yukleniyor, setYukleniyor] = React.useState(false);
+  const [yukleniyor, setYukleniyor] = React.useState(false);const [adminDefaultSekme, setAdminDefaultSekme] = useState<'istatistik' | 'destek'>('istatistik');
   const [sifrePopup, setSifrePopup] = React.useState(false);
   const [popupTelefon, setPopupTelefon] = React.useState('');
   const [popupGonderildi, setPopupGonderildi] = React.useState(false);
-  const [adminDefaultSekme, setAdminDefaultSekme] = useState<'istatistik' | 'destek'>('istatistik');
-
+  
    const handleLogin = async () => {
     if (!telefon || !sifre) { setHata('Telefon ve şifre boş bırakılamaz.'); return; }
     setYukleniyor(true);
