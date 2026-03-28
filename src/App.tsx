@@ -512,7 +512,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
             {/* YAN REKLAM ALANLARI */}
             <div className="flex gap-4 mb-3">
               {/* Sol filtreden sağ sona kadar uzanan, alt alta iki reklam */}
-              <div className="w-full flex flex-col gap-2 -ml-56">
+              <div className="w-full flex flex-col gap-2">
                 {/* Küçük reklam — h-32'nin %150'si = h-48 */}
                 <div
                   onClick={() => kenarKucukReklam?.link_url && window.open(kenarKucukReklam.link_url, '_blank')}
