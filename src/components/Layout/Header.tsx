@@ -56,13 +56,6 @@ export default function Header({
   };
 
   const handleZilTikla = () => {
-    if (isAdmin) {
-      onNavigate('admin');
-    } else {
-      onGoPanel();
-    }
-  };
-  const handleZilTikla = () => {
   console.log('zil tıklandı, isAdmin:', isAdmin);
   if (isAdmin) {
     onNavigate('admin');
