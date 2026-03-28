@@ -1,10 +1,14 @@
-import React from 'react';
-import { MapPin, Phone, MessageCircle, Clock, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Phone, MessageCircle, Clock, ArrowRight, Heart } from 'lucide-react';
 import { Ilan, KategoriType } from '../types';
+import { favoriEkle, favoriKaldir, favoriKontrol } from '../lib/ilanlar';
+import { mevcutKullanici } from '../lib/auth';
 
 type IlanCardProps = {
   ilan: Ilan;
   onDetay: (ilan: Ilan) => void;
+  onGoLogin?: () => void;
+  isLoggedIn?: boolean;
 };
 
 const kategoriConfig: Record<KategoriType, { label: string; bg: string; text: string; serit: string }> = {
@@ -14,7 +18,7 @@ const kategoriConfig: Record<KategoriType, { label: string; bg: string; text: st
   hostes_ariyorum:   { label: 'ARACIM VAR HOSTES ARIYORUM', bg: 'bg-purple-500', text: 'text-white', serit: 'bg-purple-500' },
   hostesim_is:       { label: 'HOSTESİM İŞ ARIYORUM',       bg: 'bg-pink-500',   text: 'text-white', serit: 'bg-pink-500' },
   soforum_is:        { label: 'ŞOFÖRÜM İŞ ARIYORUM',        bg: 'bg-yellow-500', text: 'text-white', serit: 'bg-yellow-500' },
-  plaka_satiyorum:   { label: 'PLAKAMI SATIYORUM',           bg: 'bg-red-500',    text: 'text-white', serit: 'bg-red-500' },
+  plaka_satiyorum:   { label: 'PLAKami SATIYORUM',           bg: 'bg-red-500',    text: 'text-white', serit: 'bg-red-500' },
   aracimi_satiyorum: { label: 'ARACIMI SATIYORUM',           bg: 'bg-teal-500',   text: 'text-white', serit: 'bg-teal-500' },
 };
 
@@ -101,12 +105,39 @@ function GuzergahSatiri({ g, kategori }: { g: any; kategori: KategoriType }) {
   );
 }
 
-export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
+export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanCardProps) {
   const config = kategoriConfig[ilan.kategori] ?? { label: 'DİĞER', bg: 'bg-gray-500', text: 'text-white', serit: 'bg-gray-300' };
   const ilanVeren = ilan.profiles?.full_name || ilan.ilan_veren || 'Kullanıcı';
   const telefon = ilan.profiles?.phone_number || '';
   const tarih = new Date(ilan.created_at).toLocaleDateString('tr-TR');
   const ekBilgi = ilan.ekbilgiler || {};
+  const [isFavori, setIsFavori] = useState(false);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      const user = mevcutKullanici();
+      if (user) {
+        favoriKontrol(user.id, ilan.id).then(({ isFavori }) => setIsFavori(isFavori));
+      }
+    }
+  }, [isLoggedIn, ilan.id]);
+
+  const handleFavori = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isLoggedIn) {
+      onGoLogin?.();
+      return;
+    }
+    const user = mevcutKullanici();
+    if (!user) return;
+    if (isFavori) {
+      await favoriKaldir(user.id, ilan.id);
+      setIsFavori(false);
+    } else {
+      await favoriEkle(user.id, ilan.id);
+      setIsFavori(true);
+    }
+  };
 
   return (
     <div
@@ -127,38 +158,38 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
       <div className="px-4 pt-3 pb-2">
 
         {/* AÇIKLAMA */}
-        {ilan.aciklama && (
-          <div className="mb-3">
-            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1">İlan Açıklaması</p>
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">İlan Açıklaması</p>
+            <button
+              onClick={handleFavori}
+              className={`flex items-center gap-1 text-[10px] font-semibold border px-2 py-0.5 rounded-full transition ${
+                isFavori
+                  ? 'text-red-500 border-red-300 bg-red-50'
+                  : 'text-gray-400 hover:text-red-400 border-gray-200 hover:border-red-300'
+              }`}
+            >
+              <Heart size={10} className={isFavori ? 'fill-red-500' : ''} />
+              {isFavori ? 'Favoride' : 'Favoriye Ekle'}
+            </button>
+          </div>
+          {ilan.aciklama && (
             <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
               {ilan.aciklama}
             </p>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* GÜZERGAH TABLOSU */}
         {ilan.guzergahlar && ilan.guzergahlar.length > 0 && (
-          ilan.kategori === 'plaka_satiyorum' || ilan.kategori === 'aracimi_satiyorum' ? (
-            <div className="mb-3 flex items-center gap-1.5 text-xs text-gray-600 border-t border-gray-100 pt-2">
-              <MapPin size={13} className="text-gray-400 flex-shrink-0" />
-              <span>
-                {[
-                  ilan.guzergahlar[0].kalkis_mah,
-                  ilan.guzergahlar[0].kalkis_ilce,
-                  ilan.guzergahlar[0].kalkis_il,
-                ].filter(Boolean).join(', ')}
-              </span>
+          <div className="mb-3">
+            <GuzergahBasliklari kategori={ilan.kategori} />
+            <div className="divide-y divide-gray-50">
+              {ilan.guzergahlar.slice(0, 2).map((g, i) => (
+                <GuzergahSatiri key={i} g={g} kategori={ilan.kategori} />
+              ))}
             </div>
-          ) : (
-            <div className="mb-3">
-              <GuzergahBasliklari kategori={ilan.kategori} />
-              <div className="divide-y divide-gray-50">
-                {ilan.guzergahlar.slice(0, 2).map((g, i) => (
-                  <GuzergahSatiri key={i} g={g} kategori={ilan.kategori} />
-                ))}
-              </div>
-            </div>
-          )
+          </div>
         )}
 
         {/* AYIRICI */}
@@ -171,12 +202,6 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
             <span>İlan Veren: <span className="text-gray-600">{ilanVeren}</span></span>
             {ilan.servis_turu && ilan.servis_turu.length > 0 && (
               <span>Servis Türü: <span className="text-gray-600">{ilan.servis_turu.join(', ')}</span></span>
-            )}
-            {ilan.kategori === 'isim_var_arac' && ekBilgi.km && (
-              <span>Toplam KM: <span className="text-gray-600">{ekBilgi.km} km</span></span>
-            )}
-            {ilan.kategori === 'isim_var_arac' && ekBilgi.servis_suresi && (
-              <span>Servis Süresi: <span className="text-gray-600">{ekBilgi.servis_suresi} dk</span></span>
             )}
             {ekBilgi.arac && (
               <span>Araç: <span className="text-gray-600">{ekBilgi.arac}</span></span>
@@ -192,39 +217,24 @@ export default function IlanCard({ ilan, onDetay }: IlanCardProps) {
       </div>
 
       {/* BUTONLAR */}
-      <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100 gap-2">
+      <div className="flex border-t border-gray-100 divide-x divide-gray-100">
         <button
           onClick={(e) => {
             e.stopPropagation();
             if (telefon) window.open(`https://wa.me/90${telefon.replace(/\D/g, '').replace(/^0/, '')}`, '_blank');
           }}
-          className="flex items-center justify-center gap-1.5 px-4 py-1.5 text-[11px] font-semibold text-[#25D366] bg-white border border-[#25D366] hover:bg-green-50 transition rounded-lg"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-[#25D366] bg-white hover:bg-gray-50 transition"
         >
           <MessageCircle size={12} /> WhatsApp
         </button>
-
-        {/* ÜCRET / FİYAT ORTADA */}
-        {ekBilgi.ucret ? (
-          <div className="text-center">
-            <span className="text-sm font-bold text-blue-600">
-              {Number(ekBilgi.ucret).toLocaleString('tr-TR')} ₺
-            </span>
-            <span className="block text-[10px] text-gray-400">
-              {ilan.kategori === 'plaka_satiyorum' || ilan.kategori === 'aracimi_satiyorum' ? 'Fiyat' : 'Ücret'}
-            </span>
-          </div>
-        ) : (
-          <div />
-        )}
-
         <button
           onClick={(e) => {
             e.stopPropagation();
             if (telefon) window.location.href = `tel:${telefon}`;
           }}
-          className="flex items-center justify-center gap-1.5 px-4 py-1.5 text-[11px] font-semibold text-white bg-blue-500 hover:bg-blue-600 transition rounded-lg"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-gray-700 bg-white hover:bg-gray-50 transition"
         >
-          <Phone size={12} /> Ara
+          <Phone size={12} className="text-[#f7971e]" /> Ara
         </button>
       </div>
     </div>
