@@ -257,12 +257,11 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
               </button>
               <button onClick={async () => {
   if (!popupTelefon) return;
-  await supabase.from('destek_talepleri').insert({
-    telefon: popupTelefon,
-    konu: 'Şifre Sıfırlama Talebi',
-    mesaj: 'Kullanıcı şifresini unuttu, aranmak istiyor.',
-    durum: 'bekliyor',
-  });
+  await supabase.from('destek').insert({
+  konu: 'Şifre Sıfırlama Talebi',
+  mesaj: `Şifresini unuttu, aranmak istiyor. Telefon: ${popupTelefon}`,
+  durum: 'bekliyor',
+});
   setPopupGonderildi(true);
 }}
                 className="flex-1 bg-[#f7971e] text-white text-xs font-bold py-2.5 rounded-lg hover:bg-[#e8881a] transition">
@@ -301,12 +300,11 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
               <button
                 onClick={async () => {
   if (!popupTelefon) return;
-  await supabase.from('destek_talepleri').insert({
-    telefon: popupTelefon,
-    konu: 'Şifre Sıfırlama Talebi',
-    mesaj: 'Kullanıcı şifresini unuttu, aranmak istiyor.',
-    durum: 'bekliyor',
-  });
+  await supabase.from('destek').insert({
+  konu: 'Şifre Sıfırlama Talebi',
+  mesaj: `Şifresini unuttu, aranmak istiyor. Telefon: ${popupTelefon}`,
+  durum: 'bekliyor',
+});
   setPopupGonderildi(true);
 }}
                 className="flex-1 bg-[#f7971e] text-white text-xs font-bold py-2.5 rounded-lg hover:bg-[#e8881a] transition"
