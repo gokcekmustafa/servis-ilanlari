@@ -62,6 +62,14 @@ export default function Header({
       onGoPanel();
     }
   };
+  const handleZilTikla = () => {
+  console.log('zil tıklandı, isAdmin:', isAdmin);
+  if (isAdmin) {
+    onNavigate('admin');
+  } else {
+    onGoPanel();
+  }
+};
 
   const toplamBildirim = okunmamis + bekleyenDestek;
 
@@ -100,9 +108,10 @@ export default function Header({
             {isLoggedIn ? (
               <>
                 <button
-                  onClick={handleZilTikla}
-                  className="relative p-1.5 text-slate-300 hover:text-white transition"
-                >
+  onClick={(e) => { e.stopPropagation(); handleZilTikla(); }}
+  className="relative p-1.5 text-slate-300 hover:text-white transition"
+  type="button"
+>
                   <Bell size={17} />
                   {toplamBildirim > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
@@ -145,7 +154,7 @@ export default function Header({
           {/* Mobil: hamburger */}
           <div className="flex md:hidden items-center gap-1 flex-shrink-0">
             {isLoggedIn && (
-              <button onClick={handleZilTikla} className="relative p-1.5 text-slate-300 hover:text-white transition">
+              <button onClick={(e) => { e.stopPropagation(); handleZilTikla(); }} className="relative p-1.5 text-slate-300 hover:text-white transition" type="button">
                 <Bell size={18} />
                 {toplamBildirim > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
