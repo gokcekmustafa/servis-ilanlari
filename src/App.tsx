@@ -167,12 +167,15 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
   const [goster, setGoster] = React.useState(false);
   const [hata, setHata] = React.useState('');
   const [yukleniyor, setYukleniyor] = React.useState(false);
+  const [sifrePopup, setSifrePopup] = React.useState(false);
+  const [popupTelefon, setPopupTelefon] = React.useState('');
+  const [popupGonderildi, setPopupGonderildi] = React.useState(false);
 
-  const handleLogin = async () => {
+   handleLogin = async () => {
     if (!telefon || !sifre) { setHata('Telefon ve şifre boş bırakılamaz.'); return; }
     setYukleniyor(true);
     setHata('');
-    const { error } = await girisYap(telefon, sifre);
+     { error } = await girisYap(telefon, sifre);
     setYukleniyor(false);
     if (error) { setHata('Telefon veya şifre hatalı.'); return; }
     onLogin();
@@ -193,6 +196,67 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
             placeholder="GSM numaranızı yazın"
             className="text-xs px-3 py-2 flex-1 min-w-0 focus:outline-none text-gray-700"
           />
+          {/* ŞİFREMİ UNUTTUM POPUP */}
+{sifrePopup && (
+  <div
+    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+    onClick={() => { setSifrePopup(false); setPopupGonderildi(false); setPopupTelefon(''); }}
+  >
+    <div
+      className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden"
+      onClick={e => e.stopPropagation()}
+    >
+      <div className="bg-[#f7971e] px-5 py-3">
+        <h3 className="text-white font-bold text-sm">Şifremi Unuttum</h3>
+      </div>
+      <div className="p-5">
+        {popupGonderildi ? (
+          <div className="text-center py-4">
+            <div className="text-3xl mb-3">✅</div>
+            <p className="text-sm font-semibold text-gray-800 mb-1">Talebiniz alındı!</p>
+            <p className="text-xs text-gray-500">En kısa sürede sizi arayacağız.</p>
+            <button
+              onClick={() => { setSifrePopup(false); setPopupGonderildi(false); setPopupTelefon(''); }}
+              className="mt-4 bg-[#f7971e] text-white text-xs font-bold px-6 py-2 rounded-lg"
+            >
+              Tamam
+            </button>
+          </div>
+        ) : (
+          <>
+            <p className="text-xs text-gray-600 mb-4">
+              Telefon numaranızı girin, sizi arayarak şifrenizi sıfırlamamıza yardımcı olalım.
+            </p>
+            <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden mb-3">
+              <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-3 py-2.5 border-r border-gray-200">GSM</span>
+              <input
+                type="tel"
+                value={popupTelefon}
+                onChange={e => setPopupTelefon(e.target.value)}
+                placeholder="05XX XXX XX XX"
+                className="text-xs px-3 py-2.5 flex-1 focus:outline-none text-gray-700"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setSifrePopup(false); setPopupTelefon(''); }}
+                className="flex-1 border border-gray-200 text-gray-600 text-xs font-medium py-2.5 rounded-lg hover:bg-gray-50 transition"
+              >
+                İptal
+              </button>
+              <button
+                onClick={() => { if (popupTelefon) setPopupGonderildi(true); }}
+                className="flex-1 bg-[#f7971e] text-white text-xs font-bold py-2.5 rounded-lg hover:bg-[#e8881a] transition"
+              >
+                Aranmak İstiyorum
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+)}
         </div>
         <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-1">
           <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-3 py-2 border-r border-gray-200 whitespace-nowrap">Şifre</span>
@@ -220,7 +284,7 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
           {yukleniyor ? '...' : 'Giriş'}
         </button>
         <div className="flex flex-col text-right flex-shrink-0">
-          <button className="text-[11px] text-gray-500 hover:text-gray-700 transition">Şifremi Unuttum</button>
+          <button onClick={() => setSifrePopup(true)} className="text-[11px] text-gray-500 hover:text-gray-700 transition">Şifremi Unuttum</button>
           <button onClick={onGoRegister} className="text-[11px] text-[#f7971e] hover:underline font-medium">Kayıt Ol</button>
         </div>
       </div>
@@ -274,17 +338,17 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
   );
 }
 function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void; onLoginSuccess: () => void; isLoggedIn: boolean }) {
-  const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
-  const [yukleniyor, setYukleniyor] = useState(true);
-  const [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
-  const [selectedSehir, setSelectedSehir] = useState('');
-  const [selectedKalkisIlce, setSelectedKalkisIlce] = useState('');
-  const [selectedKalkisMah, setSelectedKalkisMah] = useState('');
-  const [selectedVarisIl, setSelectedVarisIl] = useState('');
-  const [selectedVarisIlce, setSelectedVarisIlce] = useState('');
-  const [selectedVarisMah, setSelectedVarisMah] = useState('');
-  const [siralama, setSiralama] = useState('yeni');
-  const [duyuru, setDuyuru] = useState<any>(null);
+   [ilanlar, setIlanlar] = useState<Ilan[]>([]);
+   [yukleniyor, setYukleniyor] = useState(true);
+   [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
+   [selectedSehir, setSelectedSehir] = useState('');
+   [selectedKalkisIlce, setSelectedKalkisIlce] = useState('');
+   [selectedKalkisMah, setSelectedKalkisMah] = useState('');
+   [selectedVarisIl, setSelectedVarisIl] = useState('');
+   [selectedVarisIlce, setSelectedVarisIlce] = useState('');
+   [selectedVarisMah, setSelectedVarisMah] = useState('');
+   [siralama, setSiralama] = useState('yeni');
+   [duyuru, setDuyuru] = useState<any>(null);
   const [popupAcik, setPopupAcik] = useState(false);
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
