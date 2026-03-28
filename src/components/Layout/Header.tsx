@@ -56,9 +56,9 @@ export default function Header({
   };
 
   const handleZilTikla = () => {
-  console.log('zil tıklandı, isAdmin:', isAdmin);
   if (isAdmin) {
     onNavigate('admin');
+    onGoPanel(); // admin sayfasını yeniden tetikle
   } else {
     onGoPanel();
   }
