@@ -267,7 +267,7 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
     </div>
   );
 }
-function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void; onLoginSuccess: () => void }) {
+function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void; onLoginSuccess: () => void; isLoggedIn: boolean }) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
@@ -1019,6 +1019,7 @@ export default function App() {
   onGoLogin={() => setCurrentPage('login')}
   onIlanDetay={handleIlanDetay}
   onLoginSuccess={handleLogin}
+  isLoggedIn={isLoggedIn}
 />
     </>
   );
