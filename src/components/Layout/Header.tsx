@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Truck, LogOut, LayoutDashboard, Bell, Menu, X } from 'lucide-react';
 import { kullaniciSayisi } from '../../lib/auth';
-import { okunmamisMesajSayisi } from '../../lib/ilanlar';
+import { okunmamisMesajSayisi, okunmamisDestekSayisi } from '../../lib/ilanlar';
 import { mevcutKullanici } from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
 
@@ -20,6 +20,7 @@ export default function Header({
 }: HeaderProps) {
   const [sayi, setSayi] = useState<number | null>(null);
   const [okunmamis, setOkunmamis] = useState(0);
+  const [bekleyenDestek, setBekleyenDestek] = useState(0);
   const [menuAcik, setMenuAcik] = useState(false);
   const [headerReklam, setHeaderReklam] = useState<any>(null);
 
@@ -30,11 +31,12 @@ export default function Header({
 
   useEffect(() => {
     if (isLoggedIn) {
-      const user = mevcutKullanici();
-      if (user) {
-        okunmamisMesajSayisi(user.id).then(({ count }) => { if (count) setOkunmamis(count); });
-      }
-    }
+  const user = mevcutKullanici();
+  if (user) {
+    okunmamisMesajSayisi(user.id).then(({ count }) => { if (count) setOkunmamis(count); });
+    okunmamisDestekSayisi().then(({ count }) => { if (count) setBekleyenDestek(count); });
+  }
+}
   }, [isLoggedIn]);
 
   useEffect(() => {
@@ -84,13 +86,13 @@ export default function Header({
             {isLoggedIn ? (
               <>
                 {/* Bildirim zili */}
-                <button onClick={onGoPanel} className="relative p-1.5 text-slate-300 hover:text-white transition">
+                <button onClick={() => bekleyenDestek > 0 ? onNavigate('admin') : onGoPanel()} className="relative p-1.5 text-slate-300 hover:text-white transition">
                   <Bell size={17} />
-                  {okunmamis > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                      {okunmamis}
-                    </span>
-                  )}
+                  {(okunmamis + bekleyenDestek) > 0 && (
+  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+    {okunmamis + bekleyenDestek}
+  </span>
+)}
                 </button>
                 {/* Panelim */}
                 <button
