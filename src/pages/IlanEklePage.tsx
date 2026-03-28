@@ -413,7 +413,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
   };
 
   const selectedKategoriLabel = kategoriler.find((k) => k.id === selectedKategori)?.label;
-  const resimliKategori = selectedKategori === 'aracimi_satiyorum' || selectedKategori === 'aracim_var_is';
+  const resimliKategori = selectedKategori === 'aracimi_satiyorum' || selectedKategori === 'aracim_var_is' || selectedKategori === 'hostesim_is' || selectedKategori === 'soforum_is';
 
   return (
     <div className="bg-slate-100 min-h-screen py-6">
