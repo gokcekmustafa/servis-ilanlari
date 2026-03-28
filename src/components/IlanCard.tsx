@@ -14,7 +14,7 @@ const kategoriConfig: Record<KategoriType, { label: string; bg: string; text: st
   hostes_ariyorum:   { label: 'ARACIM VAR HOSTES ARIYORUM', bg: 'bg-purple-500', text: 'text-white', serit: 'bg-purple-500' },
   hostesim_is:       { label: 'HOSTESİM İŞ ARIYORUM',       bg: 'bg-pink-500',   text: 'text-white', serit: 'bg-pink-500' },
   soforum_is:        { label: 'ŞOFÖRÜM İŞ ARIYORUM',        bg: 'bg-yellow-500', text: 'text-white', serit: 'bg-yellow-500' },
-  plaka_satiyorum:   { label: 'PLAKIMI SATIYORUM',           bg: 'bg-red-500',    text: 'text-white', serit: 'bg-red-500' },
+  plaka_satiyorum:   { label: 'PLAKAMI SATIYORUM',           bg: 'bg-red-500',    text: 'text-white', serit: 'bg-red-500' },
   aracimi_satiyorum: { label: 'ARACIMI SATIYORUM',           bg: 'bg-teal-500',   text: 'text-white', serit: 'bg-teal-500' },
 };
 
