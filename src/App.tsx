@@ -39,17 +39,17 @@ function ReklamBanner({ konum }: { konum: 'kenar_sol' | 'kenar_sag' }) {
 
   return (
     <div
-      className="hidden xl:block fixed z-20"
+      className="hidden xl:block fixed z-0"  // z-0 yaptık
       style={{
         [taraf]: 0,
-        top: '60px',        // header yüksekliği kadar aşağıdan başla
+        top: '60px',
         bottom: 0,
-        width: 'calc((100vw - 1024px) / 2)',  // içerik dışında kalan genişlik
+        width: 'calc((100vw - 1024px) / 2)',
       }}
     >
       <div
         onClick={() => reklam?.link_url && window.open(reklam.link_url, '_blank')}
-        className={`w-full h-full overflow-hidden bg-white border-r border-l border-gray-200 ${reklam?.link_url ? 'cursor-pointer' : ''}`}
+        className={`w-full h-full overflow-hidden bg-white border-gray-200 ${taraf === 'left' ? 'border-r' : 'border-l'} ${reklam?.link_url ? 'cursor-pointer' : ''}`}
       >
         {reklam?.resim_url ? (
           <img
@@ -1158,11 +1158,11 @@ export default function App() {
   if (currentPage === 'login') return <LoginPage onLogin={handleLogin} onGoRegister={() => setCurrentPage('register')} onGoHome={() => setCurrentPage('home')} />;
   if (currentPage === 'register') return <RegisterPage onRegister={handleLogin} onGoLogin={() => setCurrentPage('login')} onGoHome={() => setCurrentPage('home')} />;
 
-  const withLayout = (content: React.ReactNode) => (
+  const withLayout = (content: React.ReactNode, reklamGoster = true) => (
   <div className="min-h-screen bg-[#f8fafc]">
     <Header {...headerProps} />
-    <ReklamBanner konum="kenar_sol" />
-    <ReklamBanner konum="kenar_sag" />
+    {reklamGoster && <ReklamBanner konum="kenar_sol" />}
+    {reklamGoster && <ReklamBanner konum="kenar_sag" />}
     {content}
     <Footer {...footerProps} />
   </div>
@@ -1174,10 +1174,10 @@ export default function App() {
     onGoBack={() => setCurrentPage('home')}
     onSuccess={() => setCurrentPage('home')}
   />);
-  if (currentPage === 'panel') return withLayout(<PanelPage onLogout={handleLogout} onIlanEkle={handleIlanEkle} onIlanDetay={handleIlanDetay} userId={userId || ''} />);
+  if (currentPage === 'panel') return withLayout(<PanelPage onLogout={handleLogout} onIlanEkle={handleIlanEkle} onIlanDetay={handleIlanDetay} userId={userId || ''} />, false);
   if (currentPage === 'admin') {
     if (!isAdmin) { setCurrentPage('home'); return null; }
-    return withLayout(<AdminPage onLogout={handleLogout} onIlanDetay={handleIlanDetay} isSuperAdmin={isSuperAdmin} yetkiler={yetkiler} />);
+    return withLayout(<AdminPage onLogout={handleLogout} onIlanDetay={handleIlanDetay} isSuperAdmin={isSuperAdmin} yetkiler={yetkiler} />, false);
   }
 
   if (currentPage === 'hakkimizda') return withLayout(<HakkimizdaPage onGoBack={goBack} />);
