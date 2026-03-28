@@ -39,23 +39,30 @@ function ReklamBanner({ konum }: { konum: 'kenar_sol' | 'kenar_sag' }) {
 
   return (
     <div
-      className="hidden xl:block fixed top-1/2 -translate-y-1/2 z-20"
-      style={{ [taraf]: 'calc((100vw - 1024px) / 2 - 136px)' }}
+      className="hidden xl:block fixed z-20"
+      style={{
+        [taraf]: 0,
+        top: '60px',        // header yüksekliği kadar aşağıdan başla
+        bottom: 0,
+        width: 'calc((100vw - 1024px) / 2)',  // içerik dışında kalan genişlik
+      }}
     >
       <div
         onClick={() => reklam?.link_url && window.open(reklam.link_url, '_blank')}
-        className={`relative w-32 rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm ${reklam?.link_url ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
-        style={{ height: '480px' }}
+        className={`w-full h-full overflow-hidden bg-white border-r border-l border-gray-200 ${reklam?.link_url ? 'cursor-pointer' : ''}`}
       >
         {reklam?.resim_url ? (
-          <img src={reklam.resim_url} alt={reklam.baslik || 'Reklam'} className="w-full h-full object-cover" />
+          <img
+            src={reklam.resim_url}
+            alt={reklam.baslik || 'Reklam'}
+            className="w-full h-full object-cover"
+          />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-100">
-            <span className="text-gray-200 text-3xl">📢</span>
-            <span className="text-gray-300 text-[10px] text-center px-2 leading-tight">Reklam<br/>Alanı</span>
+          <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-gray-50">
+            <span className="text-gray-200 text-4xl">📢</span>
+            <span className="text-gray-300 text-xs text-center px-3 leading-tight">Reklam Alanı</span>
           </div>
         )}
-        <span className="absolute bottom-1 right-1 bg-black/30 text-white text-[9px] px-1 py-0.5 rounded">Reklam</span>
       </div>
     </div>
   );
