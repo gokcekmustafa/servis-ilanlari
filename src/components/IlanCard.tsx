@@ -203,8 +203,11 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
             {ilan.servis_turu && ilan.servis_turu.length > 0 && (
               <span>Servis Türü: <span className="text-gray-600">{ilan.servis_turu.join(', ')}</span></span>
             )}
-            {ekBilgi.arac && (
-              <span>Araç: <span className="text-gray-600">{ekBilgi.arac}</span></span>
+            {ilan.kategori === 'isim_var_arac' && ekBilgi.km && (
+              <span>Toplam KM: <span className="text-gray-600">{ekBilgi.km} km</span></span>
+            )}
+            {ilan.kategori === 'isim_var_arac' && ekBilgi.servis_suresi && (
+              <span>Servis Süresi: <span className="text-gray-600">{ekBilgi.servis_suresi} dk</span></span>
             )}
             {ekBilgi.yas && (
               <span>Yaş: <span className="text-gray-600">{ekBilgi.yas}</span></span>
