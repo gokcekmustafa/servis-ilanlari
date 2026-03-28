@@ -50,7 +50,7 @@ const bosGuzergah = (): Guzergah => ({
 const ic = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
 const lb = 'text-xs font-medium text-slate-500 mb-1 block';
 
-// Güzel saat-dakika seçici bileşeni
+// Saat-dakika seçici bileşeni
 function SaatSecici({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
   const [saat, setSaat] = React.useState(() => value ? value.split(':')[0] : '');
   const [dakika, setDakika] = React.useState(() => value ? value.split(':')[1] : '');
@@ -81,30 +81,26 @@ function SaatSecici({ value, onChange, label }: { value: string; onChange: (v: s
   }, [value]);
 
   return (
-    <div>
+    <div className="inline-flex flex-col">
       <label className={lb}>{label}</label>
-      <div className="flex items-center gap-1.5">
+      <div className="inline-flex items-center gap-0.5">
         <select
           value={saat}
           onChange={(e) => handleSaatChange(e.target.value)}
-          className="flex-1 border border-slate-200 rounded-lg px-2 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white text-center font-semibold"
+          className="w-14 border border-slate-200 rounded-l-lg px-1 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white text-center font-semibold appearance-none"
         >
           <option value="">--</option>
-          {saatler.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
+          {saatler.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <span className="text-slate-400 font-bold text-base select-none">:</span>
+        <span className="bg-slate-100 border-y border-slate-200 px-1 py-2 text-slate-500 font-bold text-sm select-none">:</span>
         <select
           value={dakika}
           onChange={(e) => handleDakikaChange(e.target.value)}
           disabled={!saat}
-          className="flex-1 border border-slate-200 rounded-lg px-2 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white text-center font-semibold disabled:bg-slate-50 disabled:text-slate-300"
+          className="w-14 border border-slate-200 rounded-r-lg px-1 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white text-center font-semibold appearance-none disabled:bg-slate-50 disabled:text-slate-300"
         >
           <option value="">--</option>
-          {dakikalar.map((d) => (
-            <option key={d} value={d}>{d}</option>
-          ))}
+          {dakikalar.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
       {saat && dakika && (
@@ -175,7 +171,7 @@ function GuzergahSatiri({ guzergah, index, onGuncelle, onRemove, showRemove }: {
           </button>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-3 mb-3">
+      <div className="flex items-start gap-6 mb-3">
         <SaatSecici
           label="Giriş Saati"
           value={guzergah.giris_saati}
@@ -221,7 +217,7 @@ function KonumBilgisi({ il, ilce, mah, giris, cikis, onIlChange, onIlceChange, o
       <p className="text-xs text-orange-500 mb-4 font-medium">
         LUTFEN ASAGIDA BOS OLDUGUNUZ YERLERI VE SAATLERI EKLEYINIZ
       </p>
-      <div className="grid grid-cols-2 gap-3 mb-3">
+      <div className="flex items-start gap-6 mb-3">
         <SaatSecici
           label="Başlangıç Saati"
           value={giris}
