@@ -318,21 +318,20 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer flex-shrink-0">
-            <input type="checkbox" className="accent-orange-500 w-3.5 h-3.5" />
-            Beni Hatırla
-          </label>
-          <button
-            onClick={handleLogin}
-            disabled={yukleniyor}
-            className="bg-[#f7971e] hover:bg-[#e8881a] text-white text-xs font-bold px-4 py-2 rounded-lg transition disabled:opacity-50 flex-1"
-          >
-            {yukleniyor ? '...' : 'Giriş'}
-          </button>
-          <button onClick={onGoRegister} className="text-[11px] text-[#f7971e] hover:underline font-medium flex-shrink-0">
-            Kayıt Ol
-          </button>
-        </div>
+  <button
+    onClick={handleLogin}
+    disabled={yukleniyor}
+    className="bg-[#f7971e] hover:bg-[#e8881a] text-white text-xs font-bold px-4 py-2 rounded-lg transition disabled:opacity-50 flex-1"
+  >
+    {yukleniyor ? '...' : 'Giriş'}
+  </button>
+  <button onClick={onGoRegister} className="text-[11px] text-[#f7971e] hover:underline font-medium flex-shrink-0">
+    Kayıt Ol
+  </button>
+  <button onClick={() => setSifrePopup(true)} className="text-[11px] text-gray-500 hover:text-gray-700 flex-shrink-0">
+    Unuttum
+  </button>
+</div>
       </div>
     </div>
   );
