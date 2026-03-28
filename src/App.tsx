@@ -519,7 +519,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                   className={`relative w-full h-48 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarKucukReklam?.link_url ? 'cursor-pointer' : ''}`}
                 >
                   {kenarKucukReklam?.resim_url ? (
-                    <img src={kenarKucukReklam.resim_url} alt={kenarKucukReklam.baslik || 'Reklam'} className="w-full h-full object-cover" />
+                    <img src={kenarKucukReklam.resim_url} alt={kenarKucukReklam.baslik || 'Reklam'} className="w-full h-full object-contain" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center border border-dashed border-slate-200">
                       <span className="text-slate-300 text-xs">Reklam Alanı</span>
@@ -533,7 +533,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
                   className={`relative w-full h-72 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarBuyukReklam?.link_url ? 'cursor-pointer' : ''}`}
                 >
                   {kenarBuyukReklam?.resim_url ? (
-                    <img src={kenarBuyukReklam.resim_url} alt={kenarBuyukReklam.baslik || 'Reklam'} className="w-full h-full object-cover" />
+                    <img src={kenarBuyukReklam.resim_url} alt={kenarBuyukReklam.baslik || 'Reklam'} className="w-full h-full object-contain" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center border border-dashed border-slate-200">
                       <span className="text-slate-300 text-xs">Reklam Alanı</span>
