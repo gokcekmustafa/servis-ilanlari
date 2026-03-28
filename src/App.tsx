@@ -16,7 +16,7 @@ import KisiselVerilerPage from './pages/KisiselVerilerPage';
 import KunyePage from './pages/KunyePage';
 import IlanCard from './components/IlanCard';
 import { Ilan, KategoriType } from './types';
-import { mevcutKullanici, cikisYap } from './lib/auth';
+import { mevcutKullanici, cikisYap, girisYap } from './lib/auth';
 import { ilanlariGetir } from './lib/ilanlar';
 import { supabase } from './lib/supabase';
 import { SlidersHorizontal, X } from 'lucide-react';
@@ -160,6 +160,113 @@ function ListeReklamKarti({ reklam }: { reklam: any }) {
   );
 }
 
+// INLINE GİRİŞ ÇUBUĞU
+function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegister: () => void }) {
+  const [telefon, setTelefon] = React.useState('');
+  const [sifre, setSifre] = React.useState('');
+  const [goster, setGoster] = React.useState(false);
+  const [hata, setHata] = React.useState('');
+  const [yukleniyor, setYukleniyor] = React.useState(false);
+
+  const handleLogin = async () => {
+    if (!telefon || !sifre) { setHata('Telefon ve şifre boş bırakılamaz.'); return; }
+    setYukleniyor(true);
+    setHata('');
+    const { error } = await girisYap(telefon, sifre);
+    setYukleniyor(false);
+    if (error) { setHata('Telefon veya şifre hatalı.'); return; }
+    onLogin();
+  };
+
+  return (
+    <div className="px-3 py-2">
+      {hata && <p className="text-red-500 text-[11px] mb-1.5">{hata}</p>}
+      {/* Masaüstü: tek satır */}
+      <div className="hidden sm:flex items-center gap-2">
+        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+          <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-3 py-2 border-r border-gray-200">GSM</span>
+          <input
+            type="tel"
+            value={telefon}
+            onChange={e => setTelefon(e.target.value)}
+            placeholder="GSM numaranızı yazın"
+            className="text-xs px-3 py-2 w-44 focus:outline-none text-gray-700"
+          />
+        </div>
+        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+          <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-3 py-2 border-r border-gray-200">Şifre</span>
+          <input
+            type={goster ? 'text' : 'password'}
+            value={sifre}
+            onChange={e => setSifre(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            placeholder="Lütfen şifrenizi yazın"
+            className="text-xs px-3 py-2 w-40 focus:outline-none text-gray-700"
+          />
+          <button onClick={() => setGoster(!goster)} className="px-2 text-gray-400 hover:text-gray-600">
+            {goster ? '🙈' : '👁️'}
+          </button>
+        </div>
+        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer flex-shrink-0">
+          <input type="checkbox" className="accent-orange-500 w-3.5 h-3.5" />
+          Beni Hatırla
+        </label>
+        <button
+          onClick={handleLogin}
+          disabled={yukleniyor}
+          className="bg-[#f7971e] hover:bg-[#e8881a] text-white text-xs font-bold px-5 py-2 rounded-lg transition disabled:opacity-50 flex-shrink-0"
+        >
+          {yukleniyor ? '...' : 'Giriş'}
+        </button>
+        <div className="flex flex-col text-right ml-auto flex-shrink-0">
+          <button className="text-[11px] text-gray-500 hover:text-gray-700 transition">Şifremi Unuttum</button>
+          <button onClick={onGoRegister} className="text-[11px] text-[#f7971e] hover:underline font-medium">Kayıt Ol</button>
+        </div>
+      </div>
+      {/* Mobil: iki satır */}
+      <div className="sm:hidden flex flex-col gap-2">
+        <div className="flex gap-2">
+          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-1">
+            <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-2 border-r border-gray-200">GSM</span>
+            <input
+              type="tel"
+              value={telefon}
+              onChange={e => setTelefon(e.target.value)}
+              placeholder="GSM numaranızı yazın"
+              className="text-xs px-2 py-2 flex-1 focus:outline-none text-gray-700 min-w-0"
+            />
+          </div>
+          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-1">
+            <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-2 border-r border-gray-200">Şifre</span>
+            <input
+              type={goster ? 'text' : 'password'}
+              value={sifre}
+              onChange={e => setSifre(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              placeholder="Şifrenizi yazın"
+              className="text-xs px-2 py-2 flex-1 focus:outline-none text-gray-700 min-w-0"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+            <input type="checkbox" className="accent-orange-500 w-3.5 h-3.5" />
+            Beni Hatırla
+          </label>
+          <button
+            onClick={handleLogin}
+            disabled={yukleniyor}
+            className="bg-[#f7971e] hover:bg-[#e8881a] text-white text-xs font-bold px-5 py-2 rounded-lg transition disabled:opacity-50 flex-1"
+          >
+            {yukleniyor ? '...' : 'Giriş'}
+          </button>
+          <button className="text-[11px] text-gray-500 hover:text-gray-700">Şifremi Unuttum</button>
+          <button onClick={onGoRegister} className="text-[11px] text-[#f7971e] hover:underline font-medium">Kayıt Ol</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 function HomePage({ onGoLogin, onIlanDetay, isLoggedIn }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void; isLoggedIn: boolean }) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -330,6 +437,12 @@ function HomePage({ onGoLogin, onIlanDetay, isLoggedIn }: { onGoLogin: () => voi
     <div className="bg-[#f4f4f4] min-h-screen">
       <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4">
 
+        {/* GİRİŞ ÇUBUĞU */}
+        {!isLoggedIn && (
+          <div className="mb-3 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            <InlineGiris onLogin={onGoLogin} onGoRegister={onGoLogin} />
+          </div>
+        )}
         {/* KATEGORİ KARTLARI */}
         <div className="mb-4">
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
