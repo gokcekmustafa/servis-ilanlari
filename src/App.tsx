@@ -44,7 +44,7 @@ function ReklamBanner({ konum }: { konum: 'kenar_sol' | 'kenar_sag' }) {
         [taraf]: 0,
         top: '60px',
         bottom: 0,
-        width: 'calc((100vw - 1024px) / 2)',
+        width: 'calc((98vw - 1024px) / 2)',
       }}
     >
       <div
