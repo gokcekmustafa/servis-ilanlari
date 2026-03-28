@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   kullaniciIlanlari, ilanSil, ilanGuncelle, araclarGetir, aracEkle, aracSil,
   favorileriGetir, favoriKaldir, gelenMesajlar, okunmamisMesajSayisi,
@@ -6,11 +6,13 @@ import {
 } from '../lib/ilanlar';
 import { Ilan } from '../types';
 import { ilceler } from '../data/ilceler';
+import { mahalleler } from '../data/mahalleler';
 import { mevcutKullanici } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import {
   Eye, Trash2, Plus, Heart, Car, MessageSquare,
-  HelpCircle, User, LogOut, Bell, Menu, X, Pencil, Save, Camera
+  HelpCircle, User, LogOut, Bell, Menu, X, Pencil, Save, Camera,
+  Upload, ImagePlus
 } from 'lucide-react';
 
 type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'favoriler' | 'destek';
@@ -24,150 +26,664 @@ type PanelPageProps = {
 
 const iller = Object.keys(ilceler).sort();
 const aracTipleri = ['Minibus 16+1', 'Midibus 27+1', 'Otobüs 45+1', 'Sedan', 'Van'];
-const markalar = ['Mercedes', 'Ford', 'Volkswagen', 'Renault', 'Peugeot', 'Citroen', 'Iveco', 'Temsa', 'Isuzu'];
+const markalar = ['Mercedes', 'Fiat', 'Ford', 'Volkswagen', 'Renault', 'Peugeot', 'Citroen', 'Iveco', 'Temsa', 'Isuzu'];
+const tumIller = Object.keys(ilceler).sort();
+const MAX_RESIM = 6;
 
-// ─── Profil Resmi Bileşeni ────────────────────────────────────────────────────
+// Kategoriler güzergah gösterir mi?
+const GUZERGAHLI_KATEGORILER = ['isim_var_arac', 'aracim_var_is', 'sofor_ariyorum', 'hostes_ariyorum'];
+// Konum (il/ilçe) gösterir mi?
+const KONUMLU_KATEGORILER = ['hostesim_is', 'soforum_is', 'plaka_satiyorum', 'aracimi_satiyorum'];
+// Resim yükleme gerektiren kategoriler
+const RESIMLI_KATEGORILER = ['aracimi_satiyorum', 'aracim_var_is'];
+
+const ic = 'w-full border border-slate-200 rounded-xl px-3 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
+const lb = 'text-xs font-medium text-slate-500 mb-1 block';
+const btnO = 'bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition';
+const btnS = 'bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 text-sm font-medium px-4 py-3 rounded-xl transition';
+
+const toggleArr = (arr: string[], val: string) =>
+  arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val];
+
+// ─── Yardımcı: İl/İlçe/Mahalle ──────────────────────────────────────────────
+function IlIlceMahalle({ il, ilce, mah, onIlChange, onIlceChange, onMahChange }: {
+  il: string; ilce: string; mah: string;
+  onIlChange: (v: string) => void; onIlceChange: (v: string) => void; onMahChange: (v: string) => void;
+}) {
+  const ilceleri = il ? (ilceler[il] || []) : [];
+  const mahalleleri = il === 'Istanbul' && ilce ? ((mahalleler as any)[ilce] || []) : [];
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div><label className={lb}>Şehir</label>
+        <select value={il} onChange={e => onIlChange(e.target.value)} className={ic}>
+          <option value="">İl Seç</option>{tumIller.map(i => <option key={i} value={i}>{i}</option>)}
+        </select></div>
+      <div><label className={lb}>İlçe</label>
+        <select value={ilce} onChange={e => onIlceChange(e.target.value)} disabled={!il} className={ic + ' disabled:bg-slate-50'}>
+          <option value="">İlçe Seç</option>{ilceleri.map(i => <option key={i} value={i}>{i}</option>)}
+        </select></div>
+      <div><label className={lb}>Mahalle</label>
+        {il === 'Istanbul' ? (
+          <select value={mah} onChange={e => onMahChange(e.target.value)} disabled={!ilce} className={ic + ' disabled:bg-slate-50'}>
+            <option value="">Mahalle Seç</option>{mahalleleri.map((m: string) => <option key={m} value={m}>{m}</option>)}
+          </select>
+        ) : (
+          <input value={mah} onChange={e => onMahChange(e.target.value)} placeholder="Mahalle" className={ic} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Profil Resmi ─────────────────────────────────────────────────────────────
 function ProfilResmiWidget({ userId, mevcutUrl, onGuncelle }: {
-  userId: string;
-  mevcutUrl: string;
-  onGuncelle: (url: string) => void;
+  userId: string; mevcutUrl: string; onGuncelle: (url: string) => void;
 }) {
   const [yukleniyor, setYukleniyor] = useState(false);
   const [hata, setHata] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleDosyaSec = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Dosya boyutu kontrolü (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setHata('Dosya 5MB\'dan küçük olmalıdır.');
-      return;
-    }
-
-    setHata('');
-    setYukleniyor(true);
-
+    const file = e.target.files?.[0]; if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setHata('Dosya 5MB\'dan küçük olmalıdır.'); return; }
+    setHata(''); setYukleniyor(true);
     try {
       const dosyaAdi = `profil-${userId}-${Date.now()}`;
-
-      // Eski resmi sil (varsa)
       if (mevcutUrl) {
         const eskiPath = mevcutUrl.split('/profil-resimleri/')[1];
-        if (eskiPath) {
-          await supabase.storage.from('profil-resimleri').remove([eskiPath]);
-        }
+        if (eskiPath) await supabase.storage.from('profil-resimleri').remove([eskiPath]);
       }
-
-      // Yeni resmi yükle
-      const { data, error } = await supabase.storage
-        .from('profil-resimleri')
-        .upload(dosyaAdi, file, { upsert: true });
-
+      const { data, error } = await supabase.storage.from('profil-resimleri').upload(dosyaAdi, file, { upsert: true });
       if (error) { setHata('Yükleme hatası: ' + error.message); setYukleniyor(false); return; }
-
-      const { data: urlData } = supabase.storage
-        .from('profil-resimleri')
-        .getPublicUrl(data.path);
-
+      const { data: urlData } = supabase.storage.from('profil-resimleri').getPublicUrl(data.path);
       const yeniUrl = urlData.publicUrl;
-
-      // Profili güncelle
       await supabase.from('profiles').update({ avatar_url: yeniUrl }).eq('id', userId);
-
-      // LocalStorage güncelle
       const user = mevcutKullanici();
-      if (user) {
-        localStorage.setItem('user', JSON.stringify({ ...user, avatar_url: yeniUrl }));
-      }
-
+      if (user) localStorage.setItem('user', JSON.stringify({ ...user, avatar_url: yeniUrl }));
       onGuncelle(yeniUrl);
-    } catch {
-      setHata('Beklenmeyen bir hata oluştu.');
-    }
-
-    setYukleniyor(false);
-    e.target.value = '';
+    } catch { setHata('Beklenmeyen bir hata oluştu.'); }
+    setYukleniyor(false); e.target.value = '';
   };
 
   const handleResimSil = async () => {
-    if (!mevcutUrl) return;
-    if (!confirm('Profil resminizi silmek istiyor musunuz?')) return;
-
+    if (!mevcutUrl || !confirm('Profil resminizi silmek istiyor musunuz?')) return;
     setYukleniyor(true);
     const eskiPath = mevcutUrl.split('/profil-resimleri/')[1];
-    if (eskiPath) {
-      await supabase.storage.from('profil-resimleri').remove([eskiPath]);
-    }
+    if (eskiPath) await supabase.storage.from('profil-resimleri').remove([eskiPath]);
     await supabase.from('profiles').update({ avatar_url: null }).eq('id', userId);
-
     const user = mevcutKullanici();
-    if (user) {
-      const { avatar_url, ...rest } = user as any;
-      localStorage.setItem('user', JSON.stringify(rest));
-    }
-
-    onGuncelle('');
-    setYukleniyor(false);
+    if (user) { const { avatar_url, ...rest } = user as any; localStorage.setItem('user', JSON.stringify(rest)); }
+    onGuncelle(''); setYukleniyor(false);
   };
 
   return (
     <div className="flex flex-col items-center gap-3">
-      {/* Avatar */}
       <div className="relative">
         <div className="w-24 h-24 rounded-full bg-slate-100 border-4 border-white shadow-md overflow-hidden flex items-center justify-center">
-          {mevcutUrl ? (
-            <img src={mevcutUrl} alt="Profil" className="w-full h-full object-cover" />
-          ) : (
-            <User size={36} className="text-slate-300" />
-          )}
+          {mevcutUrl ? <img src={mevcutUrl} alt="Profil" className="w-full h-full object-cover" /> : <User size={36} className="text-slate-300" />}
         </div>
-
-        {/* Kamera butonu */}
-        <button
-          onClick={() => inputRef.current?.click()}
-          disabled={yukleniyor}
-          className="absolute bottom-0 right-0 w-8 h-8 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-lg transition disabled:opacity-50"
-          title="Fotoğraf değiştir"
-        >
-          {yukleniyor ? (
-            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Camera size={13} />
-          )}
+        <button onClick={() => inputRef.current?.click()} disabled={yukleniyor}
+          className="absolute bottom-0 right-0 w-8 h-8 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-lg transition disabled:opacity-50">
+          {yukleniyor ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Camera size={13} />}
         </button>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/gif,image/webp"
-          onChange={handleDosyaSec}
-          className="hidden"
-        />
+        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleDosyaSec} className="hidden" />
       </div>
-
-      {/* Butonlar */}
       <div className="flex gap-2">
-        <button
-          onClick={() => inputRef.current?.click()}
-          disabled={yukleniyor}
-          className="text-xs text-orange-500 hover:text-orange-700 font-semibold border border-orange-200 hover:border-orange-400 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
-        >
+        <button onClick={() => inputRef.current?.click()} disabled={yukleniyor}
+          className="text-xs text-orange-500 hover:text-orange-700 font-semibold border border-orange-200 hover:border-orange-400 px-3 py-1.5 rounded-lg transition disabled:opacity-50">
           {mevcutUrl ? 'Değiştir' : 'Fotoğraf Ekle'}
         </button>
         {mevcutUrl && (
-          <button
-            onClick={handleResimSil}
-            disabled={yukleniyor}
-            className="text-xs text-red-400 hover:text-red-600 font-semibold border border-red-100 hover:border-red-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
-          >
+          <button onClick={handleResimSil} disabled={yukleniyor}
+            className="text-xs text-red-400 hover:text-red-600 font-semibold border border-red-100 hover:border-red-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50">
             Sil
           </button>
         )}
       </div>
-
       {hata && <p className="text-xs text-red-500 text-center">{hata}</p>}
       <p className="text-[11px] text-slate-400 text-center">JPEG, PNG, WEBP · Maks 5MB</p>
+    </div>
+  );
+}
+
+// ─── Resim Yükleme (ilan resimleri) ──────────────────────────────────────────
+interface IlanResmi { file?: File; url: string; }
+
+function ResimYukleme({ resimler, onEkle, onSil }: {
+  resimler: IlanResmi[];
+  onEkle: (files: File[]) => void;
+  onSil: (index: number) => void;
+}) {
+  const [dragOver, setDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const kalan = MAX_RESIM - resimler.length;
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setDragOver(false);
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) onEkle(files);
+  };
+
+  return (
+    <div className="border border-slate-200 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h3 className="font-semibold text-slate-700 text-sm">Araç Fotoğrafları</h3>
+          <p className="text-xs text-slate-400">En fazla {MAX_RESIM} fotoğraf</p>
+        </div>
+        <span className={`text-xs font-bold px-2 py-1 rounded-lg ${resimler.length >= MAX_RESIM ? 'bg-red-50 text-red-500' : 'bg-slate-100 text-slate-500'}`}>
+          {resimler.length}/{MAX_RESIM}
+        </span>
+      </div>
+      {kalan > 0 && (
+        <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop}
+          onClick={() => inputRef.current?.click()}
+          className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition mb-3 ${dragOver ? 'border-orange-400 bg-orange-50' : 'border-slate-300 hover:border-orange-300 hover:bg-slate-50'}`}>
+          <Upload size={20} className={dragOver ? 'text-orange-400' : 'text-slate-300'} />
+          <p className="text-sm text-slate-500 text-center">Fotoğraf sürükle veya tıkla</p>
+          <input ref={inputRef} type="file" accept="image/*" multiple onChange={e => { const files = Array.from(e.target.files || []); if (files.length) onEkle(files); e.target.value = ''; }} className="hidden" />
+        </div>
+      )}
+      {resimler.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {resimler.map((resim, i) => (
+            <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-50 group">
+              <img src={resim.url} alt={`Fotoğraf ${i + 1}`} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                <button type="button" onClick={e => { e.stopPropagation(); onSil(i); }}
+                  className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition"><X size={14} /></button>
+              </div>
+              <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">{i + 1}</div>
+              {i === 0 && <div className="absolute bottom-1 left-1 bg-orange-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">Ana</div>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Düzenleme Modalı İçeriği (kategoriye göre) ───────────────────────────────
+function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
+  ilan: Ilan;
+  onKaydet: (updates: any) => void;
+  onKapat: () => void;
+}) {
+  const kategori = ilan.kategori;
+  const ek = ilan.ekbilgiler || {};
+
+  // Ortak
+  const [aciklama, setAciklama] = useState(ilan.aciklama || '');
+
+  // Resimler
+  const [resimler, setResimler] = useState<IlanResmi[]>(
+    (ek.resimler || []).map((url: string) => ({ url }))
+  );
+  const [resimYukleniyor, setResimYukleniyor] = useState(false);
+
+  const handleResimEkle = useCallback((files: File[]) => {
+    setResimler(prev => {
+      const kalan = MAX_RESIM - prev.length;
+      return [...prev, ...files.slice(0, kalan).map(f => ({ file: f, url: URL.createObjectURL(f) }))];
+    });
+  }, []);
+  const handleResimSil = useCallback((i: number) => setResimler(prev => prev.filter((_, idx) => idx !== i)), []);
+
+  // İşim Var Araç
+  const [isimVarArac, setIsimVarArac] = useState({
+    arac_markasi: ek.arac_markasi || '',
+    model: ek.model || '',
+    arac_yili: ek.arac_yili || '',
+    arac_kapasitesi: ek.arac_kapasitesi || '',
+    ucret: ek.ucret || '',
+    km: ek.km || '',
+    calisılacak_gun: ek.calisılacak_gun || '',
+    servis_suresi: ek.servis_suresi || '',
+    aracki_yolcu_sayisi: ek.aracki_yolcu_sayisi || '',
+    servis_turu: ek.servis_turu || [] as string[],
+  });
+
+  // Aracım Var İş
+  const [aracimVarIs, setAracimVarIs] = useState({
+    secilen_arac: ek.secilen_arac || '',
+    calisma_yerleri: ek.calisma_yerleri || '',
+  });
+
+  // Şoför Arıyorum
+  const [soforAriyorum, setSoforAriyorum] = useState({
+    odeme_sekli: ek.odeme_sekli || 'aylik',
+    ucret: ek.ucret || '',
+    aranan_tecrube: ek.aranan_tecrube || '',
+    ortalama_servis_suresi: ek.ortalama_servis_suresi || '',
+    yolcu_sayisi: ek.yolcu_sayisi || '',
+    km: ek.km || '',
+    calisılacak_gun: ek.calisılacak_gun || '',
+    yabanci_diller: ek.yabanci_diller || [] as string[],
+  });
+
+  // Hostes Arıyorum
+  const [hostesAriyorum, setHostesAriyorum] = useState({
+    ucret: ek.ucret || '',
+    calisılacak_okul: ek.calisılacak_okul || '',
+    aranan_tecrube: ek.aranan_tecrube || '',
+    okul_turu: ek.okul_turu || 'Anaokulu Kres',
+    yabanci_diller: ek.yabanci_diller || [] as string[],
+  });
+
+  // Hostesim İş
+  const [hostesimIs, setHostesimIs] = useState({
+    dogum_tarihi: ek.dogum_tarihi || '',
+    dogum_yeri: ek.dogum_yeri || '',
+    egitim_durumu: ek.egitim_durumu || '',
+    yabanci_diller: ek.yabanci_diller || [] as string[],
+    servis_tasimacilik_deneyimi: ek.servis_tasimacilik_deneyimi || 'var',
+  });
+
+  // Şoförüm İş
+  const [soforumIs, setSoforumIs] = useState({
+    surucubelgesi: ek.surucubelgesi || '',
+    ehliyet_alinma_tarihi: ek.ehliyet_alinma_tarihi || '',
+    sinav_belgeleri: ek.sinav_belgeleri || '',
+    dogum_tarihi: ek.dogum_tarihi || '',
+    dogum_yeri: ek.dogum_yeri || '',
+    arac_turu: ek.arac_turu || [] as string[],
+    belgeler: ek.belgeler || [] as string[],
+    yabanci_diller: ek.yabanci_diller || [] as string[],
+    emekli: ek.emekli || 'hayir',
+    mesleki_yeterlilik: ek.mesleki_yeterlilik || 'var',
+    sabika_kaydi: ek.sabika_kaydi || 'var',
+    tam_zamanlimi: ek.tam_zamanlimi || 'hayir',
+    servis_tasimacilik_deneyimi: ek.servis_tasimacilik_deneyimi || 'var',
+    baska_ise_gider_misiniz: ek.baska_ise_gider_misiniz || 'hayir',
+  });
+
+  // Plaka Satıyorum
+  const [plakaSatiyorum, setPlakaSatiyorum] = useState({
+    plaka_il: ek.plaka_il || '',
+    plaka_harf: ek.plaka_harf || '',
+    plaka_no: ek.plaka_no || '',
+    ucret: ek.ucret || '',
+    aracla_birlikte: ek.aracla_birlikte || false,
+    yol_belgesi_var: ek.yol_belgesi_var || false,
+    noter_satisi: ek.noter_satisi || false,
+    hisseli: ek.hisseli || false,
+  });
+
+  // Aracımı Satıyorum
+  const [aracimiSatiyorum, setAracimiSatiyorum] = useState({
+    marka: ek.marka || '',
+    model: ek.model || '',
+    yil: ek.yil || '',
+    plaka: ek.plaka || '',
+    koltuk_sayisi: ek.koltuk_sayisi || '',
+    arac_tipi: ek.arac_tipi || '',
+    km: ek.km || '',
+    ucret: ek.ucret || '',
+    hasar_kaydi: ek.hasar_kaydi || 'yok',
+    noter_satisi: ek.noter_satisi || false,
+    aracla_birlikte_plaka: ek.aracla_birlikte_plaka || false,
+  });
+
+  // Konum
+  const konumGuzergah = ilan.guzergahlar?.[0] || {};
+  const [konumIl, setKonumIl] = useState(konumGuzergah.kalkis_il || '');
+  const [konumIlce, setKonumIlce] = useState(konumGuzergah.kalkis_ilce || '');
+  const [konumMah, setKonumMah] = useState(konumGuzergah.kalkis_mah || '');
+
+  const handleKaydet = async () => {
+    let yeniEkbilgiler: any = { ...ek };
+    let yeniGuzergahlar = ilan.guzergahlar ? [...ilan.guzergahlar] : [];
+
+    // Resim yükle (yeni eklenenler)
+    setResimYukleniyor(true);
+    const yuklenenUrller: string[] = [];
+    for (const resim of resimler) {
+      if (resim.file) {
+        const ad = `ilan-resim-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const { data } = await supabase.storage.from('profil-resimleri').upload(ad, resim.file);
+        if (data) { const { data: u } = supabase.storage.from('profil-resimleri').getPublicUrl(data.path); yuklenenUrller.push(u.publicUrl); }
+      } else {
+        yuklenenUrller.push(resim.url);
+      }
+    }
+    setResimYukleniyor(false);
+
+    if (kategori === 'isim_var_arac') {
+      yeniEkbilgiler = { ...isimVarArac };
+    } else if (kategori === 'aracim_var_is') {
+      yeniEkbilgiler = { ...aracimVarIs, resimler: yuklenenUrller };
+    } else if (kategori === 'sofor_ariyorum') {
+      yeniEkbilgiler = { ...soforAriyorum };
+    } else if (kategori === 'hostes_ariyorum') {
+      yeniEkbilgiler = { ...hostesAriyorum };
+    } else if (kategori === 'hostesim_is') {
+      yeniEkbilgiler = { ...hostesimIs };
+      yeniGuzergahlar = [{ giris_saati: '', kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah, varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }];
+    } else if (kategori === 'soforum_is') {
+      yeniEkbilgiler = { ...soforumIs };
+      yeniGuzergahlar = [{ giris_saati: '', kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah, varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }];
+    } else if (kategori === 'plaka_satiyorum') {
+      yeniEkbilgiler = { ...plakaSatiyorum };
+      yeniGuzergahlar = [{ giris_saati: '', kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah, varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }];
+    } else if (kategori === 'aracimi_satiyorum') {
+      yeniEkbilgiler = { ...aracimiSatiyorum, resimler: yuklenenUrller };
+      yeniGuzergahlar = [{ giris_saati: '', kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah, varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }];
+    }
+
+    onKaydet({ aciklama, ekbilgiler: yeniEkbilgiler, guzergahlar: yeniGuzergahlar });
+  };
+
+  const dilSecenekleri = ['İngilizce', 'Arapça', 'Almanca', 'Fransızca', 'Diğer'];
+
+  return (
+    <div className="space-y-5">
+      {/* ─── İŞİM VAR ARAÇ ─── */}
+      {kategori === 'isim_var_arac' && (
+        <div className="border border-slate-200 rounded-xl p-4">
+          <h3 className="font-semibold text-slate-700 mb-4 text-sm">Araç Bilgileri</h3>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div><label className={lb}>Araç Markası</label>
+              <select value={isimVarArac.arac_markasi} onChange={e => setIsimVarArac({...isimVarArac,arac_markasi:e.target.value})} className={ic}>
+                <option value="">Seçin</option><option value="farketmez">Farketmez</option>
+                {markalar.map(m=><option key={m} value={m}>{m}</option>)}
+              </select></div>
+            <div><label className={lb}>Model</label>
+              <select value={isimVarArac.model} onChange={e => setIsimVarArac({...isimVarArac,model:e.target.value})} className={ic}>
+                <option value="">Seçin</option><option value="farketmez">Farketmez</option>
+                {['Sprinter','Ducato','Transit','Crafter','Jumper','Boxer','Daily','Minibus'].map(m=><option key={m} value={m}>{m}</option>)}
+              </select></div>
+            <div><label className={lb}>Araç Yılı</label>
+              <select value={isimVarArac.arac_yili} onChange={e => setIsimVarArac({...isimVarArac,arac_yili:e.target.value})} className={ic}>
+                <option value="">Seçin</option><option value="farketmez">Farketmez</option>
+                {Array.from({length:20},(_,i)=>2025-i).map(y=><option key={y} value={y}>{y}</option>)}
+              </select></div>
+            <div><label className={lb}>Kapasite</label>
+              <select value={isimVarArac.arac_kapasitesi} onChange={e => setIsimVarArac({...isimVarArac,arac_kapasitesi:e.target.value})} className={ic}>
+                <option value="">Seçin</option><option value="farketmez">Farketmez</option>
+                {['4+1','8+1','14+1','16+1','27+1','36+1','45+1'].map(k=><option key={k} value={k}>{k}</option>)}
+              </select></div>
+            <div><label className={lb}>Ücret (TL)</label><input type="number" value={isimVarArac.ucret} onChange={e=>setIsimVarArac({...isimVarArac,ucret:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>KM</label><input type="number" value={isimVarArac.km} onChange={e=>setIsimVarArac({...isimVarArac,km:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Çalışacak Gün</label><input type="number" value={isimVarArac.calisılacak_gun} onChange={e=>setIsimVarArac({...isimVarArac,calisılacak_gun:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Servis Süresi (Dk)</label><input type="number" value={isimVarArac.servis_suresi} onChange={e=>setIsimVarArac({...isimVarArac,servis_suresi:e.target.value})} className={ic}/></div>
+          </div>
+          <div className="mb-4"><label className={lb}>Yolcu Sayısı</label><input type="number" value={isimVarArac.aracki_yolcu_sayisi} onChange={e=>setIsimVarArac({...isimVarArac,aracki_yolcu_sayisi:e.target.value})} className={ic+' max-w-xs'}/></div>
+          <div><label className={lb+' mb-2'}>Servis Türü</label>
+            <div className="flex flex-wrap gap-3">
+              {['Okul','Personel','Hafif Minibus','Turizm','Diğer'].map(t=>(
+                <label key={t} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                  <input type="checkbox" checked={isimVarArac.servis_turu.includes(t)} onChange={()=>setIsimVarArac({...isimVarArac,servis_turu:toggleArr(isimVarArac.servis_turu,t)})} className="accent-orange-500 w-4 h-4"/>{t}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── ARACIM VAR İŞ ─── */}
+      {kategori === 'aracim_var_is' && (
+        <div className="border border-slate-200 rounded-xl p-4">
+          <h3 className="font-semibold text-slate-700 mb-4 text-sm">Araç Bilgileri</h3>
+          <div className="mb-3"><label className={lb}>Seçilen Araç (Plaka)</label><input value={aracimVarIs.secilen_arac} onChange={e=>setAracimVarIs({...aracimVarIs,secilen_arac:e.target.value})} className={ic} placeholder="Araç plakası"/></div>
+          <div><label className={lb}>Çalışma Yerleri / İstenen Güzergah</label><input value={aracimVarIs.calisma_yerleri} onChange={e=>setAracimVarIs({...aracimVarIs,calisma_yerleri:e.target.value})} placeholder="Kadıköy, Üsküdar, Beşiktaş" className={ic}/></div>
+        </div>
+      )}
+
+      {/* ─── ŞOFÖR ARIYORUM ─── */}
+      {kategori === 'sofor_ariyorum' && (
+        <div className="border border-slate-200 rounded-xl p-4">
+          <h3 className="font-semibold text-slate-700 mb-4 text-sm">İlan Detayları</h3>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div><label className={lb}>Ödeme Şekli</label>
+              <select value={soforAriyorum.odeme_sekli} onChange={e=>setSoforAriyorum({...soforAriyorum,odeme_sekli:e.target.value})} className={ic}>
+                <option value="aylik">Aylık</option><option value="haftalik">Haftalık</option><option value="gunluk">Günlük</option>
+              </select></div>
+            <div><label className={lb}>Ücret (TL)</label><input type="number" value={soforAriyorum.ucret} onChange={e=>setSoforAriyorum({...soforAriyorum,ucret:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Aranan Tecrübe</label>
+              <select value={soforAriyorum.aranan_tecrube} onChange={e=>setSoforAriyorum({...soforAriyorum,aranan_tecrube:e.target.value})} className={ic}>
+                <option value="">Farketmez</option><option value="1">1 Yıl</option><option value="2">2 Yıl</option><option value="3">3 Yıl ve üzeri</option>
+              </select></div>
+            <div><label className={lb}>Ort. Servis Süresi (Dk)</label><input type="number" value={soforAriyorum.ortalama_servis_suresi} onChange={e=>setSoforAriyorum({...soforAriyorum,ortalama_servis_suresi:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Yolcu Sayısı</label><input type="number" value={soforAriyorum.yolcu_sayisi} onChange={e=>setSoforAriyorum({...soforAriyorum,yolcu_sayisi:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>KM</label><input type="number" value={soforAriyorum.km} onChange={e=>setSoforAriyorum({...soforAriyorum,km:e.target.value})} className={ic}/></div>
+          </div>
+          <div className="mb-4"><label className={lb}>Çalışacak Gün</label><input type="number" value={soforAriyorum.calisılacak_gun} onChange={e=>setSoforAriyorum({...soforAriyorum,calisılacak_gun:e.target.value})} className={ic+' max-w-xs'}/></div>
+          <div><label className={lb+' mb-2'}>İstenen Yabancı Diller</label>
+            <div className="flex flex-wrap gap-3">
+              {dilSecenekleri.map(d=>(
+                <label key={d} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                  <input type="checkbox" checked={soforAriyorum.yabanci_diller.includes(d)} onChange={()=>setSoforAriyorum({...soforAriyorum,yabanci_diller:toggleArr(soforAriyorum.yabanci_diller,d)})} className="accent-orange-500 w-4 h-4"/>{d}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── HOSTES ARIYORUM ─── */}
+      {kategori === 'hostes_ariyorum' && (
+        <div className="border border-slate-200 rounded-xl p-4">
+          <h3 className="font-semibold text-slate-700 mb-4 text-sm">İlan Detayları</h3>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div><label className={lb}>Ücret (TL)</label><input type="number" value={hostesAriyorum.ucret} onChange={e=>setHostesAriyorum({...hostesAriyorum,ucret:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Çalışacak Okul</label><input value={hostesAriyorum.calisılacak_okul} onChange={e=>setHostesAriyorum({...hostesAriyorum,calisılacak_okul:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Aranan Tecrübe</label>
+              <select value={hostesAriyorum.aranan_tecrube} onChange={e=>setHostesAriyorum({...hostesAriyorum,aranan_tecrube:e.target.value})} className={ic}>
+                <option value="">Farketmez</option><option value="1">1 Yıl</option><option value="2">2 Yıl</option><option value="3">3 Yıl ve üzeri</option>
+              </select></div>
+          </div>
+          <div className="mb-4"><label className={lb+' mb-2'}>Okul Türü</label>
+            <div className="flex flex-wrap gap-4">
+              {['Anaokulu Kres','İlk Öğretim','Lise'].map(t=>(
+                <label key={t} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                  <input type="radio" checked={hostesAriyorum.okul_turu===t} onChange={()=>setHostesAriyorum({...hostesAriyorum,okul_turu:t})} className="accent-orange-500"/>{t}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div><label className={lb+' mb-2'}>Yabancı Diller</label>
+            <div className="flex flex-wrap gap-3">
+              {dilSecenekleri.map(d=>(
+                <label key={d} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                  <input type="checkbox" checked={hostesAriyorum.yabanci_diller.includes(d)} onChange={()=>setHostesAriyorum({...hostesAriyorum,yabanci_diller:toggleArr(hostesAriyorum.yabanci_diller,d)})} className="accent-orange-500 w-4 h-4"/>{d}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── HOSTESİM İŞ ─── */}
+      {kategori === 'hostesim_is' && (
+        <div className="border border-slate-200 rounded-xl p-4">
+          <h3 className="font-semibold text-slate-700 mb-4 text-sm">İlan Detayları</h3>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div><label className={lb}>Doğum Tarihi</label><input type="date" value={hostesimIs.dogum_tarihi} onChange={e=>setHostesimIs({...hostesimIs,dogum_tarihi:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Doğum Yeri</label><input value={hostesimIs.dogum_yeri} onChange={e=>setHostesimIs({...hostesimIs,dogum_yeri:e.target.value})} className={ic}/></div>
+            <div className="col-span-2"><label className={lb}>Eğitim Durumu</label>
+              <select value={hostesimIs.egitim_durumu} onChange={e=>setHostesimIs({...hostesimIs,egitim_durumu:e.target.value})} className={ic}>
+                <option value="">Seçiniz</option><option value="ilkokul">İlkokul</option><option value="ortaokul">Ortaokul</option><option value="lise">Lise</option><option value="universite">Üniversite</option>
+              </select></div>
+          </div>
+          <div className="mb-4"><label className={lb+' mb-2'}>Yabancı Diller</label>
+            <div className="flex flex-wrap gap-3">
+              {dilSecenekleri.map(d=>(
+                <label key={d} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                  <input type="checkbox" checked={hostesimIs.yabanci_diller.includes(d)} onChange={()=>setHostesimIs({...hostesimIs,yabanci_diller:toggleArr(hostesimIs.yabanci_diller,d)})} className="accent-orange-500 w-4 h-4"/>{d}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div><label className={lb+' mb-2'}>Servis Taşımacılık Deneyimi</label>
+            <div className="flex gap-4">
+              {['var','yok'].map(v=>(
+                <label key={v} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                  <input type="radio" checked={hostesimIs.servis_tasimacilik_deneyimi===v} onChange={()=>setHostesimIs({...hostesimIs,servis_tasimacilik_deneyimi:v})} className="accent-orange-500"/>{v==='var'?'Var':'Yok'}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── ŞOFÖRÜM İŞ ─── */}
+      {kategori === 'soforum_is' && (
+        <div className="border border-slate-200 rounded-xl p-4">
+          <h3 className="font-semibold text-slate-700 mb-4 text-sm">Ehliyet ve Araç Bilgileri</h3>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div><label className={lb}>Sürücü Belgesi</label>
+              <select value={soforumIs.surucubelgesi} onChange={e=>setSoforumIs({...soforumIs,surucubelgesi:e.target.value})} className={ic}>
+                <option value="">Seçin</option>{['B','D','D1','D2','D+E'].map(b=><option key={b} value={b}>{b}</option>)}
+              </select></div>
+            <div><label className={lb}>Ehliyet Tarihi</label><input type="date" value={soforumIs.ehliyet_alinma_tarihi} onChange={e=>setSoforumIs({...soforumIs,ehliyet_alinma_tarihi:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>SRC Belgeleri</label><input value={soforumIs.sinav_belgeleri} placeholder="SRC2, SRC3" onChange={e=>setSoforumIs({...soforumIs,sinav_belgeleri:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Doğum Tarihi</label><input type="date" value={soforumIs.dogum_tarihi} onChange={e=>setSoforumIs({...soforumIs,dogum_tarihi:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Doğum Yeri</label><input value={soforumIs.dogum_yeri} onChange={e=>setSoforumIs({...soforumIs,dogum_yeri:e.target.value})} className={ic}/></div>
+          </div>
+          <div className="mb-4"><label className={lb+' mb-2'}>Araç Türü</label>
+            <div className="flex flex-wrap gap-3">
+              {['Minibus','Midibus','Otobus','Van','Otomobil'].map(t=>(
+                <label key={t} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                  <input type="checkbox" checked={soforumIs.arac_turu.includes(t)} onChange={()=>setSoforumIs({...soforumIs,arac_turu:toggleArr(soforumIs.arac_turu,t)})} className="accent-orange-500 w-4 h-4"/>{t}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="mb-4"><label className={lb+' mb-2'}>Belgeler</label>
+            <div className="flex flex-wrap gap-3 mb-3">
+              {['Src','Src1','Src2','Src3','Diğer','Tam Şoför Kart'].map(b=>(
+                <label key={b} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                  <input type="checkbox" checked={soforumIs.belgeler.includes(b)} onChange={()=>setSoforumIs({...soforumIs,belgeler:toggleArr(soforumIs.belgeler,b)})} className="accent-orange-500 w-4 h-4"/>{b}
+                </label>
+              ))}
+            </div>
+            <label className={lb+' mb-2'}>Yabancı Diller</label>
+            <div className="flex flex-wrap gap-3">
+              {dilSecenekleri.map(d=>(
+                <label key={d} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                  <input type="checkbox" checked={soforumIs.yabanci_diller.includes(d)} onChange={()=>setSoforumIs({...soforumIs,yabanci_diller:toggleArr(soforumIs.yabanci_diller,d)})} className="accent-orange-500 w-4 h-4"/>{d}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              {label:'Emekli misiniz?',key:'emekli'},
+              {label:'Mesleki Yeterlilik?',key:'mesleki_yeterlilik'},
+              {label:'Sabıka kaydı?',key:'sabika_kaydi'},
+              {label:'Tam zamanlı?',key:'tam_zamanlimi'},
+              {label:'Servis Deneyimi?',key:'servis_tasimacilik_deneyimi'},
+              {label:'Başka işe gider?',key:'baska_ise_gider_misiniz'},
+            ].map(item=>(
+              <div key={item.key}><label className={lb+' mb-2'}>{item.label}</label>
+                <div className="flex gap-3">
+                  {['Evet','Hayır'].map(v=>(
+                    <label key={v} className="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer">
+                      <input type="radio" checked={(soforumIs as any)[item.key]===v.toLowerCase().replace('ı','i')} onChange={()=>setSoforumIs({...soforumIs,[item.key]:v.toLowerCase().replace('ı','i')})} className="accent-orange-500"/>{v}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── PLAKA SATIYORUM ─── */}
+      {kategori === 'plaka_satiyorum' && (
+        <div className="border border-slate-200 rounded-xl p-4">
+          <h3 className="font-semibold text-slate-700 mb-4 text-sm">Plaka Bilgileri (Gizlenecektir)</h3>
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <input value={plakaSatiyorum.plaka_il} placeholder="34" maxLength={2} onChange={e=>setPlakaSatiyorum({...plakaSatiyorum,plaka_il:e.target.value})} className="w-16 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400"/>
+            <input value={plakaSatiyorum.plaka_harf} placeholder="LAL" maxLength={3} onChange={e=>setPlakaSatiyorum({...plakaSatiyorum,plaka_harf:e.target.value.toUpperCase()})} className="w-20 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400"/>
+            <input value={plakaSatiyorum.plaka_no} placeholder="454" maxLength={4} onChange={e=>setPlakaSatiyorum({...plakaSatiyorum,plaka_no:e.target.value})} className="w-20 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400"/>
+            <div className="flex items-center gap-2">
+              <input type="number" value={plakaSatiyorum.ucret} placeholder="1.000.000" onChange={e=>setPlakaSatiyorum({...plakaSatiyorum,ucret:e.target.value})} className="w-36 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"/>
+              <span className="text-sm text-slate-500 font-medium">TL</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            {[{key:'aracla_birlikte',label:'Araçla Birlikte'},{key:'yol_belgesi_var',label:'Yol Belgesi Var'},{key:'noter_satisi',label:'Noter Satışı'},{key:'hisseli',label:'Hisseli'}].map(item=>(
+              <label key={item.key} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <input type="checkbox" checked={(plakaSatiyorum as any)[item.key]} onChange={e=>setPlakaSatiyorum({...plakaSatiyorum,[item.key]:e.target.checked})} className="accent-orange-500 w-4 h-4"/>{item.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── ARACIMI SATIYORUM ─── */}
+      {kategori === 'aracimi_satiyorum' && (
+        <div className="border border-slate-200 rounded-xl p-4">
+          <h3 className="font-semibold text-slate-700 mb-4 text-sm">Araç Bilgileri</h3>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div><label className={lb}>Marka</label>
+              <select value={aracimiSatiyorum.marka} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,marka:e.target.value})} className={ic}>
+                <option value="">Seçin</option>{markalar.map(m=><option key={m} value={m}>{m}</option>)}
+              </select></div>
+            <div><label className={lb}>Model</label><input value={aracimiSatiyorum.model} placeholder="Sprinter, Ducato..." onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,model:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Yıl</label>
+              <select value={aracimiSatiyorum.yil} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,yil:e.target.value})} className={ic}>
+                <option value="">Seçin</option>{Array.from({length:20},(_,i)=>2025-i).map(y=><option key={y} value={y}>{y}</option>)}
+              </select></div>
+            <div><label className={lb}>Plaka (Gizlenecektir)</label><input value={aracimiSatiyorum.plaka} placeholder="34 ABC 123" onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,plaka:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Koltuk Sayısı</label>
+              <select value={aracimiSatiyorum.koltuk_sayisi} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,koltuk_sayisi:e.target.value})} className={ic}>
+                <option value="">Seçin</option>{['4+1','8+1','14+1','16+1','27+1','36+1','45+1'].map(k=><option key={k} value={k}>{k}</option>)}
+              </select></div>
+            <div><label className={lb}>Araç Tipi</label>
+              <select value={aracimiSatiyorum.arac_tipi} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,arac_tipi:e.target.value})} className={ic}>
+                <option value="">Seçin</option>{['Minibus','Midibus','Otobus','Van','Sedan'].map(t=><option key={t} value={t}>{t}</option>)}
+              </select></div>
+            <div><label className={lb}>KM</label><input type="number" value={aracimiSatiyorum.km} placeholder="150000" onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,km:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Fiyat (TL)</label><input type="number" value={aracimiSatiyorum.ucret} placeholder="1200000" onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,ucret:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Hasar Kaydı</label>
+              <select value={aracimiSatiyorum.hasar_kaydi} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,hasar_kaydi:e.target.value})} className={ic}>
+                <option value="yok">Yok</option><option value="var">Var</option>
+              </select></div>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer"><input type="checkbox" checked={aracimiSatiyorum.noter_satisi} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,noter_satisi:e.target.checked})} className="accent-orange-500 w-4 h-4"/>Noter Satışı</label>
+            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer"><input type="checkbox" checked={aracimiSatiyorum.aracla_birlikte_plaka} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,aracla_birlikte_plaka:e.target.checked})} className="accent-orange-500 w-4 h-4"/>Plakayla Birlikte</label>
+          </div>
+        </div>
+      )}
+
+      {/* ─── RESİM YÜKLEME (araç satış kategorileri) ─── */}
+      {RESIMLI_KATEGORILER.includes(kategori) && (
+        <ResimYukleme resimler={resimler} onEkle={handleResimEkle} onSil={handleResimSil} />
+      )}
+
+      {/* ─── KONUM (güzergahsız kategoriler) ─── */}
+      {KONUMLU_KATEGORILER.includes(kategori) && (
+        <div className="border border-slate-200 rounded-xl p-4">
+          <h3 className="font-semibold text-slate-700 mb-1 text-sm">Konum Bilgisi</h3>
+          <p className="text-xs text-orange-500 mb-4 font-medium">Bulunduğunuz şehir, ilçe ve mahalleyi seçin</p>
+          <IlIlceMahalle
+            il={konumIl} ilce={konumIlce} mah={konumMah}
+            onIlChange={v => { setKonumIl(v); setKonumIlce(''); setKonumMah(''); }}
+            onIlceChange={v => { setKonumIlce(v); setKonumMah(''); }}
+            onMahChange={setKonumMah}
+          />
+        </div>
+      )}
+
+      {/* ─── AÇIKLAMA (hep göster) ─── */}
+      <div className="border border-slate-200 rounded-xl p-4">
+        <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 block">İlan Açıklaması</label>
+        <textarea className={ic + ' resize-none'} rows={4} value={aciklama}
+          onChange={e => setAciklama(e.target.value)} placeholder="İlan açıklaması..." />
+      </div>
+
+      {/* ─── KAYDET BUTONU ─── */}
+      <div className="flex gap-3 pt-2">
+        <button onClick={onKapat} className={btnS + ' flex-1'}>İptal</button>
+        <button onClick={handleKaydet} disabled={resimYukleniyor}
+          className={btnO + ' flex-1 flex items-center justify-center gap-2 disabled:opacity-60'}>
+          {resimYukleniyor ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={14} />}
+          {resimYukleniyor ? 'Kaydediliyor...' : 'Kaydet'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -189,13 +705,6 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
   const [aracForm, setAracForm] = useState({ marka: '', model: '', yil: '', plaka: '', koltuk_sayisi: '', arac_tipi: '' });
   const [menuAcik, setMenuAcik] = useState(false);
   const [duzenleIlan, setDuzenleIlan] = useState<Ilan | null>(null);
-  const [duzenleForm, setDuzenleForm] = useState({
-    aciklama: '',
-    ucret: '',
-    ucret_tipi: 'ay',
-    servis_turu: [] as string[],
-    guzergahlar: [] as any[],
-  });
   const [duzenleYukleniyor, setDuzenleYukleniyor] = useState(false);
 
   const user = mevcutKullanici();
@@ -303,30 +812,9 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
     if (!error) { setDestekGonderildi(true); setDestekForm({ konu: '', mesaj: '' }); }
   };
 
-  const handleDuzenlemeAc = (ilan: Ilan) => {
-    setDuzenleIlan(ilan);
-    setDuzenleForm({
-      aciklama: ilan.aciklama || '',
-      ucret: ilan.ekbilgiler?.ucret || '',
-      ucret_tipi: ilan.ekbilgiler?.ucret_tipi || 'ay',
-      servis_turu: ilan.servis_turu || [],
-      guzergahlar: ilan.guzergahlar ? JSON.parse(JSON.stringify(ilan.guzergahlar)) : [],
-    });
-  };
-
-  const handleDuzenleKaydet = async () => {
+  const handleDuzenleKaydet = async (updates: any) => {
     if (!duzenleIlan) return;
     setDuzenleYukleniyor(true);
-    const updates = {
-      aciklama: duzenleForm.aciklama,
-      servis_turu: duzenleForm.servis_turu,
-      guzergahlar: duzenleForm.guzergahlar,
-      ekbilgiler: {
-        ...(duzenleIlan.ekbilgiler || {}),
-        ucret: duzenleForm.ucret,
-        ucret_tipi: duzenleForm.ucret_tipi,
-      },
-    };
     const { error } = await ilanGuncelle(duzenleIlan.id, updates);
     setDuzenleYukleniyor(false);
     if (!error) {
@@ -339,18 +827,8 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
     }
   };
 
-  const handleGuzergahGuncelle = (idx: number, alan: string, deger: string) => {
-    const yeni = [...duzenleForm.guzergahlar];
-    yeni[idx] = { ...yeni[idx], [alan]: deger };
-    setDuzenleForm({ ...duzenleForm, guzergahlar: yeni });
-  };
-
-  const servisTurleri = ['Klima', 'USB Şarj', 'Güvenlik Kamerası', 'WiFi', 'Engelli Erişimi', 'Çocuk Koltuğu'];
   const sekmeSecildi = (id: Sekme) => { setAktifSekme(id); setMenuAcik(false); };
   const ilceleri = profil.il ? (ilceler[profil.il] || []) : [];
-  const ic = 'w-full border border-slate-200 rounded-xl px-3 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
-  const btnO = 'bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition';
-  const btnS = 'bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 text-sm font-medium px-4 py-3 rounded-xl transition';
 
   const menuItems = [
     { id: 'profil',    label: 'Profilim',    icon: User },
@@ -366,14 +844,9 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
   const SidebarIcerik = () => (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       <div className="bg-slate-800 px-4 py-5 flex flex-col items-center text-center">
-        {/* Profil resmi sidebar'da */}
         <div className="relative mb-3">
           <div className="w-16 h-16 rounded-full bg-slate-600 border-2 border-slate-500 overflow-hidden flex items-center justify-center">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="Profil" className="w-full h-full object-cover" />
-            ) : (
-              <User size={24} className="text-slate-300" />
-            )}
+            {avatarUrl ? <img src={avatarUrl} alt="Profil" className="w-full h-full object-cover" /> : <User size={24} className="text-slate-300" />}
           </div>
         </div>
         <p className="text-white font-semibold text-sm truncate w-full">{user?.full_name || 'Kullanıcı'}</p>
@@ -389,9 +862,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                 (aktif ? 'bg-orange-500 text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800')}>
               <span className="flex items-center gap-2.5"><Icon size={15} />{item.label}</span>
               {item.badge !== undefined && item.badge > 0 && (
-                <span className={'text-xs px-1.5 py-0.5 rounded-full font-bold ' + (aktif ? 'bg-white/20 text-white' : 'bg-red-500 text-white')}>
-                  {item.badge}
-                </span>
+                <span className={'text-xs px-1.5 py-0.5 rounded-full font-bold ' + (aktif ? 'bg-white/20 text-white' : 'bg-red-500 text-white')}>{item.badge}</span>
               )}
             </button>
           );
@@ -415,9 +886,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
       {/* MOBİL ÜST BAR */}
       <div className="lg:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-2">
-          <button onClick={() => setMenuAcik(true)} className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg">
-            <Menu size={20} />
-          </button>
+          <button onClick={() => setMenuAcik(true)} className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg"><Menu size={20} /></button>
           <span className="font-semibold text-slate-800 text-sm">{sekmeBulunan?.label || 'Panel'}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -427,9 +896,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">{okunmamisSayi}</span>
             </button>
           )}
-          <button onClick={onIlanEkle} className="bg-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
-            + İlan Ver
-          </button>
+          <button onClick={onIlanEkle} className="bg-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">+ İlan Ver</button>
         </div>
       </div>
 
@@ -450,74 +917,37 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
       <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-5">
 
-          {/* MASAÜSTÜ SIDEBAR */}
-          <aside className="hidden lg:block w-52 flex-shrink-0">
-            <SidebarIcerik />
-          </aside>
+          <aside className="hidden lg:block w-52 flex-shrink-0"><SidebarIcerik /></aside>
 
-          {/* ANA İÇERİK */}
           <main className="flex-1 min-w-0">
 
             {/* PROFİL */}
             {aktifSekme === 'profil' && (
               <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
                 <h2 className="font-bold text-slate-800 text-base mb-5">Profil Bilgilerim</h2>
-
                 {basari && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{basari}</div>}
                 {hata && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-4 text-sm">{hata}</div>}
-
-                {/* ── PROFİL RESMİ ── */}
                 <div className="flex flex-col items-center mb-6 pb-6 border-b border-slate-100">
-                  <ProfilResmiWidget
-                    userId={userId}
-                    mevcutUrl={avatarUrl}
-                    onGuncelle={(url) => setAvatarUrl(url)}
-                  />
+                  <ProfilResmiWidget userId={userId} mevcutUrl={avatarUrl} onGuncelle={url => setAvatarUrl(url)} />
                 </div>
-
-                {/* ── PROFİL BİLGİLERİ ── */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 mb-1 block">Ad Soyad</label>
-                    <input className={ic} value={profil.ad} onChange={e => setProfil({ ...profil, ad: e.target.value })} placeholder="Ad Soyadınız" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 mb-1 block">GSM Numaranız</label>
-                    <input className={ic + ' bg-slate-50 text-slate-400 cursor-not-allowed'} value={profil.telefon} disabled />
-                  </div>
+                  <div><label className="text-xs font-semibold text-slate-500 mb-1 block">Ad Soyad</label><input className={ic} value={profil.ad} onChange={e => setProfil({ ...profil, ad: e.target.value })} placeholder="Ad Soyadınız" /></div>
+                  <div><label className="text-xs font-semibold text-slate-500 mb-1 block">GSM Numaranız</label><input className={ic + ' bg-slate-50 text-slate-400 cursor-not-allowed'} value={profil.telefon} disabled /></div>
                 </div>
-
-                <div className="mb-3">
-                  <label className="text-xs font-semibold text-slate-500 mb-1 block">Adres</label>
-                  <textarea className={ic + ' resize-none'} value={profil.adres} onChange={e => setProfil({ ...profil, adres: e.target.value })} placeholder="Adresiniz" rows={3} />
-                </div>
-
+                <div className="mb-3"><label className="text-xs font-semibold text-slate-500 mb-1 block">Adres</label><textarea className={ic + ' resize-none'} value={profil.adres} onChange={e => setProfil({ ...profil, adres: e.target.value })} placeholder="Adresiniz" rows={3} /></div>
                 <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 mb-1 block">İl</label>
+                  <div><label className="text-xs font-semibold text-slate-500 mb-1 block">İl</label>
                     <select className={ic} value={profil.il} onChange={e => setProfil({ ...profil, il: e.target.value, ilce: '' })}>
-                      <option value="">Seçiniz</option>
-                      {iller.map(il => <option key={il} value={il}>{il}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 mb-1 block">İlçe</label>
+                      <option value="">Seçiniz</option>{iller.map(il => <option key={il} value={il}>{il}</option>)}
+                    </select></div>
+                  <div><label className="text-xs font-semibold text-slate-500 mb-1 block">İlçe</label>
                     <select className={ic} value={profil.ilce} disabled={!profil.il} onChange={e => setProfil({ ...profil, ilce: e.target.value })}>
-                      <option value="">Seçiniz</option>
-                      {ilceleri.map(ilce => <option key={ilce} value={ilce}>{ilce}</option>)}
-                    </select>
-                  </div>
+                      <option value="">Seçiniz</option>{ilceleri.map(ilce => <option key={ilce} value={ilce}>{ilce}</option>)}
+                    </select></div>
                 </div>
-
-                <div className="mb-5">
-                  <label className="text-xs font-semibold text-slate-500 mb-1 block">Yeni Şifre</label>
-                  <input type="password" className={ic} value={profil.yeniSifre} onChange={e => setProfil({ ...profil, yeniSifre: e.target.value })} placeholder="Değiştirmek istemiyorsanız boş bırakın" />
-                </div>
-
+                <div className="mb-5"><label className="text-xs font-semibold text-slate-500 mb-1 block">Yeni Şifre</label><input type="password" className={ic} value={profil.yeniSifre} onChange={e => setProfil({ ...profil, yeniSifre: e.target.value })} placeholder="Değiştirmek istemiyorsanız boş bırakın" /></div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-slate-100">
-                  <button onClick={handleHesapSil} className="text-xs text-slate-400 hover:text-red-500 hover:bg-red-50 px-3 py-2 rounded-xl transition text-center">
-                    Hesabı Kapat
-                  </button>
+                  <button onClick={handleHesapSil} className="text-xs text-slate-400 hover:text-red-500 hover:bg-red-50 px-3 py-2 rounded-xl transition text-center">Hesabı Kapat</button>
                   <button onClick={handleProfilGuncelle} className={btnO}>Bilgileri Güncelle</button>
                 </div>
               </div>
@@ -528,21 +958,15 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-slate-100">
                   <h2 className="font-bold text-slate-800 text-base">İlanlarım</h2>
-                  <button onClick={onIlanEkle} className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
-                    <Plus size={13} /> Yeni İlan
-                  </button>
+                  <button onClick={onIlanEkle} className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5"><Plus size={13} /> Yeni İlan</button>
                 </div>
                 {basari && <div className="mx-4 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">{basari}</div>}
                 {yukleniyor ? (
                   <div className="p-4 flex flex-col gap-3">{[1,2,3].map(i => <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />)}</div>
                 ) : ilanlar.length === 0 ? (
-                  <div className="text-center py-16 text-slate-400">
-                    <p className="text-sm font-medium mb-3">Henüz ilanınız yok</p>
-                    <button onClick={onIlanEkle} className={btnO}>İlan Ver</button>
-                  </div>
+                  <div className="text-center py-16 text-slate-400"><p className="text-sm font-medium mb-3">Henüz ilanınız yok</p><button onClick={onIlanEkle} className={btnO}>İlan Ver</button></div>
                 ) : (
                   <>
-                    {/* MOBİL */}
                     <div className="sm:hidden divide-y divide-slate-100">
                       {ilanlar.map(ilan => (
                         <div key={ilan.id} className="p-4">
@@ -550,48 +974,32 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                             <p className="text-slate-700 font-medium text-sm line-clamp-2 flex-1">{ilan.aciklama}</p>
                             <div className="flex gap-1 flex-shrink-0">
                               <button onClick={() => onIlanDetay(ilan)} className="p-2 text-slate-400 hover:text-blue-500 bg-slate-50 rounded-lg"><Eye size={14} /></button>
-                              <button onClick={() => handleDuzenlemeAc(ilan)} className="p-2 text-slate-400 hover:text-orange-500 bg-slate-50 rounded-lg"><Pencil size={14} /></button>
+                              <button onClick={() => setDuzenleIlan(ilan)} className="p-2 text-slate-400 hover:text-orange-500 bg-slate-50 rounded-lg"><Pencil size={14} /></button>
                               <button onClick={() => handleIlanSil(ilan.id)} className="p-2 text-slate-400 hover:text-red-500 bg-slate-50 rounded-lg"><Trash2 size={14} /></button>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">{ilan.kategori.replace(/_/g, ' ')}</span>
-                            <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500')}>
-                              {ilan.durum === 'aktif' ? 'Aktif' : 'Pasif'}
-                            </span>
+                            <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500')}>{ilan.durum === 'aktif' ? 'Aktif' : 'Pasif'}</span>
                             <span className="text-xs text-slate-400">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</span>
                           </div>
                         </div>
                       ))}
                     </div>
-                    {/* MASAÜSTÜ */}
                     <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full text-sm">
-                        <thead>
-                          <tr className="bg-slate-50 border-b border-slate-200">
-                            {['İlan', 'Kategori', 'Tarih', 'Durum', 'İşlem'].map(h => (
-                              <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
+                        <thead><tr className="bg-slate-50 border-b border-slate-200">{['İlan','Kategori','Tarih','Durum','İşlem'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500">{h}</th>)}</tr></thead>
                         <tbody>
                           {ilanlar.map(ilan => (
                             <tr key={ilan.id} className="border-b border-slate-50 hover:bg-slate-50 transition">
-                              <td className="px-4 py-3">
-                                <p className="text-slate-700 font-medium text-sm line-clamp-1 max-w-xs">{ilan.aciklama}</p>
-                                <p className="text-xs text-slate-400 mt-0.5">{ilan.guzergahlar[0]?.kalkis_ilce} - {ilan.guzergahlar[0]?.varis_ilce}</p>
-                              </td>
-                              <td className="px-4 py-3"><span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full">{ilan.kategori.replace(/_/g, ' ')}</span></td>
+                              <td className="px-4 py-3"><p className="text-slate-700 font-medium text-sm line-clamp-1 max-w-xs">{ilan.aciklama}</p></td>
+                              <td className="px-4 py-3"><span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full">{ilan.kategori.replace(/_/g,' ')}</span></td>
                               <td className="px-4 py-3 text-slate-400 text-xs">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</td>
-                              <td className="px-4 py-3">
-                                <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500')}>
-                                  {ilan.durum === 'aktif' ? 'Aktif' : 'Pasif'}
-                                </span>
-                              </td>
+                              <td className="px-4 py-3"><span className={'text-xs font-semibold px-2 py-0.5 rounded-full '+(ilan.durum==='aktif'?'bg-green-100 text-green-700':'bg-slate-100 text-slate-500')}>{ilan.durum==='aktif'?'Aktif':'Pasif'}</span></td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-1">
                                   <button onClick={() => onIlanDetay(ilan)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition"><Eye size={14} /></button>
-                                  <button onClick={() => handleDuzenlemeAc(ilan)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition"><Pencil size={14} /></button>
+                                  <button onClick={() => setDuzenleIlan(ilan)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition"><Pencil size={14} /></button>
                                   <button onClick={() => handleIlanSil(ilan.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"><Trash2 size={14} /></button>
                                 </div>
                               </td>
@@ -610,9 +1018,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-slate-100">
                   <h2 className="font-bold text-slate-800 text-base">Araçlarım</h2>
-                  <button onClick={() => setAracFormAcik(!aracFormAcik)} className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
-                    <Plus size={13} /> Araç Ekle
-                  </button>
+                  <button onClick={() => setAracFormAcik(!aracFormAcik)} className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5"><Plus size={13} /> Araç Ekle</button>
                 </div>
                 {basari && <div className="mx-4 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">{basari}</div>}
                 {hata && <div className="mx-4 mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">{hata}</div>}
@@ -630,14 +1036,9 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                       ].map(({ label, type, options, placeholder, field }: any) => (
                         <div key={field}>
                           <label className="text-xs text-slate-500 mb-1 block">{label}</label>
-                          {type === 'select' ? (
-                            <select className={ic} value={(aracForm as any)[field]} onChange={e => setAracForm({ ...aracForm, [field]: e.target.value })}>
-                              <option value="">Seçin</option>
-                              {options.map((o: string) => <option key={o} value={o}>{o}</option>)}
-                            </select>
-                          ) : (
-                            <input className={ic} value={(aracForm as any)[field]} placeholder={placeholder} onChange={e => setAracForm({ ...aracForm, [field]: e.target.value })} />
-                          )}
+                          {type === 'select'
+                            ? <select className={ic} value={(aracForm as any)[field]} onChange={e => setAracForm({ ...aracForm, [field]: e.target.value })}><option value="">Seçin</option>{options.map((o: string) => <option key={o} value={o}>{o}</option>)}</select>
+                            : <input className={ic} value={(aracForm as any)[field]} placeholder={placeholder} onChange={e => setAracForm({ ...aracForm, [field]: e.target.value })} />}
                         </div>
                       ))}
                     </div>
@@ -651,26 +1052,19 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                   {yukleniyor ? (
                     <div className="flex flex-col gap-3">{[1,2].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
                   ) : araclar.length === 0 ? (
-                    <div className="text-center py-12 text-slate-400">
-                      <Car size={40} className="mx-auto mb-3 opacity-30" />
-                      <p className="text-sm font-medium">Henüz araç eklemediniz</p>
-                    </div>
+                    <div className="text-center py-12 text-slate-400"><Car size={40} className="mx-auto mb-3 opacity-30" /><p className="text-sm font-medium">Henüz araç eklemediniz</p></div>
                   ) : (
                     <div className="flex flex-col gap-3">
                       {araclar.map(arac => (
                         <div key={arac.id} className="border border-slate-200 rounded-xl p-4 flex items-center justify-between hover:bg-slate-50 transition">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                              <Car size={18} className="text-slate-500" />
-                            </div>
+                            <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0"><Car size={18} className="text-slate-500" /></div>
                             <div className="min-w-0">
                               <p className="font-semibold text-slate-700 text-sm">{arac.marka} {arac.model} {arac.yil}</p>
                               <p className="text-xs text-slate-400 truncate">{arac.plaka} · {arac.koltuk_sayisi} koltuk · {arac.arac_tipi}</p>
                             </div>
                           </div>
-                          <button onClick={() => handleAracSil(arac.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition flex-shrink-0 ml-2">
-                            <Trash2 size={14} />
-                          </button>
+                          <button onClick={() => handleAracSil(arac.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition flex-shrink-0 ml-2"><Trash2 size={14} /></button>
                         </div>
                       ))}
                     </div>
@@ -684,23 +1078,17 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-slate-100">
                   <h2 className="font-bold text-slate-800 text-base">İlan Mesajları</h2>
-                  {okunmamisSayi > 0 && (
-                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{okunmamisSayi} okunmamış</span>
-                  )}
+                  {okunmamisSayi > 0 && <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{okunmamisSayi} okunmamış</span>}
                 </div>
                 <div className="p-4 sm:p-5">
                   {yukleniyor ? (
                     <div className="flex flex-col gap-3">{[1,2].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
                   ) : mesajlar.length === 0 ? (
-                    <div className="text-center py-12 text-slate-400">
-                      <MessageSquare size={40} className="mx-auto mb-3 opacity-30" />
-                      <p className="text-sm font-medium">Henüz mesajınız yok</p>
-                    </div>
+                    <div className="text-center py-12 text-slate-400"><MessageSquare size={40} className="mx-auto mb-3 opacity-30" /><p className="text-sm font-medium">Henüz mesajınız yok</p></div>
                   ) : (
                     <div className="flex flex-col gap-3">
                       {mesajlar.map(mesaj => (
-                        <div key={mesaj.id}
-                          onClick={() => !mesaj.okundu && handleMesajOku(mesaj.id)}
+                        <div key={mesaj.id} onClick={() => !mesaj.okundu && handleMesajOku(mesaj.id)}
                           className={'border rounded-xl p-4 cursor-pointer transition ' + (mesaj.okundu ? 'border-slate-200 bg-white' : 'border-orange-200 bg-orange-50 active:bg-orange-100')}>
                           <div className="flex items-start justify-between mb-2 gap-2">
                             <div className="min-w-0">
@@ -724,28 +1112,20 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
             {/* FAVORİLER */}
             {aktifSekme === 'favoriler' && (
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="px-4 sm:px-5 py-4 border-b border-slate-100">
-                  <h2 className="font-bold text-slate-800 text-base">Favori İlanlarım</h2>
-                </div>
+                <div className="px-4 sm:px-5 py-4 border-b border-slate-100"><h2 className="font-bold text-slate-800 text-base">Favori İlanlarım</h2></div>
                 <div className="p-4 sm:p-5">
                   {yukleniyor ? (
-                    <div className="flex flex-col gap-3">{[1,2].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
+                    <div className="flex flex-col gap-3">{[1,2].map(i=><div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse"/>)}</div>
                   ) : favoriler.length === 0 ? (
-                    <div className="text-center py-12 text-slate-400">
-                      <Heart size={40} className="mx-auto mb-3 opacity-30" />
-                      <p className="text-sm font-medium">Henüz favori ilanınız yok</p>
-                    </div>
+                    <div className="text-center py-12 text-slate-400"><Heart size={40} className="mx-auto mb-3 opacity-30"/><p className="text-sm font-medium">Henüz favori ilanınız yok</p></div>
                   ) : (
                     <div className="flex flex-col gap-3">
-                      {favoriler.map(fav => (
+                      {favoriler.map(fav=>(
                         <div key={fav.id} className="border border-slate-200 rounded-xl p-4 flex items-center justify-between hover:bg-slate-50 transition">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-slate-700 text-sm line-clamp-1">{fav.ilanlar?.aciklama}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">{fav.ilanlar?.ilan_veren} · {fav.ilanlar?.kategori?.replace(/_/g, ' ')}</p>
-                          </div>
+                          <div className="min-w-0"><p className="font-semibold text-slate-700 text-sm line-clamp-1">{fav.ilanlar?.aciklama}</p><p className="text-xs text-slate-400 mt-0.5">{fav.ilanlar?.ilan_veren} · {fav.ilanlar?.kategori?.replace(/_/g,' ')}</p></div>
                           <div className="flex items-center gap-1 flex-shrink-0 ml-3">
-                            <button onClick={() => onIlanDetay(fav.ilanlar)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition"><Eye size={14} /></button>
-                            <button onClick={() => handleFavoriKaldir(fav.ilan_id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"><Heart size={14} /></button>
+                            <button onClick={()=>onIlanDetay(fav.ilanlar)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition"><Eye size={14}/></button>
+                            <button onClick={()=>handleFavoriKaldir(fav.ilan_id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"><Heart size={14}/></button>
                           </div>
                         </div>
                       ))}
@@ -761,9 +1141,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                 <h2 className="font-bold text-slate-800 text-base mb-4">Destek</h2>
                 {destekGonderildi ? (
                   <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-green-600 text-xl font-bold">✓</span>
-                    </div>
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3"><span className="text-green-600 text-xl font-bold">✓</span></div>
                     <p className="font-semibold text-green-700 mb-1">Talebiniz Alındı</p>
                     <p className="text-green-600 text-sm mb-4">En kısa sürede size döneceğiz.</p>
                     <button onClick={() => setDestekGonderildi(false)} className={btnO}>Yeni Talep Gönder</button>
@@ -771,14 +1149,8 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                 ) : (
                   <div className="flex flex-col gap-3">
                     {hata && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">{hata}</div>}
-                    <div>
-                      <label className="text-xs font-semibold text-slate-500 mb-1 block">Konu</label>
-                      <input className={ic} value={destekForm.konu} placeholder="Destek konusu" onChange={e => setDestekForm({ ...destekForm, konu: e.target.value })} />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-slate-500 mb-1 block">Mesaj</label>
-                      <textarea className={ic + ' resize-none'} value={destekForm.mesaj} placeholder="Mesajınızı yazın..." rows={5} onChange={e => setDestekForm({ ...destekForm, mesaj: e.target.value })} />
-                    </div>
+                    <div><label className="text-xs font-semibold text-slate-500 mb-1 block">Konu</label><input className={ic} value={destekForm.konu} placeholder="Destek konusu" onChange={e=>setDestekForm({...destekForm,konu:e.target.value})}/></div>
+                    <div><label className="text-xs font-semibold text-slate-500 mb-1 block">Mesaj</label><textarea className={ic+' resize-none'} value={destekForm.mesaj} placeholder="Mesajınızı yazın..." rows={5} onChange={e=>setDestekForm({...destekForm,mesaj:e.target.value})}/></div>
                     <button onClick={handleDestekGonder} className={btnO}>Gönder</button>
                   </div>
                 )}
@@ -792,91 +1164,29 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
       {/* DÜZENLEME MODALI */}
       {duzenleIlan && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4">
-          <div className="bg-white w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh] flex flex-col">
+          <div className="bg-white w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-orange-500 rounded-t-2xl flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Pencil size={16} className="text-white" />
-                <h3 className="font-bold text-white text-sm">İlanı Düzenle</h3>
+                <div>
+                  <h3 className="font-bold text-white text-sm">İlanı Düzenle</h3>
+                  <p className="text-white/70 text-xs capitalize">{duzenleIlan.kategori.replace(/_/g, ' ')}</p>
+                </div>
               </div>
               <button onClick={() => setDuzenleIlan(null)} className="text-white/80 hover:text-white transition"><X size={20} /></button>
             </div>
-            <div className="overflow-y-auto flex-1 p-5 space-y-5">
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">Açıklama</label>
-                <textarea className={ic + ' resize-none'} rows={3} value={duzenleForm.aciklama}
-                  onChange={e => setDuzenleForm({ ...duzenleForm, aciklama: e.target.value })} placeholder="İlan açıklaması..." />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">Ücret (₺)</label>
-                  <input type="number" className={ic} value={duzenleForm.ucret}
-                    onChange={e => setDuzenleForm({ ...duzenleForm, ucret: e.target.value })} placeholder="örn. 45000" />
+            <div className="overflow-y-auto flex-1 p-5">
+              {duzenleYukleniyor ? (
+                <div className="flex items-center justify-center py-20">
+                  <span className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
                 </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">Ücret Tipi</label>
-                  <select className={ic} value={duzenleForm.ucret_tipi} onChange={e => setDuzenleForm({ ...duzenleForm, ucret_tipi: e.target.value })}>
-                    <option value="ay">Aylık</option>
-                    <option value="gün">Günlük</option>
-                    <option value="sefer">Sefer Başı</option>
-                    <option value="yıl">Yıllık</option>
-                  </select>
-                </div>
-              </div>
-              {duzenleForm.guzergahlar.length > 0 && (
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 block">
-                    Güzergahlar ({duzenleForm.guzergahlar.length} adet)
-                  </label>
-                  <div className="space-y-3">
-                    {duzenleForm.guzergahlar.map((g, idx) => (
-                      <div key={idx} className="border border-slate-200 rounded-xl p-3 bg-slate-50">
-                        <p className="text-xs font-semibold text-slate-500 mb-2">Güzergah {idx + 1}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[11px] text-slate-400 mb-1 block">Giriş Saati</label>
-                            <input type="time" className={ic} value={g.giris_saati || ''} onChange={e => handleGuzergahGuncelle(idx, 'giris_saati', e.target.value)} />
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-slate-400 mb-1 block">Çıkış Saati</label>
-                            <input type="time" className={ic} value={g.cikis_saati || ''} onChange={e => handleGuzergahGuncelle(idx, 'cikis_saati', e.target.value)} />
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-slate-400 mb-1 block">Kalkış Mahalle</label>
-                            <input className={ic} value={g.kalkis_mah || ''} onChange={e => handleGuzergahGuncelle(idx, 'kalkis_mah', e.target.value)} placeholder="Mahalle" />
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-slate-400 mb-1 block">Varış Mahalle</label>
-                            <input className={ic} value={g.varis_mah || ''} onChange={e => handleGuzergahGuncelle(idx, 'varis_mah', e.target.value)} placeholder="Mahalle" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              ) : (
+                <DuzenleIcerik
+                  ilan={duzenleIlan}
+                  onKaydet={handleDuzenleKaydet}
+                  onKapat={() => setDuzenleIlan(null)}
+                />
               )}
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 block">Özellikler</label>
-                <div className="flex flex-wrap gap-2">
-                  {servisTurleri.map(tur => {
-                    const secili = duzenleForm.servis_turu.includes(tur);
-                    return (
-                      <button key={tur} type="button"
-                        onClick={() => setDuzenleForm({ ...duzenleForm, servis_turu: secili ? duzenleForm.servis_turu.filter(t => t !== tur) : [...duzenleForm.servis_turu, tur] })}
-                        className={`text-xs px-3 py-1.5 rounded-lg border transition font-medium ${secili ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'}`}>
-                        {tur}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-3 px-5 py-4 border-t border-slate-100 flex-shrink-0 bg-white rounded-b-2xl">
-              <button onClick={() => setDuzenleIlan(null)} className={btnS + ' flex-1'}>İptal</button>
-              <button onClick={handleDuzenleKaydet} disabled={duzenleYukleniyor}
-                className={btnO + ' flex-1 flex items-center justify-center gap-2 disabled:opacity-60'}>
-                {duzenleYukleniyor ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={14} />}
-                {duzenleYukleniyor ? 'Kaydediliyor...' : 'Kaydet'}
-              </button>
             </div>
           </div>
         </div>
