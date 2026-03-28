@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  kullaniciIlanlari, ilanSil, araclarGetir, aracEkle, aracSil,
+  kullaniciIlanlari, ilanSil, ilanGuncelle, araclarGetir, aracEkle, aracSil,
   favorileriGetir, favoriKaldir, gelenMesajlar, okunmamisMesajSayisi,
   mesajOkunduIsaretle, destekGonder
 } from '../lib/ilanlar';
@@ -10,7 +10,7 @@ import { mevcutKullanici } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import {
   Eye, Trash2, Plus, Heart, Car, MessageSquare,
-  HelpCircle, User, LogOut, Bell, ChevronLeft, Menu, X
+  HelpCircle, User, LogOut, Bell, ChevronLeft, Menu, X, Pencil, Save, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'favoriler' | 'destek';
@@ -42,6 +42,16 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
   const [aracForm, setAracForm] = useState({ marka: '', model: '', yil: '', plaka: '', koltuk_sayisi: '', arac_tipi: '' });
   // Mobilde sidebar drawer
   const [menuAcik, setMenuAcik] = useState(false);
+  // Düzenleme modalı
+  const [duzenleIlan, setDuzenleIlan] = useState<Ilan | null>(null);
+  const [duzenleForm, setDuzenleForm] = useState({
+    aciklama: '',
+    ucret: '',
+    ucret_tipi: 'ay',
+    servis_turu: [] as string[],
+    guzergahlar: [] as any[],
+  });
+  const [duzenleYukleniyor, setDuzenleYukleniyor] = useState(false);
 
   const user = mevcutKullanici();
   const [profil, setProfil] = useState({
@@ -140,6 +150,50 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
     const { error } = await destekGonder({ user_id: userId, ...destekForm });
     if (!error) { setDestekGonderildi(true); setDestekForm({ konu: '', mesaj: '' }); }
   };
+
+  const handleDuzenlemeAc = (ilan: Ilan) => {
+    setDuzenleIlan(ilan);
+    setDuzenleForm({
+      aciklama: ilan.aciklama || '',
+      ucret: ilan.ekbilgiler?.ucret || '',
+      ucret_tipi: ilan.ekbilgiler?.ucret_tipi || 'ay',
+      servis_turu: ilan.servis_turu || [],
+      guzergahlar: ilan.guzergahlar ? JSON.parse(JSON.stringify(ilan.guzergahlar)) : [],
+    });
+  };
+
+  const handleDuzenleKaydet = async () => {
+    if (!duzenleIlan) return;
+    setDuzenleYukleniyor(true);
+    const updates = {
+      aciklama: duzenleForm.aciklama,
+      servis_turu: duzenleForm.servis_turu,
+      guzergahlar: duzenleForm.guzergahlar,
+      ekbilgiler: {
+        ...(duzenleIlan.ekbilgiler || {}),
+        ucret: duzenleForm.ucret,
+        ucret_tipi: duzenleForm.ucret_tipi,
+      },
+    };
+    const { error } = await ilanGuncelle(duzenleIlan.id, updates);
+    setDuzenleYukleniyor(false);
+    if (!error) {
+      setIlanlar(ilanlar.map(i => i.id === duzenleIlan.id ? { ...i, ...updates } : i));
+      setDuzenleIlan(null);
+      setBasari('İlan başarıyla güncellendi!');
+      setTimeout(() => setBasari(''), 3000);
+    } else {
+      setHata('Güncelleme sırasında hata oluştu.');
+    }
+  };
+
+  const handleGuzergahGuncelle = (idx: number, alan: string, deger: string) => {
+    const yeni = [...duzenleForm.guzergahlar];
+    yeni[idx] = { ...yeni[idx], [alan]: deger };
+    setDuzenleForm({ ...duzenleForm, guzergahlar: yeni });
+  };
+
+  const servisTurleri = ['Klima', 'USB Şarj', 'Güvenlik Kamerası', 'WiFi', 'Engelli Erişimi', 'Çocuk Koltuğu'];
 
   const sekmeSecildi = (id: Sekme) => {
     setAktifSekme(id);
@@ -338,6 +392,9 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                               <button onClick={() => onIlanDetay(ilan)} className="p-2 text-slate-400 hover:text-blue-500 bg-slate-50 rounded-lg">
                                 <Eye size={14} />
                               </button>
+                              <button onClick={() => handleDuzenlemeAc(ilan)} className="p-2 text-slate-400 hover:text-orange-500 bg-slate-50 rounded-lg">
+                                <Pencil size={14} />
+                              </button>
                               <button onClick={() => handleIlanSil(ilan.id)} className="p-2 text-slate-400 hover:text-red-500 bg-slate-50 rounded-lg">
                                 <Trash2 size={14} />
                               </button>
@@ -380,6 +437,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-1">
                                   <button onClick={() => onIlanDetay(ilan)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition"><Eye size={14} /></button>
+                                  <button onClick={() => handleDuzenlemeAc(ilan)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition"><Pencil size={14} /></button>
                                   <button onClick={() => handleIlanSil(ilan.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"><Trash2 size={14} /></button>
                                 </div>
                               </td>
@@ -576,6 +634,171 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
           </main>
         </div>
       </div>
+      {/* DÜZENLEME MODALI */}
+      {duzenleIlan && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4">
+          <div className="bg-white w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh] flex flex-col">
+            {/* Modal Başlık */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-orange-500 rounded-t-2xl sm:rounded-t-2xl flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <Pencil size={16} className="text-white" />
+                <h3 className="font-bold text-white text-sm">İlanı Düzenle</h3>
+              </div>
+              <button onClick={() => setDuzenleIlan(null)} className="text-white/80 hover:text-white transition">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal İçerik */}
+            <div className="overflow-y-auto flex-1 p-5 space-y-5">
+
+              {/* Açıklama */}
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">Açıklama</label>
+                <textarea
+                  className={ic + ' resize-none'}
+                  rows={3}
+                  value={duzenleForm.aciklama}
+                  onChange={e => setDuzenleForm({ ...duzenleForm, aciklama: e.target.value })}
+                  placeholder="İlan açıklaması..."
+                />
+              </div>
+
+              {/* Ücret */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">Ücret (₺)</label>
+                  <input
+                    type="number"
+                    className={ic}
+                    value={duzenleForm.ucret}
+                    onChange={e => setDuzenleForm({ ...duzenleForm, ucret: e.target.value })}
+                    placeholder="örn. 45000"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">Ücret Tipi</label>
+                  <select
+                    className={ic}
+                    value={duzenleForm.ucret_tipi}
+                    onChange={e => setDuzenleForm({ ...duzenleForm, ucret_tipi: e.target.value })}
+                  >
+                    <option value="ay">Aylık</option>
+                    <option value="gün">Günlük</option>
+                    <option value="sefer">Sefer Başı</option>
+                    <option value="yıl">Yıllık</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Güzergahlar */}
+              {duzenleForm.guzergahlar.length > 0 && (
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 block">
+                    Güzergahlar ({duzenleForm.guzergahlar.length} adet)
+                  </label>
+                  <div className="space-y-3">
+                    {duzenleForm.guzergahlar.map((g, idx) => (
+                      <div key={idx} className="border border-slate-200 rounded-xl p-3 bg-slate-50">
+                        <p className="text-xs font-semibold text-slate-500 mb-2">Güzergah {idx + 1}</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[11px] text-slate-400 mb-1 block">Giriş Saati</label>
+                            <input
+                              type="time"
+                              className={ic}
+                              value={g.giris_saati || ''}
+                              onChange={e => handleGuzergahGuncelle(idx, 'giris_saati', e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-slate-400 mb-1 block">Çıkış Saati</label>
+                            <input
+                              type="time"
+                              className={ic}
+                              value={g.cikis_saati || ''}
+                              onChange={e => handleGuzergahGuncelle(idx, 'cikis_saati', e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-slate-400 mb-1 block">Kalkış Mahalle</label>
+                            <input
+                              className={ic}
+                              value={g.kalkis_mah || ''}
+                              onChange={e => handleGuzergahGuncelle(idx, 'kalkis_mah', e.target.value)}
+                              placeholder="Mahalle"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-slate-400 mb-1 block">Varış Mahalle</label>
+                            <input
+                              className={ic}
+                              value={g.varis_mah || ''}
+                              onChange={e => handleGuzergahGuncelle(idx, 'varis_mah', e.target.value)}
+                              placeholder="Mahalle"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Servis Türü */}
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 block">Özellikler</label>
+                <div className="flex flex-wrap gap-2">
+                  {servisTurleri.map(tur => {
+                    const secili = duzenleForm.servis_turu.includes(tur);
+                    return (
+                      <button
+                        key={tur}
+                        type="button"
+                        onClick={() => setDuzenleForm({
+                          ...duzenleForm,
+                          servis_turu: secili
+                            ? duzenleForm.servis_turu.filter(t => t !== tur)
+                            : [...duzenleForm.servis_turu, tur]
+                        })}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition font-medium ${
+                          secili
+                            ? 'bg-orange-500 text-white border-orange-500'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'
+                        }`}
+                      >
+                        {tur}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Alt Butonlar */}
+            <div className="flex gap-3 px-5 py-4 border-t border-slate-100 flex-shrink-0 bg-white rounded-b-2xl">
+              <button
+                onClick={() => setDuzenleIlan(null)}
+                className={btnS + ' flex-1'}
+              >
+                İptal
+              </button>
+              <button
+                onClick={handleDuzenleKaydet}
+                disabled={duzenleYukleniyor}
+                className={btnO + ' flex-1 flex items-center justify-center gap-2 disabled:opacity-60'}
+              >
+                {duzenleYukleniyor ? (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Save size={14} />
+                )}
+                {duzenleYukleniyor ? 'Kaydediliyor...' : 'Kaydet'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
