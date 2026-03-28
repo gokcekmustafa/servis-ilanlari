@@ -39,6 +39,20 @@ export async function ilanSil(id: string) {
   return { error };
 }
 
+export async function ilanGuncelle(id: string, updates: {
+  aciklama?: string;
+  servis_turu?: string[];
+  guzergahlar?: any[];
+  ekbilgiler?: any;
+}) {
+  const { data, error } = await supabase
+    .from('ilanlar')
+    .update(updates)
+    .eq('id', id)
+    .select();
+  return { data, error };
+}
+
 export async function kullaniciIlanlari(userId: string) {
   const { data, error } = await supabase
     .from('ilanlar')
@@ -145,13 +159,6 @@ export async function okunmamisMesajSayisi(userId: string) {
     .select('*', { count: 'exact', head: true })
     .eq('alan_id', userId)
     .eq('okundu', false);
-  return { count, error };
-}
-export async function okunmamisDestekSayisi() {
-  const { count, error } = await supabase
-    .from('destek')
-    .select('*', { count: 'exact', head: true })
-    .eq('durum', 'bekliyor');
   return { count, error };
 }
 
