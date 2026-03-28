@@ -147,6 +147,13 @@ export async function okunmamisMesajSayisi(userId: string) {
     .eq('okundu', false);
   return { count, error };
 }
+export async function okunmamisDestekSayisi() {
+  const { count, error } = await supabase
+    .from('destek')
+    .select('*', { count: 'exact', head: true })
+    .eq('durum', 'bekliyor');
+  return { count, error };
+}
 
 export async function mesajOkunduIsaretle(mesajId: string) {
   const { error } = await supabase
