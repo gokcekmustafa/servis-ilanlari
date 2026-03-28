@@ -182,7 +182,7 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
     <div className="px-3 py-2">
       {hata && <p className="text-red-500 text-[11px] mb-1.5">{hata}</p>}
       {/* Masaüstü: tek satır */}
-      <div className="hidden sm:flex items-center gap-2">
+      <div className="flex items-center gap-2">
         <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-shrink-0">
           <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-3 py-2 border-r border-gray-200">GSM</span>
           <input
@@ -224,7 +224,7 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
         </div>
       </div>
       {/* Mobil: iki satır */}
-      <div className="sm:hidden flex flex-col gap-2">
+      <div className="hidden flex flex-col gap-2">
         <div className="flex gap-2">
           <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden flex-1">
             <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-2 border-r border-gray-200">GSM</span>
