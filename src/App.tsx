@@ -176,6 +176,8 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
   const [listeReklam, setListeReklam] = useState<any>(null);
+  const [kenarKucukReklam, setKenarKucukReklam] = useState<any>(null);
+  const [kenarBuyukReklam, setKenarBuyukReklam] = useState<any>(null);
   const [reklamSiklik, setReklamSiklik] = useState(8);
 
   useEffect(() => {
@@ -183,6 +185,7 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
     setDuyuru(null);
     listeReklamYukle();
     reklamSiklikYukle();
+    kenarReklamlariYukle();
   }, []);
 
   useEffect(() => {
@@ -208,6 +211,12 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
     if (data) setListeReklam(data);
   };
 
+  const kenarReklamlariYukle = async () => {
+    const { data: kucuk } = await supabase.from('reklamlar').select('*').eq('aktif', true).eq('konum', 'kenar_kucuk').limit(1).single();
+    if (kucuk) setKenarKucukReklam(kucuk);
+    const { data: buyuk } = await supabase.from('reklamlar').select('*').eq('aktif', true).eq('konum', 'kenar_buyuk').limit(1).single();
+    if (buyuk) setKenarBuyukReklam(buyuk);
+  };
   const reklamSiklikYukle = async () => {
     const { data } = await supabase
       .from('ayarlar')
@@ -499,6 +508,39 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
 
           {/* SAĞ: İLAN LİSTESİ */}
           <div className="flex-1 min-w-0">
+
+            {/* YAN REKLAM ALANLARI */}
+            <div className="flex gap-2 mb-3">
+              {/* Küçük reklam — 8cm ~ h-32 */}
+              <div
+                onClick={() => kenarKucukReklam?.link_url && window.open(kenarKucukReklam.link_url, '_blank')}
+                className={`relative flex-1 h-32 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarKucukReklam?.link_url ? 'cursor-pointer' : ''}`}
+              >
+                {kenarKucukReklam?.resim_url ? (
+                  <img src={kenarKucukReklam.resim_url} alt={kenarKucukReklam.baslik || 'Reklam'} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center border border-dashed border-slate-200">
+                    <span className="text-slate-300 text-xs">Reklam Alanı</span>
+                  </div>
+                )}
+                <span className="absolute top-1 right-1 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">Reklam</span>
+              </div>
+              {/* Büyük reklam — 12cm ~ h-48 */}
+              <div
+                onClick={() => kenarBuyukReklam?.link_url && window.open(kenarBuyukReklam.link_url, '_blank')}
+                className={`relative flex-1 h-48 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarBuyukReklam?.link_url ? 'cursor-pointer' : ''}`}
+              >
+                {kenarBuyukReklam?.resim_url ? (
+                  <img src={kenarBuyukReklam.resim_url} alt={kenarBuyukReklam.baslik || 'Reklam'} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center border border-dashed border-slate-200">
+                    <span className="text-slate-300 text-xs">Reklam Alanı</span>
+                  </div>
+                )}
+                <span className="absolute top-1 right-1 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">Reklam</span>
+              </div>
+            </div>
+
             <div className="bg-white border border-gray-200 rounded px-3 py-2 mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {aktifKategori && (
