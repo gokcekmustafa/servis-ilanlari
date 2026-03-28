@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, User, Bus, ArrowLeft, Heart, MessageSquare, MapPin, Clock, Tag, Ruler, Timer, Users, Car, FileText, Award, CheckCircle } from 'lucide-react';
+import { Calendar, User, Bus, ArrowLeft, Heart, MessageSquare, MapPin, Clock, Tag, Ruler, Timer, Users, Car, FileText, Award, CheckCircle, ChevronLeft, ChevronRight, X, Images } from 'lucide-react';
 import { Ilan, KategoriType } from '../types';
 import { favoriEkle, favoriKaldir, favoriKontrol, mesajGonder } from '../lib/ilanlar';
 import { mevcutKullanici } from '../lib/auth';
@@ -48,6 +48,157 @@ function EvetHayirBadge({ label, deger }: { label: string; deger: string }) {
   );
 }
 
+// ─── Resim Galerisi ───────────────────────────────────────────────────────────
+function ResimGalerisi({ resimler }: { resimler: string[] }) {
+  const [aktif, setAktif] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
+
+  if (!resimler || resimler.length === 0) return null;
+
+  const onceki = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setAktif(prev => (prev - 1 + resimler.length) % resimler.length);
+  };
+  const sonraki = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setAktif(prev => (prev + 1) % resimler.length);
+  };
+
+  // Klavye desteği lightbox'ta
+  useEffect(() => {
+    if (!lightbox) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') onceki();
+      if (e.key === 'ArrowRight') sonraki();
+      if (e.key === 'Escape') setLightbox(false);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightbox, aktif]);
+
+  return (
+    <>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-slate-600 px-4 py-2.5 flex items-center gap-2">
+          <Images size={14} className="text-orange-400" />
+          <span className="text-white text-xs font-semibold uppercase tracking-wider">Araç Fotoğrafları</span>
+          <span className="ml-auto text-white/60 text-xs">{resimler.length} fotoğraf</span>
+        </div>
+
+        {/* Ana görsel */}
+        <div
+          className="relative bg-slate-900 cursor-zoom-in"
+          style={{ aspectRatio: '16/9' }}
+          onClick={() => setLightbox(true)}
+        >
+          <img
+            src={resimler[aktif]}
+            alt={`Araç fotoğrafı ${aktif + 1}`}
+            className="w-full h-full object-contain"
+          />
+
+          {/* Önceki / Sonraki okları */}
+          {resimler.length > 1 && (
+            <>
+              <button
+                onClick={onceki}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                onClick={sonraki}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </>
+          )}
+
+          {/* Sayaç */}
+          <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded font-medium">
+            {aktif + 1} / {resimler.length}
+          </div>
+        </div>
+
+        {/* Küçük resim şeridi */}
+        {resimler.length > 1 && (
+          <div className="flex gap-1.5 p-2 overflow-x-auto bg-slate-50">
+            {resimler.map((url, i) => (
+              <button
+                key={i}
+                onClick={() => setAktif(i)}
+                className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition ${
+                  i === aktif ? 'border-orange-400' : 'border-transparent hover:border-slate-300'
+                }`}
+              >
+                <img src={url} alt={`Küçük ${i + 1}`} className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setLightbox(false)}
+        >
+          <button
+            onClick={() => setLightbox(false)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition"
+          >
+            <X size={20} />
+          </button>
+
+          {resimler.length > 1 && (
+            <>
+              <button
+                onClick={onceki}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <button
+                onClick={sonraki}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition"
+              >
+                <ChevronRight size={24} />
+              </button>
+            </>
+          )}
+
+          <img
+            src={resimler[aktif]}
+            alt={`Fotoğraf ${aktif + 1}`}
+            className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm">
+            {aktif + 1} / {resimler.length}
+          </div>
+
+          {/* Küçük thumbnail şeridi */}
+          {resimler.length > 1 && (
+            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {resimler.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => { e.stopPropagation(); setAktif(i); }}
+                  className={`w-2 h-2 rounded-full transition ${i === aktif ? 'bg-orange-400' : 'bg-white/40 hover:bg-white/70'}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── Ana Bileşen ──────────────────────────────────────────────────────────────
 export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, tumIlanlar }: IlanDetayPageProps) {
   const badge = kategoriBadge[ilan.kategori];
   const user = mevcutKullanici();
@@ -62,7 +213,11 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
   const ucret = ek.ucret;
   const plakaSatiyormu = ilan.kategori === 'plaka_satiyorum';
   const aracSatiyormu = ilan.kategori === 'aracimi_satiyorum';
+  const aracimVarIs = ilan.kategori === 'aracim_var_is';
   const kendiIlani = isLoggedIn && user?.id === ilan.user_id;
+
+  // Resim gösteren kategoriler
+  const resimler: string[] = (aracSatiyormu || aracimVarIs) ? (ek.resimler || []) : [];
 
   useEffect(() => {
     if (isLoggedIn && user) {
@@ -199,6 +354,9 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
                 </div>
               )}
             </div>
+
+            {/* ── FOTOĞRAF GALERİSİ ── */}
+            {resimler.length > 0 && <ResimGalerisi resimler={resimler} />}
 
             {/* ÜCRET / FİYAT */}
             {ucret && (
@@ -440,38 +598,20 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
                         <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                           {ilan.kategori === 'aracim_var_is' || ilan.kategori === 'soforum_is' || ilan.kategori === 'hostesim_is' ? (
                             <>
-                              <td className="px-3 sm:px-4 py-3 text-center">
-                                <span className="text-orange-600 font-bold text-sm">{g.giris_saati || '—'}</span>
-                              </td>
+                              <td className="px-3 sm:px-4 py-3 text-center"><span className="text-orange-600 font-bold text-sm">{g.giris_saati || '—'}</span></td>
                               <td className="px-3 sm:px-4 py-3 text-center">
                                 <p className="font-bold text-slate-700 uppercase">{g.kalkis_mah}</p>
                                 {g.kalkis_ilce && <p className="text-xs text-slate-400 uppercase">{g.kalkis_ilce}</p>}
                                 {g.kalkis_il && <p className="text-xs text-slate-400 uppercase">{g.kalkis_il}</p>}
                               </td>
-                              <td className="px-3 sm:px-4 py-3 text-center">
-                                <span className="text-orange-600 font-bold text-sm">{g.cikis_saati || '—'}</span>
-                              </td>
+                              <td className="px-3 sm:px-4 py-3 text-center"><span className="text-orange-600 font-bold text-sm">{g.cikis_saati || '—'}</span></td>
                             </>
                           ) : (
                             <>
-                              <td className="px-3 sm:px-4 py-3">
-                                <span className="flex items-center gap-1.5 text-orange-600 font-bold text-sm whitespace-nowrap">
-                                  <Clock size={12} />{g.giris_saati}
-                                </span>
-                              </td>
-                              <td className="px-3 sm:px-4 py-3 text-slate-600 text-sm">
-                                <p className="font-semibold uppercase">{g.kalkis_mah}</p>
-                                <p className="text-xs text-slate-400">{g.kalkis_ilce}{g.kalkis_il ? ` / ${g.kalkis_il}` : ''}</p>
-                              </td>
-                              <td className="px-3 sm:px-4 py-3 text-slate-600 text-sm">
-                                <p className="font-semibold uppercase">{g.varis_mah}</p>
-                                <p className="text-xs text-slate-400">{g.varis_ilce}{g.varis_il ? ` / ${g.varis_il}` : ''}</p>
-                              </td>
-                              <td className="px-3 sm:px-4 py-3">
-                                <span className="flex items-center gap-1.5 text-orange-600 font-bold text-sm whitespace-nowrap">
-                                  <Clock size={12} />{g.cikis_saati}
-                                </span>
-                              </td>
+                              <td className="px-3 sm:px-4 py-3"><span className="flex items-center gap-1.5 text-orange-600 font-bold text-sm whitespace-nowrap"><Clock size={12} />{g.giris_saati}</span></td>
+                              <td className="px-3 sm:px-4 py-3 text-slate-600 text-sm"><p className="font-semibold uppercase">{g.kalkis_mah}</p><p className="text-xs text-slate-400">{g.kalkis_ilce}{g.kalkis_il ? ` / ${g.kalkis_il}` : ''}</p></td>
+                              <td className="px-3 sm:px-4 py-3 text-slate-600 text-sm"><p className="font-semibold uppercase">{g.varis_mah}</p><p className="text-xs text-slate-400">{g.varis_ilce}{g.varis_il ? ` / ${g.varis_il}` : ''}</p></td>
+                              <td className="px-3 sm:px-4 py-3"><span className="flex items-center gap-1.5 text-orange-600 font-bold text-sm whitespace-nowrap"><Clock size={12} />{g.cikis_saati}</span></td>
                             </>
                           )}
                         </tr>
