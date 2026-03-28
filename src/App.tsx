@@ -166,11 +166,11 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
   const [sifre, setSifre] = React.useState('');
   const [goster, setGoster] = React.useState(false);
   const [hata, setHata] = React.useState('');
-  const [yukleniyor, setYukleniyor] = React.useState(false);const [adminDefaultSekme, setAdminDefaultSekme] = useState<'istatistik' | 'destek'>('istatistik');
+  const [yukleniyor, setYukleniyor] = React.useState(false);
   const [sifrePopup, setSifrePopup] = React.useState(false);
   const [popupTelefon, setPopupTelefon] = React.useState('');
   const [popupGonderildi, setPopupGonderildi] = React.useState(false);
-  
+
    const handleLogin = async () => {
     if (!telefon || !sifre) { setHata('Telefon ve şifre boş bırakılamaz.'); return; }
     setYukleniyor(true);
@@ -1090,7 +1090,7 @@ export default function App() {
   onIlanEkle: handleIlanEkle,
   onGoPanel: () => isAdmin ? setCurrentPage('admin') : setCurrentPage('panel'),
   onNavigate: (page: any) => setCurrentPage(page),
-  onGoDestek: () => { setAdminDefaultSekme('destek'); setCurrentPage('admin'); },
+  onGoDestek: () => setCurrentPage('admin'),
 };
 
   const footerProps = {
@@ -1128,7 +1128,7 @@ export default function App() {
   if (currentPage === 'panel') return withLayout(<PanelPage onLogout={handleLogout} onIlanEkle={handleIlanEkle} onIlanDetay={handleIlanDetay} userId={userId || ''} />);
   if (currentPage === 'admin') {
     if (!isAdmin) { setCurrentPage('home'); return null; }
-    return withLayout(<AdminPage onLogout={handleLogout} onIlanDetay={handleIlanDetay} isSuperAdmin={isSuperAdmin} yetkiler={yetkiler} defaultSekme={adminDefaultSekme} />);
+    return withLayout(<AdminPage onLogout={handleLogout} onIlanDetay={handleIlanDetay} isSuperAdmin={isSuperAdmin} yetkiler={yetkiler} />);
   }
 
   if (currentPage === 'hakkimizda') return withLayout(<HakkimizdaPage onGoBack={goBack} />);
