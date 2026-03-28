@@ -1,4 +1,3 @@
-import { Phone, MessageCircle, Clock, ArrowRight, Heart } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Ilan, KategoriType } from '../types';
 import { favoriEkle, favoriKaldir, favoriKontrol } from '../lib/ilanlar';
