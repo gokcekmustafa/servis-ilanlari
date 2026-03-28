@@ -623,7 +623,7 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                           <p className="font-semibold text-slate-700 text-sm">{r.baslik || 'Başlıksız'}</p>
                           <p className="text-xs text-slate-400 truncate mt-0.5">{r.link_url || 'Link yok'}</p>
                           <span className={'text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ' + (r.konum === 'header' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')}>
-                            {r.konum === 'header' ? 'Üst Alan' : 'Liste Arası'}
+                            {r.konum === 'header' ? 'Üst Alan' : r.konum === 'kenar_kucuk' ? 'Yan - Küçük' : r.konum === 'kenar_buyuk' ? 'Yan - Büyük' : 'Liste Arası'}
                           </span>
                         </div>
                         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 flex-shrink-0">
@@ -659,6 +659,8 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
                   <select className={ic + ' mb-3'} value={yeniReklam.konum} onChange={e => setYeniReklam({ ...yeniReklam, konum: e.target.value })}>
                     <option value="liste">Liste Arası</option>
                     <option value="header">Üst Alan</option>
+                    <option value="kenar_kucuk">Yan Alan - Küçük (8cm)</option>
+                    <option value="kenar_buyuk">Yan Alan - Büyük (12cm)</option>
                   </select>
                   {yeniReklam.resim_url ? (
                     <div className="mb-3 relative">
@@ -951,8 +953,10 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
               <input className={ic} placeholder="Tıklama linki" value={duzenleForm.link_url} onChange={e => setDuzenleForm({ ...duzenleForm, link_url: e.target.value })} />
               <select className={ic} value={duzenleForm.konum} onChange={e => setDuzenleForm({ ...duzenleForm, konum: e.target.value })}>
                 <option value="liste">Liste Arası</option>
-                <option value="header">Üst Alan</option>
-              </select>
+              <option value="header">Üst Alan</option>
+              <option value="kenar_kucuk">Yan Alan - Küçük (8cm)</option>
+              <option value="kenar_buyuk">Yan Alan - Büyük (12cm)</option>
+            </select>
               {/* Resim önizleme + değiştirme */}
               <div>
                 <p className="text-xs font-medium text-slate-500 mb-2">Reklam Görseli</p>
