@@ -1,3 +1,4 @@
+import { MapPin, Heart } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { MapPin, Phone, MessageCircle, Clock, ArrowRight } from 'lucide-react';
 import { Ilan, KategoriType } from '../types';
