@@ -1083,14 +1083,15 @@ export default function App() {
   };
 
   const headerProps = {
-    isLoggedIn,
-    isAdmin,
-    onGoLogin: () => setCurrentPage('login'),
-    onLogout: handleLogout,
-    onIlanEkle: handleIlanEkle,
-    onGoPanel: () => isAdmin ? setCurrentPage('admin') : setCurrentPage('panel'),
-    onNavigate: (page: any) => setCurrentPage(page),
-  };
+  isLoggedIn,
+  isAdmin,
+  onGoLogin: () => setCurrentPage('login'),
+  onLogout: handleLogout,
+  onIlanEkle: handleIlanEkle,
+  onGoPanel: () => isAdmin ? setCurrentPage('admin') : setCurrentPage('panel'),
+  onNavigate: (page: any) => setCurrentPage(page),
+  onGoDestek: () => setCurrentPage('admin'),
+};
 
   const footerProps = {
     onNavigate: (page: any) => setCurrentPage(page),
