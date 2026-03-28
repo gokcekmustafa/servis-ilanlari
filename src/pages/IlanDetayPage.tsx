@@ -145,16 +145,18 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
               <MessageSquare size={15} /> Mesaj Gonder
             </button>
           )}
-          <button
-            onClick={handleFavori}
-            className={'w-full py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2 border ' +
-              (isFavori
-                ? 'bg-red-50 border-red-200 text-red-500'
-                : 'bg-white border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-400')}
-          >
-            <Heart size={15} className={isFavori ? 'fill-red-500' : ''} />
-            {isFavori ? 'Favorilerden Kaldir' : 'Favoriye Ekle'}
-          </button>
+          {!kendiIlani && (
+            <button
+              onClick={handleFavori}
+              className={'w-full py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2 border ' +
+                (isFavori
+                  ? 'bg-red-50 border-red-200 text-red-500'
+                  : 'bg-white border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-400')}
+            >
+              <Heart size={15} className={isFavori ? 'fill-red-500' : ''} />
+              {isFavori ? 'Favorilerden Kaldir' : 'Favoriye Ekle'}
+            </button>
+          )}
         </div>
       )}
     </>
