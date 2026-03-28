@@ -217,24 +217,39 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
       </div>
 
       {/* BUTONLAR */}
-      <div className="flex border-t border-gray-100 divide-x divide-gray-100">
+      <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100 gap-2">
         <button
           onClick={(e) => {
             e.stopPropagation();
             if (telefon) window.open(`https://wa.me/90${telefon.replace(/\D/g, '').replace(/^0/, '')}`, '_blank');
           }}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-[#25D366] bg-white hover:bg-gray-50 transition"
+          className="flex items-center justify-center gap-1.5 px-4 py-1.5 text-[11px] font-semibold text-[#25D366] bg-white border border-[#25D366] hover:bg-green-50 transition rounded-lg"
         >
           <MessageCircle size={12} /> WhatsApp
         </button>
+
+        {/* ÜCRET / FİYAT ORTADA */}
+        {ekBilgi.ucret ? (
+          <div className="text-center">
+            <span className="text-sm font-bold text-blue-600">
+              {Number(ekBilgi.ucret).toLocaleString('tr-TR')} ₺
+            </span>
+            <span className="block text-[10px] text-gray-400">
+              {ilan.kategori === 'plaka_satiyorum' || ilan.kategori === 'aracimi_satiyorum' ? 'Fiyat' : 'Ücret'}
+            </span>
+          </div>
+        ) : (
+          <div />
+        )}
+
         <button
           onClick={(e) => {
             e.stopPropagation();
             if (telefon) window.location.href = `tel:${telefon}`;
           }}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-gray-700 bg-white hover:bg-gray-50 transition"
+          className="flex items-center justify-center gap-1.5 px-4 py-1.5 text-[11px] font-semibold text-white bg-blue-500 hover:bg-blue-600 transition rounded-lg"
         >
-          <Phone size={12} className="text-[#f7971e]" /> Ara
+          <Phone size={12} /> Ara
         </button>
       </div>
     </div>
