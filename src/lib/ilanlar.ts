@@ -95,6 +95,18 @@ export async function aracSil(id: string) {
   return { error };
 }
 
+export async function aracGuncelle(id: string, updates: {
+  marka?: string; model?: string; yil?: string;
+  plaka?: string; koltuk_sayisi?: string; arac_tipi?: string;
+}) {
+  const { data, error } = await supabase
+    .from('araclar')
+    .update(updates)
+    .eq('id', id)
+    .select();
+  return { data, error };
+}
+
 export async function favorileriGetir(userId: string) {
   const { data, error } = await supabase
     .from('favoriler')
