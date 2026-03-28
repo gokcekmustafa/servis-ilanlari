@@ -162,17 +162,19 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
         <div className="mb-3">
           <div className="flex items-center justify-between mb-1">
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">İlan Açıklaması</p>
-            <button
-              onClick={handleFavori}
-              className={`flex items-center gap-1 text-[10px] font-semibold border px-2 py-0.5 rounded-full transition ${
-                isFavori
-                  ? 'text-red-500 border-red-300 bg-red-50'
-                  : 'text-gray-400 hover:text-red-400 border-gray-200 hover:border-red-300'
-              }`}
-            >
-              <Heart size={10} className={isFavori ? 'fill-red-500' : ''} />
-              {isFavori ? 'Favoride' : 'Favoriye Ekle'}
-            </button>
+            {ilan.user_id !== mevcutKullanici()?.id && (
+              <button
+                onClick={handleFavori}
+                className={`flex items-center gap-1 text-[10px] font-semibold border px-2 py-0.5 rounded-full transition ${
+                  isFavori
+                    ? 'text-red-500 border-red-300 bg-red-50'
+                    : 'text-gray-400 hover:text-red-400 border-gray-200 hover:border-red-300'
+                }`}
+              >
+                <Heart size={10} className={isFavori ? 'fill-red-500' : ''} />
+                {isFavori ? 'Favoride' : 'Favoriye Ekle'}
+              </button>
+            )}
           </div>
           {ilan.aciklama && (
             <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
