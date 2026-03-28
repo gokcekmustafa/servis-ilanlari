@@ -192,6 +192,18 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
           </div>
         )}
 
+        {/* ÜCRET / FİYAT */}
+        {ekBilgi.ucret && (
+          <div className="mb-2">
+            <span className="text-sm font-bold text-blue-600">
+              {Number(ekBilgi.ucret).toLocaleString('tr-TR')} ₺
+            </span>
+            <span className="text-xs text-gray-400 ml-1">
+              / {ilan.kategori === 'plaka_satiyorum' || ilan.kategori === 'aracimi_satiyorum' ? 'Fiyat' : 'Ücret'}
+            </span>
+          </div>
+        )}
+
         {/* AYIRICI */}
         <div className="border-t border-gray-100 my-2" />
 
