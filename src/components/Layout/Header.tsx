@@ -131,14 +131,14 @@ export default function Header({
           {/* Mobil: hamburger */}
           <div className="flex md:hidden items-center gap-1 flex-shrink-0">
             {isLoggedIn && (
-              <button onClick={onGoPanel} className="relative p-1.5 text-slate-300">
-                <Bell size={18} />
-                {okunmamis > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {okunmamis}
-                  </span>
-                )}
-              </button>
+              <button onClick={() => bekleyenDestek > 0 ? onNavigate('admin') : onGoPanel()} className="relative p-1.5 text-slate-300">
+  <Bell size={18} />
+  {(okunmamis + bekleyenDestek) > 0 && (
+    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+      {okunmamis + bekleyenDestek}
+    </span>
+  )}
+</button>
             )}
             <button
               onClick={() => setMenuAcik(!menuAcik)}
