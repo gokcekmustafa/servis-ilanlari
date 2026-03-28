@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, MessageCircle, Clock, ArrowRight, Heart, MapPin } from 'lucide-react';
+import { Phone, MessageCircle, Clock, ArrowRight, Heart, MapPin, ImageOff } from 'lucide-react';
 import { Ilan, KategoriType } from '../types';
 import { favoriEkle, favoriKaldir, favoriKontrol } from '../lib/ilanlar';
 import { mevcutKullanici } from '../lib/auth';
@@ -32,46 +32,35 @@ function zamanFarki(tarih: string): string {
   return new Date(tarih).toLocaleDateString('tr-TR');
 }
 
-// Kategoriye göre güzergah başlık kolonları
 function GuzergahBasliklari({ kategori }: { kategori: KategoriType }) {
   if (kategori === 'aracim_var_is') {
     return (
       <div className="grid grid-cols-3 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
-        <span>Saat</span>
-        <span>Boş Olduğu Semt</span>
-        <span>Saat</span>
+        <span>Saat</span><span>Boş Olduğu Semt</span><span>Saat</span>
       </div>
     );
   }
   if (kategori === 'soforum_is') {
     return (
       <div className="grid grid-cols-3 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
-        <span>Başlangıç Saati</span>
-        <span>Şoför'ün Boş olduğu Yer</span>
-        <span>Bitiş Saati</span>
+        <span>Başlangıç Saati</span><span>Şoför'ün Boş olduğu Yer</span><span>Bitiş Saati</span>
       </div>
     );
   }
   if (kategori === 'hostesim_is') {
     return (
       <div className="grid grid-cols-3 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
-        <span>Başlangıç Saati</span>
-        <span>Boş Olduğu Yer</span>
-        <span>Bitiş Saati</span>
+        <span>Başlangıç Saati</span><span>Boş Olduğu Yer</span><span>Bitiş Saati</span>
       </div>
     );
   }
   return (
     <div className="grid grid-cols-4 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
-      <span>Giriş Saati</span>
-      <span>Nereden</span>
-      <span>Nereye</span>
-      <span>Çıkış Saati</span>
+      <span>Giriş Saati</span><span>Nereden</span><span>Nereye</span><span>Çıkış Saati</span>
     </div>
   );
 }
 
-// Kategoriye göre güzergah satırı
 function GuzergahSatiri({ g, kategori }: { g: any; kategori: KategoriType }) {
   if (kategori === 'aracim_var_is' || kategori === 'soforum_is' || kategori === 'hostesim_is') {
     return (
@@ -86,7 +75,6 @@ function GuzergahSatiri({ g, kategori }: { g: any; kategori: KategoriType }) {
       </div>
     );
   }
-
   return (
     <div className="grid grid-cols-4 text-center items-center py-2">
       <span className="text-sm font-bold text-gray-800">{g.giris_saati || '—'}</span>
@@ -105,6 +93,37 @@ function GuzergahSatiri({ g, kategori }: { g: any; kategori: KategoriType }) {
   );
 }
 
+// Küçük resim bileşeni — sadece aracim_var_is ve aracimi_satiyorum için
+function IlanThumbnail({ resimler }: { resimler: string[] }) {
+  const [hata, setHata] = useState(false);
+  const anaResim = resimler?.[0];
+
+  if (!anaResim || hata) {
+    return (
+      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg bg-gray-100 border border-gray-200 flex flex-col items-center justify-center gap-1">
+        <ImageOff size={16} className="text-gray-300" />
+        {resimler?.length > 0 && <span className="text-[9px] text-gray-400">Yüklenemedi</span>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+      <img
+        src={anaResim}
+        alt="Araç"
+        className="w-full h-full object-cover"
+        onError={() => setHata(true)}
+      />
+      {resimler.length > 1 && (
+        <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">
+          +{resimler.length - 1}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanCardProps) {
   const config = kategoriConfig[ilan.kategori] ?? { label: 'DİĞER', bg: 'bg-gray-500', text: 'text-white', serit: 'bg-gray-300' };
   const ilanVeren = ilan.profiles?.full_name || ilan.ilan_veren || 'Kullanıcı';
@@ -112,6 +131,10 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
   const tarih = new Date(ilan.created_at).toLocaleDateString('tr-TR');
   const ekBilgi = ilan.ekbilgiler || {};
   const [isFavori, setIsFavori] = useState(false);
+
+  // Resim gösteren kategoriler
+  const resimliKategori = ilan.kategori === 'aracimi_satiyorum' || ilan.kategori === 'aracim_var_is';
+  const resimler: string[] = ekBilgi.resimler || [];
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -124,20 +147,11 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
 
   const handleFavori = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isLoggedIn) {
-      onGoLogin?.();
-      return;
-    }
+    if (!isLoggedIn) { onGoLogin?.(); return; }
     const user = mevcutKullanici();
-    if (!user) return;
-    if (user.id === ilan.user_id) return;
-    if (isFavori) {
-      await favoriKaldir(user.id, ilan.id);
-      setIsFavori(false);
-    } else {
-      await favoriEkle(user.id, ilan.id);
-      setIsFavori(true);
-    }
+    if (!user || user.id === ilan.user_id) return;
+    if (isFavori) { await favoriKaldir(user.id, ilan.id); setIsFavori(false); }
+    else { await favoriEkle(user.id, ilan.id); setIsFavori(true); }
   };
 
   return (
@@ -145,7 +159,7 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
       onClick={() => onDetay(ilan)}
       className="bg-white border border-gray-200 hover:border-[#f7971e] hover:shadow-sm transition-all duration-150 cursor-pointer rounded overflow-hidden"
     >
-      {/* ÜST BAŞLIK ÇUBUĞU */}
+      {/* ÜST BAŞLIK */}
       <div className={`${config.bg} flex items-center justify-between px-4 py-2`}>
         <span className={`text-xs font-bold tracking-wide ${config.text}`}>{config.label}</span>
         <button
@@ -158,32 +172,54 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
 
       <div className="px-4 pt-3 pb-2">
 
-        {/* AÇIKLAMA */}
-        <div className="mb-3">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">İlan Açıklaması</p>
-            {ilan.user_id !== mevcutKullanici()?.id && (
-              <button
-                onClick={handleFavori}
-                className={`flex items-center gap-1 text-[10px] font-semibold border px-2 py-0.5 rounded-full transition ${
-                  isFavori
-                    ? 'text-red-500 border-red-300 bg-red-50'
-                    : 'text-gray-400 hover:text-red-400 border-gray-200 hover:border-red-300'
-                }`}
-              >
-                <Heart size={10} className={isFavori ? 'fill-red-500' : ''} />
-                {isFavori ? 'Favoride' : 'Favoriye Ekle'}
-              </button>
+        {/* AÇIKLAMA + THUMBNAIL */}
+        <div className={`mb-3 flex gap-3 ${resimliKategori && resimler.length > 0 ? '' : ''}`}>
+          {/* Sol: thumbnail (sadece resimli kategorilerde) */}
+          {resimliKategori && resimler.length > 0 && (
+            <IlanThumbnail resimler={resimler} />
+          )}
+
+          {/* Sağ: açıklama + favori */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">İlan Açıklaması</p>
+              {ilan.user_id !== mevcutKullanici()?.id && (
+                <button
+                  onClick={handleFavori}
+                  className={`flex items-center gap-1 text-[10px] font-semibold border px-2 py-0.5 rounded-full transition flex-shrink-0 ${
+                    isFavori
+                      ? 'text-red-500 border-red-300 bg-red-50'
+                      : 'text-gray-400 hover:text-red-400 border-gray-200 hover:border-red-300'
+                  }`}
+                >
+                  <Heart size={10} className={isFavori ? 'fill-red-500' : ''} />
+                  {isFavori ? 'Favoride' : 'Favoriye Ekle'}
+                </button>
+              )}
+            </div>
+            {ilan.aciklama && (
+              <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">
+                {ilan.aciklama}
+              </p>
+            )}
+            {/* Araç bilgileri özeti (aracimi_satiyorum için) */}
+            {ilan.kategori === 'aracimi_satiyorum' && (ekBilgi.marka || ekBilgi.model || ekBilgi.yil) && (
+              <p className="text-xs text-gray-500 mt-1 font-medium">
+                {[ekBilgi.marka, ekBilgi.model, ekBilgi.yil].filter(Boolean).join(' · ')}
+                {ekBilgi.km && <span className="text-gray-400"> · {Number(ekBilgi.km).toLocaleString('tr-TR')} km</span>}
+              </p>
             )}
           </div>
-          {ilan.aciklama && (
-            <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
-              {ilan.aciklama}
-            </p>
-          )}
         </div>
 
-        {/* GÜZERGAH TABLOSU */}
+        {/* Resim yoksa açıklama favori satırı normal */}
+        {(!resimliKategori || resimler.length === 0) && ilan.aciklama && (
+          <div className="mb-3 -mt-3">
+            {/* açıklama zaten yukarıda render edildi, bu blok boş kalır */}
+          </div>
+        )}
+
+        {/* GÜZERGAH */}
         {ilan.guzergahlar && ilan.guzergahlar.length > 0 && (
           ilan.kategori === 'plaka_satiyorum' || ilan.kategori === 'aracimi_satiyorum' ? (
             <div className="mb-3 flex items-center gap-1.5 text-xs text-gray-600 border-t border-gray-100 pt-2">
@@ -247,7 +283,6 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
           <MessageCircle size={12} /> WhatsApp
         </button>
 
-        {/* ÜCRET / FİYAT ORTADA */}
         {ekBilgi.ucret ? (
           <div className="text-center">
             <span className="text-sm font-bold text-blue-600">
