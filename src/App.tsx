@@ -267,7 +267,7 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
     </div>
   );
 }
-function HomePage({ onGoLogin, onIlanDetay, isLoggedIn }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void; isLoggedIn: boolean }) {
+function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void; onLoginSuccess: () => void }) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
@@ -440,7 +440,7 @@ function HomePage({ onGoLogin, onIlanDetay, isLoggedIn }: { onGoLogin: () => voi
         {/* GİRİŞ ÇUBUĞU */}
         {!isLoggedIn && (
           <div className="mb-3 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            <InlineGiris onLogin={onGoLogin} onGoRegister={onGoLogin} />
+            <InlineGiris onLogin={onLoginSuccess} onGoRegister={onGoLogin} />
           </div>
         )}
         {/* KATEGORİ KARTLARI */}
@@ -1016,10 +1016,10 @@ export default function App() {
         </div>
       )}
       <HomePage
-        onGoLogin={() => setCurrentPage('login')}
-        onIlanDetay={handleIlanDetay}
-        isLoggedIn={isLoggedIn}
-      />
+  onGoLogin={() => setCurrentPage('login')}
+  onIlanDetay={handleIlanDetay}
+  onLoginSuccess={handleLogin}
+/>
     </>
   );
 }
