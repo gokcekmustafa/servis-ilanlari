@@ -510,34 +510,37 @@ function HomePage({ onGoLogin, onIlanDetay }: { onGoLogin: () => void; onIlanDet
           <div className="flex-1 min-w-0">
 
             {/* YAN REKLAM ALANLARI */}
-            <div className="flex gap-2 mb-3">
-              {/* Küçük reklam — 8cm ~ h-32 */}
-              <div
-                onClick={() => kenarKucukReklam?.link_url && window.open(kenarKucukReklam.link_url, '_blank')}
-                className={`relative flex-1 h-32 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarKucukReklam?.link_url ? 'cursor-pointer' : ''}`}
-              >
-                {kenarKucukReklam?.resim_url ? (
-                  <img src={kenarKucukReklam.resim_url} alt={kenarKucukReklam.baslik || 'Reklam'} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center border border-dashed border-slate-200">
-                    <span className="text-slate-300 text-xs">Reklam Alanı</span>
-                  </div>
-                )}
-                <span className="absolute top-1 right-1 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">Reklam</span>
-              </div>
-              {/* Büyük reklam — 12cm ~ h-48 */}
-              <div
-                onClick={() => kenarBuyukReklam?.link_url && window.open(kenarBuyukReklam.link_url, '_blank')}
-                className={`relative flex-1 h-48 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarBuyukReklam?.link_url ? 'cursor-pointer' : ''}`}
-              >
-                {kenarBuyukReklam?.resim_url ? (
-                  <img src={kenarBuyukReklam.resim_url} alt={kenarBuyukReklam.baslik || 'Reklam'} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center border border-dashed border-slate-200">
-                    <span className="text-slate-300 text-xs">Reklam Alanı</span>
-                  </div>
-                )}
-                <span className="absolute top-1 right-1 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">Reklam</span>
+            <div className="flex gap-4 mb-3">
+              {/* Sol filtreden sağ sona kadar uzanan, alt alta iki reklam */}
+              <div className="w-full flex flex-col gap-2 -ml-56">
+                {/* Küçük reklam — h-32'nin %150'si = h-48 */}
+                <div
+                  onClick={() => kenarKucukReklam?.link_url && window.open(kenarKucukReklam.link_url, '_blank')}
+                  className={`relative w-full h-48 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarKucukReklam?.link_url ? 'cursor-pointer' : ''}`}
+                >
+                  {kenarKucukReklam?.resim_url ? (
+                    <img src={kenarKucukReklam.resim_url} alt={kenarKucukReklam.baslik || 'Reklam'} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center border border-dashed border-slate-200">
+                      <span className="text-slate-300 text-xs">Reklam Alanı</span>
+                    </div>
+                  )}
+                  <span className="absolute top-1 right-1 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">Reklam</span>
+                </div>
+                {/* Büyük reklam — h-48'in %150'si = h-72 */}
+                <div
+                  onClick={() => kenarBuyukReklam?.link_url && window.open(kenarBuyukReklam.link_url, '_blank')}
+                  className={`relative w-full h-72 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarBuyukReklam?.link_url ? 'cursor-pointer' : ''}`}
+                >
+                  {kenarBuyukReklam?.resim_url ? (
+                    <img src={kenarBuyukReklam.resim_url} alt={kenarBuyukReklam.baslik || 'Reklam'} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center border border-dashed border-slate-200">
+                      <span className="text-slate-300 text-xs">Reklam Alanı</span>
+                    </div>
+                  )}
+                  <span className="absolute top-1 right-1 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">Reklam</span>
+                </div>
               </div>
             </div>
 
