@@ -180,7 +180,7 @@ export default function Header({
                   <img
                     src={headerReklam.resim_url}
                     alt={headerReklam.baslik || 'Reklam'}
-                    className="w-full h-full object-cover rounded-lg"
+                    className="w-full h-full object-contain rounded-lg"
                   />
                   <span className="absolute top-1 right-1 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">
                     Reklam
