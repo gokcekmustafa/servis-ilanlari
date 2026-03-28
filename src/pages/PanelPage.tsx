@@ -12,7 +12,7 @@ import { supabase } from '../lib/supabase';
 import {
   Eye, Trash2, Plus, Heart, Car, MessageSquare,
   HelpCircle, User, LogOut, Bell, Menu, X, Pencil, Save, Camera,
-  Upload, ImagePlus
+  Upload
 } from 'lucide-react';
 
 type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'favoriler' | 'destek';
@@ -30,9 +30,7 @@ const markalar = ['Mercedes', 'Fiat', 'Ford', 'Volkswagen', 'Renault', 'Peugeot'
 const tumIller = Object.keys(ilceler).sort();
 const MAX_RESIM = 6;
 
-// Kategoriler güzergah gösterir mi?
-const GUZERGAHLI_KATEGORILER = ['isim_var_arac', 'aracim_var_is', 'sofor_ariyorum', 'hostes_ariyorum'];
-// Konum (il/ilçe) gösterir mi?
+// Konum (il/ilçe/mahalle) gösterir mi?
 const KONUMLU_KATEGORILER = ['hostesim_is', 'soforum_is', 'plaka_satiyorum', 'aracimi_satiyorum'];
 // Resim yükleme gerektiren kategoriler
 const RESIMLI_KATEGORILER = ['aracimi_satiyorum', 'aracim_var_is'];
@@ -212,10 +210,8 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
   const kategori = ilan.kategori;
   const ek = ilan.ekbilgiler || {};
 
-  // Ortak
   const [aciklama, setAciklama] = useState(ilan.aciklama || '');
 
-  // Resimler
   const [resimler, setResimler] = useState<IlanResmi[]>(
     (ek.resimler || []).map((url: string) => ({ url }))
   );
@@ -229,103 +225,61 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
   }, []);
   const handleResimSil = useCallback((i: number) => setResimler(prev => prev.filter((_, idx) => idx !== i)), []);
 
-  // İşim Var Araç
   const [isimVarArac, setIsimVarArac] = useState({
-    arac_markasi: ek.arac_markasi || '',
-    model: ek.model || '',
-    arac_yili: ek.arac_yili || '',
-    arac_kapasitesi: ek.arac_kapasitesi || '',
-    ucret: ek.ucret || '',
-    km: ek.km || '',
-    calisılacak_gun: ek.calisılacak_gun || '',
-    servis_suresi: ek.servis_suresi || '',
-    aracki_yolcu_sayisi: ek.aracki_yolcu_sayisi || '',
-    servis_turu: ek.servis_turu || [] as string[],
+    arac_markasi: ek.arac_markasi || '', model: ek.model || '', arac_yili: ek.arac_yili || '',
+    arac_kapasitesi: ek.arac_kapasitesi || '', ucret: ek.ucret || '', km: ek.km || '',
+    calisılacak_gun: ek.calisılacak_gun || '', servis_suresi: ek.servis_suresi || '',
+    aracki_yolcu_sayisi: ek.aracki_yolcu_sayisi || '', servis_turu: ek.servis_turu || [] as string[],
   });
 
-  // Aracım Var İş
   const [aracimVarIs, setAracimVarIs] = useState({
-    secilen_arac: ek.secilen_arac || '',
-    calisma_yerleri: ek.calisma_yerleri || '',
+    secilen_arac: ek.secilen_arac || '', calisma_yerleri: ek.calisma_yerleri || '',
   });
 
-  // Şoför Arıyorum
   const [soforAriyorum, setSoforAriyorum] = useState({
-    odeme_sekli: ek.odeme_sekli || 'aylik',
-    ucret: ek.ucret || '',
-    aranan_tecrube: ek.aranan_tecrube || '',
-    ortalama_servis_suresi: ek.ortalama_servis_suresi || '',
-    yolcu_sayisi: ek.yolcu_sayisi || '',
-    km: ek.km || '',
-    calisılacak_gun: ek.calisılacak_gun || '',
-    yabanci_diller: ek.yabanci_diller || [] as string[],
+    odeme_sekli: ek.odeme_sekli || 'aylik', ucret: ek.ucret || '',
+    aranan_tecrube: ek.aranan_tecrube || '', ortalama_servis_suresi: ek.ortalama_servis_suresi || '',
+    yolcu_sayisi: ek.yolcu_sayisi || '', km: ek.km || '',
+    calisılacak_gun: ek.calisılacak_gun || '', yabanci_diller: ek.yabanci_diller || [] as string[],
   });
 
-  // Hostes Arıyorum
   const [hostesAriyorum, setHostesAriyorum] = useState({
-    ucret: ek.ucret || '',
-    calisılacak_okul: ek.calisılacak_okul || '',
-    aranan_tecrube: ek.aranan_tecrube || '',
-    okul_turu: ek.okul_turu || 'Anaokulu Kres',
+    ucret: ek.ucret || '', calisılacak_okul: ek.calisılacak_okul || '',
+    aranan_tecrube: ek.aranan_tecrube || '', okul_turu: ek.okul_turu || 'Anaokulu Kres',
     yabanci_diller: ek.yabanci_diller || [] as string[],
   });
 
-  // Hostesim İş
   const [hostesimIs, setHostesimIs] = useState({
-    dogum_tarihi: ek.dogum_tarihi || '',
-    dogum_yeri: ek.dogum_yeri || '',
-    egitim_durumu: ek.egitim_durumu || '',
-    yabanci_diller: ek.yabanci_diller || [] as string[],
+    dogum_tarihi: ek.dogum_tarihi || '', dogum_yeri: ek.dogum_yeri || '',
+    egitim_durumu: ek.egitim_durumu || '', yabanci_diller: ek.yabanci_diller || [] as string[],
     servis_tasimacilik_deneyimi: ek.servis_tasimacilik_deneyimi || 'var',
   });
 
-  // Şoförüm İş
   const [soforumIs, setSoforumIs] = useState({
-    surucubelgesi: ek.surucubelgesi || '',
-    ehliyet_alinma_tarihi: ek.ehliyet_alinma_tarihi || '',
-    sinav_belgeleri: ek.sinav_belgeleri || '',
-    dogum_tarihi: ek.dogum_tarihi || '',
-    dogum_yeri: ek.dogum_yeri || '',
-    arac_turu: ek.arac_turu || [] as string[],
-    belgeler: ek.belgeler || [] as string[],
-    yabanci_diller: ek.yabanci_diller || [] as string[],
-    emekli: ek.emekli || 'hayir',
-    mesleki_yeterlilik: ek.mesleki_yeterlilik || 'var',
-    sabika_kaydi: ek.sabika_kaydi || 'var',
-    tam_zamanlimi: ek.tam_zamanlimi || 'hayir',
+    surucubelgesi: ek.surucubelgesi || '', ehliyet_alinma_tarihi: ek.ehliyet_alinma_tarihi || '',
+    sinav_belgeleri: ek.sinav_belgeleri || '', dogum_tarihi: ek.dogum_tarihi || '',
+    dogum_yeri: ek.dogum_yeri || '', arac_turu: ek.arac_turu || [] as string[],
+    belgeler: ek.belgeler || [] as string[], yabanci_diller: ek.yabanci_diller || [] as string[],
+    emekli: ek.emekli || 'hayir', mesleki_yeterlilik: ek.mesleki_yeterlilik || 'var',
+    sabika_kaydi: ek.sabika_kaydi || 'var', tam_zamanlimi: ek.tam_zamanlimi || 'hayir',
     servis_tasimacilik_deneyimi: ek.servis_tasimacilik_deneyimi || 'var',
     baska_ise_gider_misiniz: ek.baska_ise_gider_misiniz || 'hayir',
   });
 
-  // Plaka Satıyorum
   const [plakaSatiyorum, setPlakaSatiyorum] = useState({
-    plaka_il: ek.plaka_il || '',
-    plaka_harf: ek.plaka_harf || '',
-    plaka_no: ek.plaka_no || '',
-    ucret: ek.ucret || '',
-    aracla_birlikte: ek.aracla_birlikte || false,
-    yol_belgesi_var: ek.yol_belgesi_var || false,
-    noter_satisi: ek.noter_satisi || false,
-    hisseli: ek.hisseli || false,
+    plaka_il: ek.plaka_il || '', plaka_harf: ek.plaka_harf || '', plaka_no: ek.plaka_no || '',
+    ucret: ek.ucret || '', aracla_birlikte: ek.aracla_birlikte || false,
+    yol_belgesi_var: ek.yol_belgesi_var || false, noter_satisi: ek.noter_satisi || false, hisseli: ek.hisseli || false,
   });
 
-  // Aracımı Satıyorum
   const [aracimiSatiyorum, setAracimiSatiyorum] = useState({
-    marka: ek.marka || '',
-    model: ek.model || '',
-    yil: ek.yil || '',
-    plaka: ek.plaka || '',
-    koltuk_sayisi: ek.koltuk_sayisi || '',
-    arac_tipi: ek.arac_tipi || '',
-    km: ek.km || '',
-    ucret: ek.ucret || '',
-    hasar_kaydi: ek.hasar_kaydi || 'yok',
-    noter_satisi: ek.noter_satisi || false,
-    aracla_birlikte_plaka: ek.aracla_birlikte_plaka || false,
+    marka: ek.marka || '', model: ek.model || '', yil: ek.yil || '', plaka: ek.plaka || '',
+    koltuk_sayisi: ek.koltuk_sayisi || '', arac_tipi: ek.arac_tipi || '',
+    km: ek.km || '', ucret: ek.ucret || '', hasar_kaydi: ek.hasar_kaydi || 'yok',
+    noter_satisi: ek.noter_satisi || false, aracla_birlikte_plaka: ek.aracla_birlikte_plaka || false,
   });
 
-  // Konum
-  const konumGuzergah = ilan.guzergahlar?.[0] || {};
+  const konumGuzergah = (ilan.guzergahlar?.[0] || {}) as any;
   const [konumIl, setKonumIl] = useState(konumGuzergah.kalkis_il || '');
   const [konumIlce, setKonumIlce] = useState(konumGuzergah.kalkis_ilce || '');
   const [konumMah, setKonumMah] = useState(konumGuzergah.kalkis_mah || '');
@@ -334,7 +288,6 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
     let yeniEkbilgiler: any = { ...ek };
     let yeniGuzergahlar = ilan.guzergahlar ? [...ilan.guzergahlar] : [];
 
-    // Resim yükle (yeni eklenenler)
     setResimYukleniyor(true);
     const yuklenenUrller: string[] = [];
     for (const resim of resimler) {
@@ -342,9 +295,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         const ad = `ilan-resim-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         const { data } = await supabase.storage.from('profil-resimleri').upload(ad, resim.file);
         if (data) { const { data: u } = supabase.storage.from('profil-resimleri').getPublicUrl(data.path); yuklenenUrller.push(u.publicUrl); }
-      } else {
-        yuklenenUrller.push(resim.url);
-      }
+      } else { yuklenenUrller.push(resim.url); }
     }
     setResimYukleniyor(false);
 
@@ -377,7 +328,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
 
   return (
     <div className="space-y-5">
-      {/* ─── İŞİM VAR ARAÇ ─── */}
+      {/* İŞİM VAR ARAÇ */}
       {kategori === 'isim_var_arac' && (
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">Araç Bilgileri</h3>
@@ -420,7 +371,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         </div>
       )}
 
-      {/* ─── ARACIM VAR İŞ ─── */}
+      {/* ARACIM VAR İŞ */}
       {kategori === 'aracim_var_is' && (
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">Araç Bilgileri</h3>
@@ -429,7 +380,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         </div>
       )}
 
-      {/* ─── ŞOFÖR ARIYORUM ─── */}
+      {/* ŞOFÖR ARIYORUM */}
       {kategori === 'sofor_ariyorum' && (
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">İlan Detayları</h3>
@@ -441,7 +392,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
             <div><label className={lb}>Ücret (TL)</label><input type="number" value={soforAriyorum.ucret} onChange={e=>setSoforAriyorum({...soforAriyorum,ucret:e.target.value})} className={ic}/></div>
             <div><label className={lb}>Aranan Tecrübe</label>
               <select value={soforAriyorum.aranan_tecrube} onChange={e=>setSoforAriyorum({...soforAriyorum,aranan_tecrube:e.target.value})} className={ic}>
-                <option value="">Farketmez</option><option value="1">1 Yıl</option><option value="2">2 Yıl</option><option value="3">3 Yıl ve üzeri</option>
+                <option value="">Farketmez</option><option value="1">1 Yıl</option><option value="2">2 Yıl</option><option value="3">3 Yıl+</option>
               </select></div>
             <div><label className={lb}>Ort. Servis Süresi (Dk)</label><input type="number" value={soforAriyorum.ortalama_servis_suresi} onChange={e=>setSoforAriyorum({...soforAriyorum,ortalama_servis_suresi:e.target.value})} className={ic}/></div>
             <div><label className={lb}>Yolcu Sayısı</label><input type="number" value={soforAriyorum.yolcu_sayisi} onChange={e=>setSoforAriyorum({...soforAriyorum,yolcu_sayisi:e.target.value})} className={ic}/></div>
@@ -460,7 +411,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         </div>
       )}
 
-      {/* ─── HOSTES ARIYORUM ─── */}
+      {/* HOSTES ARIYORUM */}
       {kategori === 'hostes_ariyorum' && (
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">İlan Detayları</h3>
@@ -469,7 +420,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
             <div><label className={lb}>Çalışacak Okul</label><input value={hostesAriyorum.calisılacak_okul} onChange={e=>setHostesAriyorum({...hostesAriyorum,calisılacak_okul:e.target.value})} className={ic}/></div>
             <div><label className={lb}>Aranan Tecrübe</label>
               <select value={hostesAriyorum.aranan_tecrube} onChange={e=>setHostesAriyorum({...hostesAriyorum,aranan_tecrube:e.target.value})} className={ic}>
-                <option value="">Farketmez</option><option value="1">1 Yıl</option><option value="2">2 Yıl</option><option value="3">3 Yıl ve üzeri</option>
+                <option value="">Farketmez</option><option value="1">1 Yıl</option><option value="2">2 Yıl</option><option value="3">3 Yıl+</option>
               </select></div>
           </div>
           <div className="mb-4"><label className={lb+' mb-2'}>Okul Türü</label>
@@ -493,7 +444,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         </div>
       )}
 
-      {/* ─── HOSTESİM İŞ ─── */}
+      {/* HOSTESİM İŞ */}
       {kategori === 'hostesim_is' && (
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">İlan Detayları</h3>
@@ -526,7 +477,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         </div>
       )}
 
-      {/* ─── ŞOFÖRÜM İŞ ─── */}
+      {/* ŞOFÖRÜM İŞ */}
       {kategori === 'soforum_is' && (
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">Ehliyet ve Araç Bilgileri</h3>
@@ -549,7 +500,8 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
               ))}
             </div>
           </div>
-          <div className="mb-4"><label className={lb+' mb-2'}>Belgeler</label>
+          <div className="mb-4">
+            <label className={lb+' mb-2'}>Belgeler</label>
             <div className="flex flex-wrap gap-3 mb-3">
               {['Src','Src1','Src2','Src3','Diğer','Tam Şoför Kart'].map(b=>(
                 <label key={b} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
@@ -589,7 +541,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         </div>
       )}
 
-      {/* ─── PLAKA SATIYORUM ─── */}
+      {/* PLAKA SATIYORUM */}
       {kategori === 'plaka_satiyorum' && (
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">Plaka Bilgileri (Gizlenecektir)</h3>
@@ -612,7 +564,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         </div>
       )}
 
-      {/* ─── ARACIMI SATIYORUM ─── */}
+      {/* ARACIMI SATIYORUM */}
       {kategori === 'aracimi_satiyorum' && (
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">Araç Bilgileri</h3>
@@ -649,12 +601,12 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         </div>
       )}
 
-      {/* ─── RESİM YÜKLEME (araç satış kategorileri) ─── */}
+      {/* RESİM YÜKLEME */}
       {RESIMLI_KATEGORILER.includes(kategori) && (
         <ResimYukleme resimler={resimler} onEkle={handleResimEkle} onSil={handleResimSil} />
       )}
 
-      {/* ─── KONUM (güzergahsız kategoriler) ─── */}
+      {/* KONUM (güzergahsız kategoriler - güzergah bölümü yoktur) */}
       {KONUMLU_KATEGORILER.includes(kategori) && (
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-1 text-sm">Konum Bilgisi</h3>
@@ -668,14 +620,14 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         </div>
       )}
 
-      {/* ─── AÇIKLAMA (hep göster) ─── */}
+      {/* AÇIKLAMA */}
       <div className="border border-slate-200 rounded-xl p-4">
         <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 block">İlan Açıklaması</label>
         <textarea className={ic + ' resize-none'} rows={4} value={aciklama}
           onChange={e => setAciklama(e.target.value)} placeholder="İlan açıklaması..." />
       </div>
 
-      {/* ─── KAYDET BUTONU ─── */}
+      {/* KAYDET */}
       <div className="flex gap-3 pt-2">
         <button onClick={onKapat} className={btnS + ' flex-1'}>İptal</button>
         <button onClick={handleKaydet} disabled={resimYukleniyor}
@@ -683,6 +635,62 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
           {resimYukleniyor ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={14} />}
           {resimYukleniyor ? 'Kaydediliyor...' : 'Kaydet'}
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Araç Düzenleme Modalı ───────────────────────────────────────────────────
+function AracDuzenleModal({ arac, onKaydet, onKapat }: {
+  arac: any;
+  onKaydet: (updates: any) => void;
+  onKapat: () => void;
+}) {
+  const [form, setForm] = useState({
+    marka: arac.marka || '',
+    model: arac.model || '',
+    yil: arac.yil || '',
+    plaka: arac.plaka || '',
+    koltuk_sayisi: arac.koltuk_sayisi || '',
+    arac_tipi: arac.arac_tipi || '',
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4">
+      <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 bg-orange-500 rounded-t-2xl flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Car size={16} className="text-white" />
+            <h3 className="font-bold text-white text-sm">Aracı Düzenle</h3>
+          </div>
+          <button onClick={onKapat} className="text-white/80 hover:text-white"><X size={20} /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className={lb}>Marka</label>
+              <select value={form.marka} onChange={e=>setForm({...form,marka:e.target.value})} className={ic}>
+                <option value="">Seçin</option>{markalar.map(m=><option key={m} value={m}>{m}</option>)}
+              </select></div>
+            <div><label className={lb}>Model</label>
+              <input value={form.model} onChange={e=>setForm({...form,model:e.target.value})} placeholder="Sprinter, Transit..." className={ic}/></div>
+            <div><label className={lb}>Yıl</label>
+              <input value={form.yil} onChange={e=>setForm({...form,yil:e.target.value})} placeholder="2020" className={ic}/></div>
+            <div><label className={lb}>Plaka</label>
+              <input value={form.plaka} onChange={e=>setForm({...form,plaka:e.target.value})} placeholder="34 ABC 123" className={ic}/></div>
+            <div><label className={lb}>Koltuk Sayısı</label>
+              <input value={form.koltuk_sayisi} onChange={e=>setForm({...form,koltuk_sayisi:e.target.value})} placeholder="16+1" className={ic}/></div>
+            <div><label className={lb}>Araç Tipi</label>
+              <select value={form.arac_tipi} onChange={e=>setForm({...form,arac_tipi:e.target.value})} className={ic}>
+                <option value="">Seçin</option>{aracTipleri.map(t=><option key={t} value={t}>{t}</option>)}
+              </select></div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button onClick={onKapat} className={btnS+' flex-1'}>İptal</button>
+            <button onClick={()=>onKaydet(form)} className={btnO+' flex-1 flex items-center justify-center gap-2'}>
+              <Save size={14}/> Kaydet
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -700,6 +708,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
   const [basari, setBasari] = useState('');
   const [hata, setHata] = useState('');
   const [aracFormAcik, setAracFormAcik] = useState(false);
+  const [duzenleArac, setDuzenleArac] = useState<any>(null);
   const [destekGonderildi, setDestekGonderildi] = useState(false);
   const [destekForm, setDestekForm] = useState({ konu: '', mesaj: '' });
   const [aracForm, setAracForm] = useState({ marka: '', model: '', yil: '', plaka: '', koltuk_sayisi: '', arac_tipi: '' });
@@ -762,6 +771,17 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
     if (!confirm('Bu aracı silmek istediğinizden emin misiniz?')) return;
     const { error } = await aracSil(id);
     if (!error) setAraclar(araclar.filter(a => a.id !== id));
+  };
+
+  const handleAracGuncelle = async (updates: any) => {
+    if (!duzenleArac) return;
+    const { error } = await supabase.from('araclar').update(updates).eq('id', duzenleArac.id);
+    if (!error) {
+      setAraclar(araclar.map(a => a.id === duzenleArac.id ? { ...a, ...updates } : a));
+      setDuzenleArac(null);
+      setBasari('Araç başarıyla güncellendi!');
+      setTimeout(() => setBasari(''), 3000);
+    }
   };
 
   const handleFavoriKaldir = async (ilanId: string) => {
@@ -883,7 +903,6 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
 
   return (
     <div className="bg-slate-100 min-h-screen">
-      {/* MOBİL ÜST BAR */}
       <div className="lg:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-2">
           <button onClick={() => setMenuAcik(true)} className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg"><Menu size={20} /></button>
@@ -900,7 +919,6 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
         </div>
       </div>
 
-      {/* MOBİL SIDEBAR DRAWER */}
       {menuAcik && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/50" onClick={() => setMenuAcik(false)} />
@@ -916,9 +934,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
 
       <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-5">
-
           <aside className="hidden lg:block w-52 flex-shrink-0"><SidebarIcerik /></aside>
-
           <main className="flex-1 min-w-0">
 
             {/* PROFİL */}
@@ -1064,7 +1080,10 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                               <p className="text-xs text-slate-400 truncate">{arac.plaka} · {arac.koltuk_sayisi} koltuk · {arac.arac_tipi}</p>
                             </div>
                           </div>
-                          <button onClick={() => handleAracSil(arac.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition flex-shrink-0 ml-2"><Trash2 size={14} /></button>
+                          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                            <button onClick={() => setDuzenleArac(arac)} className="p-2 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition"><Pencil size={14} /></button>
+                            <button onClick={() => handleAracSil(arac.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"><Trash2 size={14} /></button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1161,7 +1180,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
         </div>
       </div>
 
-      {/* DÜZENLEME MODALI */}
+      {/* İLAN DÜZENLEME MODALI */}
       {duzenleIlan && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4">
           <div className="bg-white w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] flex flex-col">
@@ -1190,6 +1209,15 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
             </div>
           </div>
         </div>
+      )}
+
+      {/* ARAÇ DÜZENLEME MODALI */}
+      {duzenleArac && (
+        <AracDuzenleModal
+          arac={duzenleArac}
+          onKaydet={handleAracGuncelle}
+          onKapat={() => setDuzenleArac(null)}
+        />
       )}
     </div>
   );
