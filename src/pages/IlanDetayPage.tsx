@@ -217,7 +217,7 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
   const kendiIlani = isLoggedIn && user?.id === ilan.user_id;
 
   // Resim gösteren kategoriler
-  const resimler: string[] = (aracSatiyormu || aracimVarIs) ? (ek.resimler || []) : [];
+  const resimler: string[] = (aracSatiyormu || aracimVarIs || ilan.kategori === 'hostesim_is' || ilan.kategori === 'soforum_is') ? (ek.resimler || []) : [];
 
   useEffect(() => {
     if (isLoggedIn && user) {
