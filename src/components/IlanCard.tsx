@@ -162,25 +162,28 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn, kompakt
   const ekBilgi = ilan.ekbilgiler || {};
   const [isFavori, setIsFavori] = useState(false);
   const [goruldu, setGoruldu] = useState(() => gorilenIlanlariGetir().has(ilan.id));
-  const kullaniciId = mevcutKullanici()?.id || 'misafir';
-const gizliKey = `gizli_ilan_${kullaniciId}_${ilan.id}`;
-
-const kullanici = mevcutKullanici();
-const [gizli, setGizli] = useState(false);
+  const [gizli, setGizli] = useState(false);
 const [hover, setHover] = useState(false);
+const kullaniciId = mevcutKullanici()?.id || null;
 
 useEffect(() => {
-  if (!kullanici?.id) return;
+  if (!kullaniciId) {
+    // Misafir — localStorage'dan oku
+    const kayit = localStorage.getItem(`gizli_misafir_${ilan.id}`);
+    if (kayit === '1') setGizli(true);
+    return;
+  }
+  // Üye — Supabase'den oku
   supabase
     .from('gizli_ilanlar')
     .select('id')
-    .eq('user_id', kullanici.id)
+    .eq('user_id', kullaniciId)
     .eq('ilan_id', ilan.id)
     .maybeSingle()
     .then(({ data }) => {
-      if (data) setGizli(true);
+      setGizli(!!data);
     });
-}, [ilan.id, kullanici?.id]);
+}, [ilan.id, kullaniciId]);
 
   // Resim gösteren kategoriler
   const resimliKategori = ilan.kategori === 'aracimi_satiyorum' || ilan.kategori === 'aracim_var_is' || ilan.kategori === 'hostesim_is' || ilan.kategori === 'soforum_is';
@@ -216,17 +219,17 @@ if (kompakt) return (
   <div className="absolute top-1 right-1 z-20 group/gizle">
     <button
       onClick={async (e) => {
-        e.stopPropagation();
-        setGizli(true);
-        if (kullanici?.id) {
-          await supabase.from('gizli_ilanlar').upsert({
-            user_id: kullanici.id,
-            ilan_id: ilan.id,
-          });
-        } else {
-          localStorage.setItem(`gizli_misafir_${ilan.id}`, '1');
-        }
-      }}
+  e.stopPropagation();
+  setGizli(true);
+  if (kullaniciId) {
+    await supabase.from('gizli_ilanlar').upsert({
+      user_id: kullaniciId,
+      ilan_id: ilan.id,
+    });
+  } else {
+    localStorage.setItem(`gizli_misafir_${ilan.id}`, '1');
+  }
+}}
       className="w-6 h-6 rounded-full bg-gray-600/70 hover:bg-red-500 text-white flex items-center justify-center transition-all duration-150"
     >
       <X size={12} />
@@ -242,16 +245,16 @@ if (kompakt) return (
   <div className="absolute top-1 right-1 z-20">
     <button
       onClick={async (e) => {
-        e.stopPropagation();
-        setGizli(false);
-        if (kullanici?.id) {
-          await supabase.from('gizli_ilanlar').delete()
-            .eq('user_id', kullanici.id)
-            .eq('ilan_id', ilan.id);
-        } else {
-          localStorage.removeItem(`gizli_misafir_${ilan.id}`);
-        }
-      }}
+  e.stopPropagation();
+  setGizli(false);
+  if (kullaniciId) {
+    await supabase.from('gizli_ilanlar').delete()
+      .eq('user_id', kullaniciId)
+      .eq('ilan_id', ilan.id);
+  } else {
+    localStorage.removeItem(`gizli_misafir_${ilan.id}`);
+  }
+}}
       className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700/80 hover:bg-gray-900 text-white text-[10px] font-semibold transition"
     >
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -331,9 +334,9 @@ if (kompakt) return (
       onClick={async (e) => {
   e.stopPropagation();
   setGizli(true);
-  if (kullanici?.id) {
+  if (kullaniciId) {
     await supabase.from('gizli_ilanlar').upsert({
-      user_id: kullanici.id,
+      user_id: kullaniciId,
       ilan_id: ilan.id,
     });
   } else {
@@ -357,9 +360,9 @@ if (kompakt) return (
       onClick={async (e) => {
   e.stopPropagation();
   setGizli(false);
-  if (kullanici?.id) {
+  if (kullaniciId) {
     await supabase.from('gizli_ilanlar').delete()
-      .eq('user_id', kullanici.id)
+      .eq('user_id', kullaniciId)
       .eq('ilan_id', ilan.id);
   } else {
     localStorage.removeItem(`gizli_misafir_${ilan.id}`);
