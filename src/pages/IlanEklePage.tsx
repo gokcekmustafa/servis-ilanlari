@@ -7,6 +7,26 @@ import { ilceler } from '../data/ilceler';
 import { mahalleler } from '../data/mahalleler';
 import { supabase } from '../lib/supabase';
 
+const MARKA_MODELLER: Record<string, string[]> = {
+  'Mercedes': ['Sprinter', 'Vito', 'V-Class', 'Tourismo', 'Travego', 'Citaro'],
+  'Fiat': ['Ducato', 'Doblo', 'Scudo'],
+  'Ford': ['Transit', 'Transit Custom', 'Tourneo'],
+  'Volkswagen': ['Crafter', 'Transporter', 'Caravelle'],
+  'Renault': ['Master', 'Trafic', 'Kangoo'],
+  'Peugeot': ['Boxer', 'Expert', 'Traveller'],
+  'Citroen': ['Jumper', 'Jumpy', 'SpaceTourer'],
+  'Iveco': ['Daily', 'Crossway', 'Evadys'],
+  'Temsa': ['MD9', 'Maraton', 'Safari', 'Avenue', 'Opalin'],
+  'Isuzu': ['Novo', 'Turquoise', 'Citiport', 'Visigo'],
+  'Toyota': ['HiAce', 'Proace'],
+  'Hyundai': ['H350', 'Solati', 'County', 'Universe'],
+  'MAN': ['Lion\'s City', 'Lion\'s Coach', 'TGE'],
+  'Scania': ['Touring', 'Interlink', 'OmniCity'],
+  'Volvo': ['9700', '9900', 'B8R'],
+  'Karsan': ['Jest', 'Atak', 'e-ATAK'],
+  'Neoplan': ['Cityliner', 'Tourliner', 'Skyliner'],
+  'Opel': ['Movano', 'Vivaro', 'Combo'],
+};
 const kategoriler = [
   { id: 'isim_var_arac' as KategoriType, label: 'Isim Var Arac Ariyorum', color: 'border-blue-400 bg-blue-50 text-blue-700' },
   { id: 'aracim_var_is' as KategoriType, label: 'Aracim Var Is Ariyorum', color: 'border-green-400 bg-green-50 text-green-700' },
@@ -480,8 +500,18 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                   <div className="border border-slate-200 rounded-xl p-4 md:p-5">
                     <h3 className="font-semibold text-slate-700 mb-4">Arac Bilgileri</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                      <div><label className={lb}>Arac Markasi</label><select value={isimVarArac.arac_markasi} onChange={(e) => setIsimVarArac({...isimVarArac,arac_markasi:e.target.value})} className={ic}><option value="">Secin</option><option value="farketmez">Farketmez</option>{['Mercedes','Fiat','Ford','Volkswagen','Renault','Peugeot','Citroen','Iveco','Temsa','Isuzu'].map(m=><option key={m} value={m}>{m}</option>)}</select></div>
-                      <div><label className={lb}>Model</label><select value={isimVarArac.model} onChange={(e) => setIsimVarArac({...isimVarArac,model:e.target.value})} className={ic}><option value="">Secin</option><option value="farketmez">Farketmez</option>{['Sprinter','Ducato','Transit','Crafter','Jumper','Boxer','Daily','Minibus'].map(m=><option key={m} value={m}>{m}</option>)}</select></div>
+                      <div><label className={lb}>Arac Markasi</label>
+  <select value={isimVarArac.arac_markasi} onChange={(e) => setIsimVarArac({...isimVarArac, arac_markasi: e.target.value, model: ''})} className={ic}>
+    <option value="">Secin</option>
+    <option value="farketmez">Farketmez</option>
+    {Object.keys(MARKA_MODELLER).map(m=><option key={m} value={m}>{m}</option>)}
+  </select></div>
+<div><label className={lb}>Model</label>
+  <select value={isimVarArac.model} onChange={(e) => setIsimVarArac({...isimVarArac, model: e.target.value})} disabled={!isimVarArac.arac_markasi || isimVarArac.arac_markasi === 'farketmez'} className={ic + ' disabled:bg-slate-50 disabled:text-slate-400'}>
+    <option value="">Secin</option>
+    <option value="farketmez">Farketmez</option>
+    {(MARKA_MODELLER[isimVarArac.arac_markasi] || []).map(m=><option key={m} value={m}>{m}</option>)}
+  </select></div>
                       <div><label className={lb}>Arac Yili</label><select value={isimVarArac.arac_yili} onChange={(e) => setIsimVarArac({...isimVarArac,arac_yili:e.target.value})} className={ic}><option value="">Secin</option><option value="farketmez">Farketmez</option>{Array.from({length:20},(_,i)=>2025-i).map(y=><option key={y} value={y}>{y}</option>)}</select></div>
                       <div><label className={lb}>Kapasite</label><select value={isimVarArac.arac_kapasitesi} onChange={(e) => setIsimVarArac({...isimVarArac,arac_kapasitesi:e.target.value})} className={ic}><option value="">Secin</option><option value="farketmez">Farketmez</option>{['4+1','8+1','14+1','16+1','27+1','36+1','45+1'].map(k=><option key={k} value={k}>{k}</option>)}</select></div>
                     </div>
