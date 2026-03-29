@@ -839,29 +839,6 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                   </div>
                 )}
 
-                {/* PROFİL RESMİ */}
-                {(selectedKategori==='hostesim_is'||selectedKategori==='soforum_is')&&(
-                  <div className="border border-slate-200 rounded-xl p-4 md:p-5">
-                    <h3 className="font-semibold text-slate-700 mb-4">Kisisel Bilgiler</h3>
-                    <div className="flex flex-col items-start gap-3">
-                      <div className="w-24 h-24 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center overflow-hidden">
-                        {profilResimUrl?<img src={profilResimUrl} alt="Profil" className="w-full h-full object-cover"/>:<svg className="w-10 h-10 text-slate-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>}
-                      </div>
-                      <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-medium transition">Dosya Sec<input type="file" accept="image/jpeg,image/png,image/gif" onChange={handleProfilResimSec} className="hidden"/></label>
-                      {profilResim&&<p className="text-xs text-green-600">{profilResim.name}</p>}
-                      <p className="text-xs text-slate-400">Maks 20MB, JPEG/PNG/GIF</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <button onClick={() => setAdimVeKaydet(1)} className="flex-1 border border-slate-200 hover:border-slate-300 text-slate-600 py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"><ArrowLeft size={15} /> Geri</button>
-                  <button onClick={handleAdim2} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2">Önizleme <ArrowRight size={15} /></button>
-                </div>
-
-              </div>
-            )}
-
             {/* ADIM 3 */}
             {adim === 3 && (
               <div>
