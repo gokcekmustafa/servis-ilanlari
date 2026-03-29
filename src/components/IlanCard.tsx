@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, MessageCircle, Clock, ArrowRight, Heart, MapPin, ImageOff } from 'lucide-react';
+import { Phone, MessageCircle, Clock, ArrowRight, Heart, MapPin, ImageOff, X } from 'lucide-react';
 import { Ilan, KategoriType } from '../types';
 import { favoriEkle, favoriKaldir, favoriKontrol } from '../lib/ilanlar';
 import { mevcutKullanici } from '../lib/auth';
@@ -124,7 +124,7 @@ function GuzergahSatiri({ g, kategori }: { g: any; kategori: KategoriType }) {
 
 // Küçük resim bileşeni — sadece aracim_var_is ve aracimi_satiyorum için
 function IlanThumbnail({ resimler }: { resimler: string[] }) {
-  const [hata, setHata] = (false);
+  const [hata, setHata] = useState(false);
   const anaResim = resimler?.[0];
 
   if (!anaResim || hata) {
