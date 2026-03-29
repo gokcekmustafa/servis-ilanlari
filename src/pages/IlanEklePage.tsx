@@ -41,6 +41,8 @@ interface Guzergah {
   varis_ilce: string;
   varis_mah: string;
   cikis_saati: string;
+  baslangic_saati: string;
+  bitis_saati: string;
 }
 
 interface IlanResmi {
@@ -51,6 +53,7 @@ interface IlanResmi {
 const bosGuzergah = (): Guzergah => ({
   giris_saati: '', kalkis_il: '', kalkis_ilce: '', kalkis_mah: '',
   varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '',
+  baslangic_saati: '', bitis_saati: '',
 });
 
 const ic = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
@@ -242,10 +245,16 @@ function GuzergahSatiri({ guzergah, index, onGuncelle, onRemove, showRemove }: {
         <span className="text-sm font-semibold text-slate-600">Guzergah {index + 1}</span>
         {showRemove && <button onClick={() => onRemove(index)} className="text-red-400 hover:text-red-600 transition"><Trash2 size={14} /></button>}
       </div>
-      <div className="flex items-start gap-6 mb-3">
-        <SaatSecici label="Giriş Saati" value={guzergah.giris_saati} onChange={(v) => onGuncelle(index, { ...guzergah, giris_saati: v })} />
-        <SaatSecici label="Çıkış Saati" value={guzergah.cikis_saati} onChange={(v) => onGuncelle(index, { ...guzergah, cikis_saati: v })} />
-      </div>
+      <div className="grid grid-cols-2 gap-4 mb-3">
+  <div className="flex flex-col gap-3">
+    <SaatSecici label="Giriş Saati" value={guzergah.giris_saati} onChange={(v) => onGuncelle(index, { ...guzergah, giris_saati: v })} />
+    <SaatSecici label="Başlangıç Saati" value={guzergah.baslangic_saati} onChange={(v) => onGuncelle(index, { ...guzergah, baslangic_saati: v })} />
+  </div>
+  <div className="flex flex-col gap-3">
+    <SaatSecici label="Çıkış Saati" value={guzergah.cikis_saati} onChange={(v) => onGuncelle(index, { ...guzergah, cikis_saati: v })} />
+    <SaatSecici label="Bitiş Saati" value={guzergah.bitis_saati} onChange={(v) => onGuncelle(index, { ...guzergah, bitis_saati: v })} />
+  </div>
+</div>
       <div className="mb-3">
         <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Kalkis</p>
         <IlIlceMahalle il={guzergah.kalkis_il} ilce={guzergah.kalkis_ilce} mah={guzergah.kalkis_mah}
