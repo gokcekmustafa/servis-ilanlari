@@ -856,7 +856,6 @@ function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGo
                 >
                   <option value="yeni">En Yeni</option>
                   <option value="eski">En Eski</option>
-                </select>
                 <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
                   <button
                     onClick={() => setKompaktGorunum(false)}
