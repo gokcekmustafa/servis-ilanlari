@@ -24,6 +24,8 @@ export interface Ilan {
     varis_mah: string;
     varis_ilce?: string;
     varis_il?: string;
+    baslangic_saati?: string;
+    bitis_saati?: string;
   }[];
   servis_turu?: string[];
   created_at: string;
