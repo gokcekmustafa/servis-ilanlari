@@ -124,7 +124,7 @@ function GuzergahSatiri({ g, kategori }: { g: any; kategori: KategoriType }) {
 
 // Küçük resim bileşeni — sadece aracim_var_is ve aracimi_satiyorum için
 function IlanThumbnail({ resimler }: { resimler: string[] }) {
-  const [hata, setHata] = useState(false);
+  const [hata, setHata] = (false);
   const anaResim = resimler?.[0];
 
   if (!anaResim || hata) {
@@ -161,6 +161,8 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn, kompakt
   const ekBilgi = ilan.ekbilgiler || {};
   const [isFavori, setIsFavori] = useState(false);
   const [goruldu, setGoruldu] = useState(() => gorilenIlanlariGetir().has(ilan.id));
+  const [gizli, setGizli] = useState(false);
+const [hover, setHover] = useState(false);
 
   // Resim gösteren kategoriler
   const resimliKategori = ilan.kategori === 'aracimi_satiyorum' || ilan.kategori === 'aracim_var_is' || ilan.kategori === 'hostesim_is' || ilan.kategori === 'soforum_is';
@@ -247,10 +249,39 @@ if (kompakt) return (
   </div>
 );
   return (
-    <div
-      onClick={() => { ilanGorulduIsaretle(ilan.id); setGoruldu(true); onDetay(ilan); }}
-      className="bg-white border border-gray-200 hover:border-[#f7971e] hover:shadow-sm transition-all duration-150 cursor-pointer rounded overflow-hidden"
-    >
+  <div
+    onMouseEnter={() => setHover(true)}
+    onMouseLeave={() => setHover(false)}
+    onClick={() => { if (!gizli) { ilanGorulduIsaretle(ilan.id); setGoruldu(true); onDetay(ilan); } }}
+    className={`relative bg-white border border-gray-200 hover:border-[#f7971e] hover:shadow-sm transition-all duration-150 cursor-pointer rounded overflow-hidden ${gizli ? 'opacity-40 grayscale' : ''}`}
+  >
+    {/* GİZLE BUTONU */}
+    {!gizli && hover && (
+      <div className="absolute top-2 right-2 z-10 group/gizle">
+        <button
+          onClick={(e) => { e.stopPropagation(); setGizli(true); }}
+          className="w-6 h-6 rounded-full bg-gray-600/70 hover:bg-red-500 text-white flex items-center justify-center transition-all duration-150"
+        >
+          <X size={12} />
+        </button>
+        <div className="absolute right-0 top-7 bg-gray-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/gizle:opacity-100 transition-opacity pointer-events-none">
+          Bu ilanla ilgilenmiyorum, gizle.
+        </div>
+      </div>
+    )}
+
+    {/* GÖSTER BUTONU */}
+    {gizli && (
+      <div className="absolute top-2 right-2 z-10">
+        <button
+          onClick={(e) => { e.stopPropagation(); setGizli(false); }}
+          className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700/80 hover:bg-gray-900 text-white text-[10px] font-semibold transition"
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Göster
+        </button>
+      </div>
+    )}
       {/* ÜST BAŞLIK */}
       <div className={`${config.bg} flex items-center justify-between px-4 py-2`}>
         <span className={`text-xs font-bold tracking-wide ${config.text}`}>{config.label}</span>
