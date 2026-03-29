@@ -210,7 +210,7 @@ if (kompakt) return (
       )}
 
       {/* Açıklama */}
-      <p className={`text-xs line-clamp-1 flex-1 min-w-0 ${goruldu ? 'text-purple-700' : 'text-[#1a3c6e]'}`}>{ilan.aciklama}</p>
+      <p className={`text-xs line-clamp-3 leading-relaxed flex-1 min-w-0 ${goruldu ? 'text-purple-700' : 'text-[#1a3c6e]'}`}>{ilan.aciklama}</p>
 
       {/* Konum */}
       {ilan.guzergahlar?.[0]?.kalkis_il && (
