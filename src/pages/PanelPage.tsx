@@ -834,13 +834,14 @@ const [notMetin, setNotMetin] = useState('');
   const user = mevcutKullanici();
   const [avatarUrl, setAvatarUrl] = useState<string>((user as any)?.avatar_url || '');
   const [profil, setProfil] = useState({
-    ad: user?.full_name || '',
-    telefon: user?.phone_number || '',
-    adres: (user as any)?.adres || '',
-    il: (user as any)?.il || '',
-    ilce: (user as any)?.ilce || '',
-    yeniSifre: '',
-  });
+  ad: user?.full_name || '',
+  telefon: user?.phone_number || '',
+  email: (user as any)?.email || '',
+  adres: (user as any)?.adres || '',
+  il: (user as any)?.il || '',
+  ilce: (user as any)?.ilce || '',
+  yeniSifre: '',
+});
 
   useEffect(() => {
     okunmamisMesajSayisi(userId).then(({ count }) => { if (count) setOkunmamisSayi(count); });
@@ -936,7 +937,7 @@ const handleNotSil = (ilanId: string) => {
 
   const handleProfilGuncelle = async () => {
     setHata(''); setBasari('');
-    const updates: any = { full_name: profil.ad, adres: profil.adres, il: profil.il, ilce: profil.ilce };
+    const updates: any = { full_name: profil.ad, email: profil.email, adres: profil.adres, il: profil.il, ilce: profil.ilce };
     if (profil.yeniSifre) {
       const enc = new TextEncoder();
       const data = enc.encode(profil.yeniSifre + 'servis-ilanlari-salt');
@@ -1088,6 +1089,7 @@ const handleNotSil = (ilanId: string) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   <div><label className="text-xs font-semibold text-slate-500 mb-1 block">Ad Soyad</label><input className={ic} value={profil.ad} onChange={e => setProfil({ ...profil, ad: e.target.value })} placeholder="Ad Soyadınız" /></div>
                   <div><label className="text-xs font-semibold text-slate-500 mb-1 block">GSM Numaranız</label><input className={ic + ' bg-slate-50 text-slate-400 cursor-not-allowed'} value={profil.telefon} disabled /></div>
+                  <div><label className="text-xs font-semibold text-slate-500 mb-1 block">E-posta <span className="text-slate-400 font-normal text-xs">(opsiyonel)</span></label><input className={ic} type="email" value={profil.email} onChange={e => setProfil({ ...profil, email: e.target.value })} placeholder="ornek@email.com" /></div>
                 </div>
                 <div className="mb-3"><label className="text-xs font-semibold text-slate-500 mb-1 block">Adres</label><textarea className={ic + ' resize-none'} value={profil.adres} onChange={e => setProfil({ ...profil, adres: e.target.value })} placeholder="Adresiniz" rows={3} /></div>
                 <div className="grid grid-cols-2 gap-3 mb-3">
