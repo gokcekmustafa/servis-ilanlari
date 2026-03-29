@@ -1030,6 +1030,7 @@ function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGo
 export default function App() {
   const [currentPage, setCurrentPageState] = useState<Page>('home');
   const [prevPage, setPrevPage] = useState<Page>('home');
+  const [prevPanelSekme, setPrevPanelSekme] = useState<string>('profil');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
@@ -1125,10 +1126,11 @@ export default function App() {
     setCurrentPage('home');
   };
 
-  const handleIlanDetay = (ilan: Ilan) => {
-    setSelectedIlan(ilan);
-    setCurrentPage('detay');
-  };
+  const handleIlanDetay = (ilan: Ilan, kaynakSekme?: string) => {
+  if (kaynakSekme) setPrevPanelSekme(kaynakSekme);
+  setSelectedIlan(ilan);
+  setCurrentPage('detay');
+};
 
   const handleIlanEkle = () => {
     if (!isLoggedIn) {
@@ -1145,8 +1147,15 @@ export default function App() {
   };
 
   const goBack = () => {
+  if (prevPage === 'panel') {
+    setCurrentPageState('panel');
+    window.history.pushState({ page: 'panel' }, '', '/panel');
+    // PanelPage'e sekme bilgisini iletmek için sessionStorage kullan
+    sessionStorage.setItem('panel_aktif_sekme', prevPanelSekme);
+  } else {
     setCurrentPage(prevPage || 'home');
-  };
+  }
+};
 
   const headerProps = {
   isLoggedIn,
@@ -1193,7 +1202,13 @@ export default function App() {
     onGoBack={() => setCurrentPage('home')}
     onSuccess={() => setCurrentPage('home')}
   />);
-  if (currentPage === 'panel') return withLayout(<PanelPage onLogout={handleLogout} onIlanEkle={handleIlanEkle} onIlanDetay={handleIlanDetay} userId={userId || ''} />, false);
+  if (currentPage === 'panel') return withLayout(<PanelPage
+  onLogout={handleLogout}
+  onIlanEkle={handleIlanEkle}
+  onIlanDetay={(ilan, sekme) => handleIlanDetay(ilan, sekme)}
+  userId={userId || ''}
+  baslangicSekme={sessionStorage.getItem('panel_aktif_sekme') || 'profil'}
+/>);
   if (currentPage === 'admin') {
     if (!isAdmin) { setCurrentPage('home'); return null; }
     return withLayout(<AdminPage onLogout={handleLogout} onIlanDetay={handleIlanDetay} isSuperAdmin={isSuperAdmin} yetkiler={yetkiler} />, false);
