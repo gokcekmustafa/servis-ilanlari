@@ -459,6 +459,7 @@ function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGo
   const [popupAcik, setPopupAcik] = useState(false);
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
+  const [kompaktGorunum, setKompaktGorunum] = useState(false);
   const [listeReklam, setListeReklam] = useState<any>(null);
   const [kenarKucukReklam, setKenarKucukReklam] = useState<any>(null);
   const [kenarBuyukReklam, setKenarBuyukReklam] = useState<any>(null);
@@ -599,7 +600,7 @@ function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGo
     const result: React.ReactNode[] = [];
     filtrelenmisIlanlar.forEach((ilan, index) => {
       result.push(
-        <IlanCard key={ilan.id} ilan={ilan} onDetay={() => onIlanDetay(ilan)} isLoggedIn={!!isLoggedIn} onGoLogin={onGoLogin} />
+        <IlanCard key={ilan.id} ilan={ilan} onDetay={() => onIlanDetay(ilan)} isLoggedIn={!!isLoggedIn} onGoLogin={onGoLogin} kompakt={kompaktGorunum} />
       );
       if ((index + 1) % reklamSiklik === 5 && index < filtrelenmisIlanlar.length - 1) {
         result.push(
@@ -847,6 +848,22 @@ function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGo
                 </span>
               </div>
               <select
+                <div className="flex items-center gap-1 ml-2 border border-gray-200 rounded-lg overflow-hidden">
+  <button
+    onClick={() => setKompaktGorunum(false)}
+    title="Detaylı görünüm"
+    className={`px-2 py-1.5 text-xs transition ${!kompaktGorunum ? 'bg-[#f7971e] text-white' : 'text-gray-400 hover:bg-gray-50'}`}
+  >
+    ☰☰
+  </button>
+  <button
+    onClick={() => setKompaktGorunum(true)}
+    title="Kompakt görünüm"
+    className={`px-2 py-1.5 text-xs transition ${kompaktGorunum ? 'bg-[#f7971e] text-white' : 'text-gray-400 hover:bg-gray-50'}`}
+  >
+    ≡≡≡
+  </button>
+</div>
                 value={siralama}
                 onChange={(e) => setSiralama(e.target.value)}
                 className="text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
