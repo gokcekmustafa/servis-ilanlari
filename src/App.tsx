@@ -217,6 +217,7 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
   const [sifrePopup, setSifrePopup] = React.useState(false);
   const [popupTelefon, setPopupTelefon] = React.useState('');
   const [popupGonderildi, setPopupGonderildi] = React.useState(false);
+  const scrollPozisyon = React.useRef(0);
 
    const handleLogin = async () => {
     if (!telefon || !sifre) { setHata('Telefon ve şifre boş bırakılamaz.'); return; }
@@ -1041,11 +1042,19 @@ export default function App() {
   const [yukleniyor, setYukleniyor] = useState(true);
 
   const setCurrentPage = (page: Page) => {
-    setPrevPage(currentPage);
-    setCurrentPageState(page);
-    window.history.pushState({ page }, '', page === 'home' ? '/' : `/${page}`);
+  setPrevPage(currentPage);
+  setCurrentPageState(page);
+  window.history.pushState({ page }, '', page === 'home' ? '/' : `/${page}`);
+  if (page === 'home') {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollPozisyon.current);
+      });
+    });
+  } else {
     window.scrollTo(0, 0);
-  };
+  }
+};
 
   const kullaniciyiIsle = (user: any) => {
     if (!user) return;
@@ -1126,8 +1135,8 @@ export default function App() {
     setCurrentPage('home');
   };
 
-  const handleIlanDetay = (ilan: Ilan, kaynakSekme?: string) => {
-  if (kaynakSekme) setPrevPanelSekme(kaynakSekme);
+  const handleIlanDetay = (ilan: Ilan) => {
+  scrollPozisyon.current = window.scrollY;
   setSelectedIlan(ilan);
   setCurrentPage('detay');
 };
@@ -1147,13 +1156,18 @@ export default function App() {
   };
 
   const goBack = () => {
-  if (prevPage === 'panel') {
-    setCurrentPageState('panel');
-    window.history.pushState({ page: 'panel' }, '', '/panel');
-    // PanelPage'e sekme bilgisini iletmek için sessionStorage kullan
-    sessionStorage.setItem('panel_aktif_sekme', prevPanelSekme);
+  const hedef = prevPage || 'home';
+  setPrevPage(currentPage);
+  setCurrentPageState(hedef);
+  window.history.pushState({ page: hedef }, '', hedef === 'home' ? '/' : `/${hedef}`);
+  if (hedef === 'home') {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollPozisyon.current);
+      });
+    });
   } else {
-    setCurrentPage(prevPage || 'home');
+    window.scrollTo(0, 0);
   }
 };
 
