@@ -847,8 +847,7 @@ function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGo
                   <span className="font-semibold text-gray-800">{filtrelenmisIlanlar.length}</span> ilan bulundu
                 </span>
               </div>
-              <select
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <select
                   value={siralama}
                   onChange={(e) => setSiralama(e.target.value)}
@@ -856,6 +855,7 @@ function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGo
                 >
                   <option value="yeni">En Yeni</option>
                   <option value="eski">En Eski</option>
+                </select>
                 <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
                   <button
                     onClick={() => setKompaktGorunum(false)}
