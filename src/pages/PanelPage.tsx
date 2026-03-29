@@ -47,7 +47,6 @@ const MARKA_MODELLER: Record<string, string[]> = {
 const markalar = Object.keys(MARKA_MODELLER);
 const iller = Object.keys(ilceler).sort();
 const aracTipleri = ['Minibus 16+1', 'Midibus 27+1', 'Otobüs 45+1', 'Sedan', 'Van'];
-const markalar = ['Mercedes', 'Fiat', 'Ford', 'Volkswagen', 'Renault', 'Peugeot', 'Citroen', 'Iveco', 'Temsa', 'Isuzu'];
 const tumIller = Object.keys(ilceler).sort();
 const MAX_RESIM = 6;
 
