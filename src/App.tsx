@@ -459,7 +459,7 @@ function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGo
   const [popupAcik, setPopupAcik] = useState(false);
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
-  const [kompaktGorunum, setKompaktGorunum] = useState(false);
+  const [kompaktGorunum, setKompaktGorunum] = useState(() => localStorage.getItem('gorunum_tercihi') === 'kompakt');
   const [listeReklam, setListeReklam] = useState<any>(null);
   const [kenarKucukReklam, setKenarKucukReklam] = useState<any>(null);
   const [kenarBuyukReklam, setKenarBuyukReklam] = useState<any>(null);
@@ -858,14 +858,14 @@ function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGo
                 </select>
                 <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
                   <button
-                    onClick={() => setKompaktGorunum(false)}
+                    onClick={() => { setKompaktGorunum(false); localStorage.setItem('gorunum_tercihi', 'detayli'); }}
                     title="Detaylı görünüm"
                     className={`px-2 py-1.5 text-xs transition ${!kompaktGorunum ? 'bg-[#f7971e] text-white' : 'text-gray-400 hover:bg-gray-50'}`}
                   >
                     ☰☰
                   </button>
                   <button
-                    onClick={() => setKompaktGorunum(true)}
+                    onClick={() => { setKompaktGorunum(true); localStorage.setItem('gorunum_tercihi', 'kompakt'); }}
                     title="Kompakt görünüm"
                     className={`px-2 py-1.5 text-xs transition ${kompaktGorunum ? 'bg-[#f7971e] text-white' : 'text-gray-400 hover:bg-gray-50'}`}
                   >
