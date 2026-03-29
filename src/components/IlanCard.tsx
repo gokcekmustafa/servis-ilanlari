@@ -4,6 +4,17 @@ import { Ilan, KategoriType } from '../types';
 import { favoriEkle, favoriKaldir, favoriKontrol } from '../lib/ilanlar';
 import { mevcutKullanici } from '../lib/auth';
 
+// Görüntülenen ilanları localStorage'da tut
+const gorilenIlanlariGetir = (): Set<string> => {
+  try { return new Set(JSON.parse(localStorage.getItem('gorilen_ilanlar') || '[]')); }
+  catch { return new Set(); }
+};
+const ilanGorulduIsaretle = (id: string) => {
+  const set = gorilenIlanlariGetir();
+  set.add(id);
+  localStorage.setItem('gorilen_ilanlar', JSON.stringify([...set]));
+};
+
 type IlanCardProps = {
   ilan: Ilan;
   onDetay: (ilan: Ilan) => void;
@@ -151,6 +162,7 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn, kompakt
   const tarih = new Date(ilan.created_at).toLocaleDateString('tr-TR');
   const ekBilgi = ilan.ekbilgiler || {};
   const [isFavori, setIsFavori] = useState(false);
+  const [goruldu, setGoruldu] = useState(() => gorilenIlanlariGetir().has(ilan.id));
 
   // Resim gösteren kategoriler
   const resimliKategori = ilan.kategori === 'aracimi_satiyorum' || ilan.kategori === 'aracim_var_is' || ilan.kategori === 'hostesim_is' || ilan.kategori === 'soforum_is';
@@ -198,7 +210,7 @@ if (kompakt) return (
       )}
 
       {/* Açıklama */}
-      <p className="text-xs text-gray-700 line-clamp-1 flex-1 min-w-0">{ilan.aciklama}</p>
+      <p className={`text-xs line-clamp-1 flex-1 min-w-0 ${goruldu ? 'text-purple-700' : 'text-[#1a3c6e]'}`}>{ilan.aciklama}</p>
 
       {/* Konum */}
       {ilan.guzergahlar?.[0]?.kalkis_il && (
@@ -236,14 +248,14 @@ if (kompakt) return (
 );
   return (
     <div
-      onClick={() => onDetay(ilan)}
+      onClick={() => { ilanGorulduIsaretle(ilan.id); setGoruldu(true); onDetay(ilan); }}
       className="bg-white border border-gray-200 hover:border-[#f7971e] hover:shadow-sm transition-all duration-150 cursor-pointer rounded overflow-hidden"
     >
       {/* ÜST BAŞLIK */}
       <div className={`${config.bg} flex items-center justify-between px-4 py-2`}>
         <span className={`text-xs font-bold tracking-wide ${config.text}`}>{config.label}</span>
         <button
-          onClick={(e) => { e.stopPropagation(); onDetay(ilan); }}
+          onClick={(e) => { e.stopPropagation(); ilanGorulduIsaretle(ilan.id); setGoruldu(true); onDetay(ilan); }}
           className="text-[11px] font-semibold text-white/90 hover:text-white flex items-center gap-1 transition"
         >
           İlan Detayı <ArrowRight size={11} />
@@ -278,7 +290,7 @@ if (kompakt) return (
               )}
             </div>
             {ilan.aciklama && (
-              <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">
+              <p className={`text-xs line-clamp-3 leading-relaxed ${goruldu ? 'text-purple-700' : 'text-[#1a3c6e]'}`}>
                 {ilan.aciklama}
               </p>
             )}
