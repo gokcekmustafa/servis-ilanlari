@@ -161,11 +161,21 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn, kompakt
   const ekBilgi = ilan.ekbilgiler || {};
   const [isFavori, setIsFavori] = useState(false);
   const [goruldu, setGoruldu] = useState(() => gorilenIlanlariGetir().has(ilan.id));
-  const gizliKey = `gizli_ilan_${mevcutKullanici()?.id || 'misafir'}_${ilan.id}`;
-  const [gizli, setGizli] = useState(() => {
-  try { return localStorage.getItem(gizliKey) === '1'; }
+  const kullaniciId = mevcutKullanici()?.id || 'misafir';
+const gizliKey = `gizli_ilan_${kullaniciId}_${ilan.id}`;
+
+const [gizli, setGizli] = useState(() => {
+  try { return localStorage.getItem(`gizli_ilan_${mevcutKullanici()?.id || 'misafir'}_${ilan.id}`) === '1'; }
   catch { return false; }
 });
+
+useEffect(() => {
+  const key = `gizli_ilan_${mevcutKullanici()?.id || 'misafir'}_${ilan.id}`;
+  try {
+    const kayitliDurum = localStorage.getItem(key) === '1';
+    setGizli(kayitliDurum);
+  } catch {}
+}, [ilan.id]);
 const [hover, setHover] = useState(false);
 
   // Resim gösteren kategoriler
