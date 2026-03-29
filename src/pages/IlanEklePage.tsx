@@ -355,7 +355,13 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
   const [aracFormAcik, setAracFormAcik] = useState(false);
 
   const [isimVarArac, setIsimVarArac] = useState({ arac_markasi: '', model: '', arac_yili: '', arac_kapasitesi: '', ucret: '', km: '', calisılacak_gun: '', servis_suresi: '', aracki_yolcu_sayisi: '', servis_turu: [] as string[] });
-  const [aracimVarIs, setAracimVarIs] = useState({ secilen_arac: '', calisma_yerleri: '' });
+  const [aracimVarIs, setAracimVarIs] = useState({
+  secilen_arac: '',
+  calisma_yerleri: '',
+  tamamen_bos: false,
+  sefer_turu: '', // '2tek', '4tek', '6tek'
+  guzergahlar: [bosGuzergah()],
+});
   const [soforAriyorum, setSoforAriyorum] = useState({ odeme_sekli: 'aylik', ucret: '', aranan_tecrube: '', ortalama_servis_suresi: '', yolcu_sayisi: '', km: '', calisılacak_gun: '', yabanci_diller: [] as string[] });
   const [hostesAriyorum, setHostesAriyorum] = useState({ ucret: '', calisılacak_okul: '', aranan_tecrube: '', okul_turu: 'Anaokulu Kres', yabanci_diller: [] as string[] });
   const [hostesimIs, setHostesimIs] = useState({ dogum_tarihi: '', dogum_yeri: '', egitim_durumu: '', yabanci_diller: [] as string[], servis_tasimacilik_deneyimi: 'var' });
@@ -421,14 +427,22 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
       if (data) { const { data: u } = supabase.storage.from('profil-resimleri').getPublicUrl(data.path); yuklenenResimUrller.push(u.publicUrl); }
     }
 
-    const ilanGuzergahlar = ['hostesim_is','soforum_is','plaka_satiyorum','aracimi_satiyorum'].includes(selectedKategori!) ? [{
-      giris_saati: '', kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah,
-      varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '',
-    }] : guzergahlar;
+    const ilanGuzergahlar = ['hostesim_is', 'soforum_is', 'plaka_satiyorum', 'aracimi_satiyorum'].includes(selectedKategori!) ? [{
+  giris_saati: '', kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah,
+  varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '',
+}] : selectedKategori === 'aracim_var_is'
+  ? (aracimVarIs.tamamen_bos ? [] : aracimVarIs.guzergahlar)
+  : guzergahlar;
 
     let ekbilgiler: any = {};
     if (selectedKategori === 'isim_var_arac') ekbilgiler = isimVarArac;
-    else if (selectedKategori === 'aracim_var_is') ekbilgiler = { ...aracimVarIs, resimler: yuklenenResimUrller };
+    else if (selectedKategori === 'aracim_var_is') ekbilgiler = {
+  secilen_arac: aracimVarIs.secilen_arac,
+  calisma_yerleri: aracimVarIs.calisma_yerleri,
+  tamamen_bos: aracimVarIs.tamamen_bos,
+  sefer_turu: aracimVarIs.sefer_turu,
+  resimler: yuklenenResimUrller,
+};
     else if (selectedKategori === 'sofor_ariyorum') ekbilgiler = soforAriyorum;
     else if (selectedKategori === 'hostes_ariyorum') ekbilgiler = hostesAriyorum;
     else if (selectedKategori === 'hostesim_is') ekbilgiler = { ...hostesimIs, profil_resmi: resimUrl };
@@ -538,43 +552,123 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                 )}
 
                 {/* ARACIM VAR İŞ */}
-                {selectedKategori === 'aracim_var_is' && (
-                  <div className="border border-slate-200 rounded-xl p-4 md:p-5">
-                    <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                      <h3 className="font-semibold text-slate-700">Secilen Arac: <span className="text-orange-500">{aracimVarIs.secilen_arac||'Secilmedi'}</span></h3>
-                      <button onClick={()=>setAracFormAcik(!aracFormAcik)} className="flex items-center gap-1.5 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-orange-600 transition"><Plus size={12}/>{aracFormAcik?'Iptal':'Yeni Arac Ekle'}</button>
-                    </div>
-                    {aracFormAcik && (
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
-                        <p className="text-xs font-semibold text-slate-600 mb-3">Yeni Arac Bilgileri</p>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-                          <div><label className={lb}>Marka</label><select className={ic} value={yeniAracForm.marka} onChange={(e)=>setYeniAracForm({...yeniAracForm,marka:e.target.value})}><option value="">Secin</option>{['Mercedes','Fiat','Ford','Volkswagen','Renault','Peugeot','Citroen','Iveco','Temsa','Isuzu'].map(m=><option key={m} value={m}>{m}</option>)}</select></div>
-                          <div><label className={lb}>Model</label><input className={ic} value={yeniAracForm.model} placeholder="Sprinter, Ducato, Transit..." onChange={(e)=>setYeniAracForm({...yeniAracForm,model:e.target.value})}/></div>
-                          <div><label className={lb}>Yil</label><input className={ic} value={yeniAracForm.yil} placeholder="2020" onChange={(e)=>setYeniAracForm({...yeniAracForm,yil:e.target.value})}/></div>
-                          <div><label className={lb}>Plaka</label><input className={ic} value={yeniAracForm.plaka} placeholder="34 ABC 123" onChange={(e)=>setYeniAracForm({...yeniAracForm,plaka:e.target.value})}/></div>
-                          <div><label className={lb}>Koltuk Sayisi</label><input className={ic} value={yeniAracForm.koltuk_sayisi} placeholder="16+1" onChange={(e)=>setYeniAracForm({...yeniAracForm,koltuk_sayisi:e.target.value})}/></div>
-                          <div><label className={lb}>Arac Tipi</label><select className={ic} value={yeniAracForm.arac_tipi} onChange={(e)=>setYeniAracForm({...yeniAracForm,arac_tipi:e.target.value})}><option value="">Secin</option>{['Minibus 16+1','Midibus 27+1','Otobus 45+1','Sedan','Van'].map(t=><option key={t} value={t}>{t}</option>)}</select></div>
-                        </div>
-                        <button onClick={handleYeniAracEkle} disabled={yeniAracEkleniyor} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg text-sm font-semibold transition disabled:opacity-50">{yeniAracEkleniyor?'Ekleniyor...':'Araci Ekle ve Sec'}</button>
-                      </div>
-                    )}
-                    {kullaniciaraclari.length===0&&!aracFormAcik?(
-                      <div className="text-center py-8 text-slate-400 border border-dashed border-slate-300 rounded-xl bg-slate-50">
-                        <p className="text-sm font-medium mb-1">Henuz arac eklemediniz</p>
-                        <p className="text-xs mb-3">Yukardaki butona tiklayarak arac ekleyebilirsiniz</p>
-                        <button onClick={()=>setAracFormAcik(true)} className="bg-orange-500 text-white text-xs px-4 py-2 rounded-lg font-semibold hover:bg-orange-600 transition">Arac Ekle</button>
-                      </div>
-                    ):kullaniciaraclari.length>0?(
-                      <div className="border border-slate-200 rounded-xl overflow-hidden mb-4 overflow-x-auto">
-                        <table className="w-full text-sm min-w-max">
-                          <thead><tr className="bg-slate-50 border-b border-slate-200"><th className="px-3 py-2 text-left text-xs font-semibold text-slate-500"></th><th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">PLAKA</th><th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">MARKA MODEL</th><th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">KOLTUK</th><th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">TARIH</th></tr></thead>
-                          <tbody>{kullaniciaraclari.map(arac=><tr key={arac.id} className={'border-b border-slate-50 hover:bg-slate-50 cursor-pointer '+(aracimVarIs.secilen_arac===arac.plaka?'bg-orange-50':'')} onClick={()=>setAracimVarIs({...aracimVarIs,secilen_arac:arac.plaka})}><td className="px-3 py-2"><input type="radio" checked={aracimVarIs.secilen_arac===arac.plaka} onChange={()=>setAracimVarIs({...aracimVarIs,secilen_arac:arac.plaka})} className="accent-orange-500"/></td><td className="px-3 py-2 font-medium text-slate-700">{arac.plaka}</td><td className="px-3 py-2 text-slate-600">{arac.yil} - {arac.marka} {arac.model}</td><td className="px-3 py-2 text-slate-600">{arac.koltuk_sayisi}</td><td className="px-3 py-2 text-slate-400 text-xs">{new Date(arac.created_at).toLocaleDateString('tr-TR')}</td></tr>)}</tbody>
-                        </table>
-                      </div>
-                    ):null}
-                    <div><label className={lb}>Calisma Yerleri / Istenen Guzergah</label><input value={aracimVarIs.calisma_yerleri} onChange={(e)=>setAracimVarIs({...aracimVarIs,calisma_yerleri:e.target.value})} placeholder="Ornek: Kadikoy, Uskudar, Besiktas" className={ic}/></div>
-                  </div>
-                )}
+{selectedKategori === 'aracim_var_is' && (
+  <div className="border border-slate-200 rounded-xl p-4 md:p-5">
+    <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <h3 className="font-semibold text-slate-700">Seçilen Araç: <span className="text-orange-500">{aracimVarIs.secilen_arac || 'Seçilmedi'}</span></h3>
+      <button onClick={() => setAracFormAcik(!aracFormAcik)} className="flex items-center gap-1.5 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-orange-600 transition">
+        <Plus size={12} />{aracFormAcik ? 'İptal' : 'Yeni Araç Ekle'}
+      </button>
+    </div>
+
+    {aracFormAcik && (
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
+        <p className="text-xs font-semibold text-slate-600 mb-3">Yeni Araç Bilgileri</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+          <div><label className={lb}>Marka</label><select className={ic} value={yeniAracForm.marka} onChange={(e) => setYeniAracForm({ ...yeniAracForm, marka: e.target.value })}><option value="">Seçin</option>{['Mercedes', 'Fiat', 'Ford', 'Volkswagen', 'Renault', 'Peugeot', 'Citroen', 'Iveco', 'Temsa', 'Isuzu'].map(m => <option key={m} value={m}>{m}</option>)}</select></div>
+          <div><label className={lb}>Model</label><input className={ic} value={yeniAracForm.model} placeholder="Sprinter, Ducato, Transit..." onChange={(e) => setYeniAracForm({ ...yeniAracForm, model: e.target.value })} /></div>
+          <div><label className={lb}>Yıl</label><input className={ic} value={yeniAracForm.yil} placeholder="2020" onChange={(e) => setYeniAracForm({ ...yeniAracForm, yil: e.target.value })} /></div>
+          <div><label className={lb}>Plaka</label><input className={ic} value={yeniAracForm.plaka} placeholder="34 ABC 123" onChange={(e) => setYeniAracForm({ ...yeniAracForm, plaka: e.target.value })} /></div>
+          <div><label className={lb}>Koltuk Sayısı</label><input className={ic} value={yeniAracForm.koltuk_sayisi} placeholder="16+1" onChange={(e) => setYeniAracForm({ ...yeniAracForm, koltuk_sayisi: e.target.value })} /></div>
+          <div><label className={lb}>Araç Tipi</label><select className={ic} value={yeniAracForm.arac_tipi} onChange={(e) => setYeniAracForm({ ...yeniAracForm, arac_tipi: e.target.value })}><option value="">Seçin</option>{['Minibus 16+1', 'Midibus 27+1', 'Otobus 45+1', 'Sedan', 'Van'].map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+        </div>
+        <button onClick={handleYeniAracEkle} disabled={yeniAracEkleniyor} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg text-sm font-semibold transition disabled:opacity-50">{yeniAracEkleniyor ? 'Ekleniyor...' : 'Aracı Ekle ve Seç'}</button>
+      </div>
+    )}
+
+    {kullaniciaraclari.length === 0 && !aracFormAcik ? (
+      <div className="text-center py-8 text-slate-400 border border-dashed border-slate-300 rounded-xl bg-slate-50">
+        <p className="text-sm font-medium mb-1">Henüz araç eklemediniz</p>
+        <p className="text-xs mb-3">Yukarıdaki butona tıklayarak araç ekleyebilirsiniz</p>
+        <button onClick={() => setAracFormAcik(true)} className="bg-orange-500 text-white text-xs px-4 py-2 rounded-lg font-semibold hover:bg-orange-600 transition">Araç Ekle</button>
+      </div>
+    ) : kullaniciaraclari.length > 0 ? (
+      <div className="border border-slate-200 rounded-xl overflow-hidden mb-4 overflow-x-auto">
+        <table className="w-full text-sm min-w-max">
+          <thead><tr className="bg-slate-50 border-b border-slate-200"><th className="px-3 py-2 text-left text-xs font-semibold text-slate-500"></th><th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">PLAKA</th><th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">MARKA MODEL</th><th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">KOLTUK</th><th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">TARİH</th></tr></thead>
+          <tbody>{kullaniciaraclari.map(arac => <tr key={arac.id} className={'border-b border-slate-50 hover:bg-slate-50 cursor-pointer ' + (aracimVarIs.secilen_arac === arac.plaka ? 'bg-orange-50' : '')} onClick={() => setAracimVarIs({ ...aracimVarIs, secilen_arac: arac.plaka })}><td className="px-3 py-2"><input type="radio" checked={aracimVarIs.secilen_arac === arac.plaka} onChange={() => setAracimVarIs({ ...aracimVarIs, secilen_arac: arac.plaka })} className="accent-orange-500" /></td><td className="px-3 py-2 font-medium text-slate-700">{arac.plaka}</td><td className="px-3 py-2 text-slate-600">{arac.yil} - {arac.marka} {arac.model}</td><td className="px-3 py-2 text-slate-600">{arac.koltuk_sayisi}</td><td className="px-3 py-2 text-slate-400 text-xs">{new Date(arac.created_at).toLocaleDateString('tr-TR')}</td></tr>)}</tbody>
+        </table>
+      </div>
+    ) : null}
+
+    {/* SEFER TÜRÜ */}
+    <div className="mb-4">
+      <label className={lb + ' mb-2'}>Sefer Türü</label>
+      <div className="flex flex-wrap gap-2">
+        {['2 Tek', '4 Tek', '6 Tek'].map(sefer => (
+          <button
+            key={sefer}
+            type="button"
+            onClick={() => setAracimVarIs({ ...aracimVarIs, sefer_turu: aracimVarIs.sefer_turu === sefer ? '' : sefer })}
+            className={'px-4 py-2 rounded-lg text-xs font-semibold border-2 transition ' +
+              (aracimVarIs.sefer_turu === sefer
+                ? 'bg-green-500 border-green-500 text-white'
+                : 'bg-white border-slate-200 text-slate-600 hover:border-green-300')}
+          >
+            {sefer}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    {/* TAMAMEN BOŞ */}
+    <div className="mb-4">
+      <label className="flex items-center gap-2.5 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={aracimVarIs.tamamen_bos}
+          onChange={(e) => setAracimVarIs({ ...aracimVarIs, tamamen_bos: e.target.checked })}
+          className="accent-orange-500 w-4 h-4"
+        />
+        <span className="text-sm font-medium text-slate-700">Aracım Tamamen Boşta</span>
+        <span className="text-xs text-slate-400">(Güzergah ve saat seçmek istemiyorum)</span>
+      </label>
+    </div>
+
+    {/* GÜZERGAH — tamamen boş değilse göster */}
+    {!aracimVarIs.tamamen_bos && (
+      <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div>
+            <h4 className="font-semibold text-slate-700 text-sm">Güzergah Listesi</h4>
+            <p className="text-xs text-orange-500 mt-0.5 font-medium">Güzergahlarınızın başlangıç ve bitiş yerlerini ekleyin</p>
+          </div>
+          <button
+            onClick={() => setAracimVarIs({ ...aracimVarIs, guzergahlar: [...aracimVarIs.guzergahlar, bosGuzergah()] })}
+            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+          >
+            <Plus size={12} /> Güzergah Ekle
+          </button>
+        </div>
+        {aracimVarIs.guzergahlar.map((g, i) => (
+          <GuzergahSatiri
+            key={i}
+            guzergah={g}
+            index={i}
+            onGuncelle={(idx, yeni) => {
+              const liste = [...aracimVarIs.guzergahlar];
+              liste[idx] = yeni;
+              setAracimVarIs({ ...aracimVarIs, guzergahlar: liste });
+            }}
+            onRemove={(idx) => setAracimVarIs({ ...aracimVarIs, guzergahlar: aracimVarIs.guzergahlar.filter((_, ii) => ii !== idx) })}
+            showRemove={aracimVarIs.guzergahlar.length > 1}
+          />
+        ))}
+      </div>
+    )}
+
+    {/* ÇALIŞMA YERLERİ */}
+    <div className="mt-4">
+      <label className={lb}>Çalışma Yerleri / İstenen Güzergah</label>
+      <input
+        value={aracimVarIs.calisma_yerleri}
+        onChange={(e) => setAracimVarIs({ ...aracimVarIs, calisma_yerleri: e.target.value })}
+        placeholder="Örnek: Kadıköy, Üsküdar, Beşiktaş"
+        className={ic}
+      />
+    </div>
+  </div>
+)}
 
                 {/* ŞOFÖR ARIYORUM */}
                 {selectedKategori === 'sofor_ariyorum' && (
