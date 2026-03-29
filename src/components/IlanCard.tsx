@@ -62,14 +62,12 @@ function GuzergahBasliklari({ kategori }: { kategori: KategoriType }) {
   if (kategori === 'soforum_is') {
     return (
       <div className="grid grid-cols-3 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
-        <span>Başlangıç Saati</span><span>Şoför'ün Boş olduğu Yer</span><span>Bitiş Saati</span>
       </div>
     );
   }
   if (kategori === 'hostesim_is') {
     return (
       <div className="grid grid-cols-3 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
-        <span>Başlangıç Saati</span><span>Boş Olduğu Yer</span><span>Bitiş Saati</span>
       </div>
     );
   }
