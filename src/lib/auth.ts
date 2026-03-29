@@ -14,7 +14,8 @@ export async function kayitOl(
   sifre: string,
   fullName: string,
   type: string,
-  il: string
+  il: string,
+  email?: string
 ) {
   const temiz = telefon.replace(/\s/g, '').replace(/[^0-9]/g, '');
 
@@ -38,6 +39,7 @@ export async function kayitOl(
     full_name: fullName,
     type,
     il,
+    email: email || null,
     password_hash: hash,
     aktif: true,
     yetkiler: {
