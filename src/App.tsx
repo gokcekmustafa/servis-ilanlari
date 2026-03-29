@@ -217,7 +217,6 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
   const [sifrePopup, setSifrePopup] = React.useState(false);
   const [popupTelefon, setPopupTelefon] = React.useState('');
   const [popupGonderildi, setPopupGonderildi] = React.useState(false);
-  const scrollPozisyon = React.useRef(0);
 
    const handleLogin = async () => {
     if (!telefon || !sifre) { setHata('Telefon ve şifre boş bırakılamaz.'); return; }
@@ -1040,6 +1039,7 @@ export default function App() {
   const [selectedIlan, setSelectedIlan] = useState<Ilan | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
   const [yukleniyor, setYukleniyor] = useState(true);
+  const scrollPozisyon = useRef(0);
 
   const setCurrentPage = (page: Page) => {
   setPrevPage(currentPage);
@@ -1135,7 +1135,7 @@ export default function App() {
     setCurrentPage('home');
   };
 
-  const handleIlanDetay = (ilan: Ilan) => {
+  const handleIlanDetay = (ilan: Ilan, sekme?: string) => {
   scrollPozisyon.current = window.scrollY;
   setSelectedIlan(ilan);
   setCurrentPage('detay');
