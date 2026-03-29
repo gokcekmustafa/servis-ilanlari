@@ -222,10 +222,11 @@ if (kompakt) return (
   e.stopPropagation();
   setGizli(true);
   if (kullaniciId) {
-    await supabase.from('gizli_ilanlar').upsert({
+    const { data, error } = await supabase.from('gizli_ilanlar').upsert({
       user_id: kullaniciId,
       ilan_id: ilan.id,
     });
+    console.log('Gizle sonucu:', data, error); // ← ekle
   } else {
     localStorage.setItem(`gizli_misafir_${ilan.id}`, '1');
   }
@@ -335,10 +336,11 @@ if (kompakt) return (
   e.stopPropagation();
   setGizli(true);
   if (kullaniciId) {
-    await supabase.from('gizli_ilanlar').upsert({
+    const { data, error } = await supabase.from('gizli_ilanlar').upsert({
       user_id: kullaniciId,
       ilan_id: ilan.id,
     });
+    console.log('Gizle sonucu:', data, error); // ← ekle
   } else {
     localStorage.setItem(`gizli_misafir_${ilan.id}`, '1');
   }
