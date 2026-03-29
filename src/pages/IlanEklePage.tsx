@@ -327,6 +327,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
   const [guzergahlar, setGuzergahlar] = useState<Guzergah[]>([bosGuzergah()]);
+  const [baslik, setBaslik] = useState('');
   const [aciklama, setAciklama] = useState('');
   const [konumIl, setKonumIl] = useState('');
   const [konumIlce, setKonumIlce] = useState('');
@@ -380,7 +381,12 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
     setAdim(yeniAdim); sessionStorage.setItem('ilan-ekle-adim', String(yeniAdim)); sessionStorage.setItem('ilan-ekle-userId', userId);
   };
   const handleAdim1 = () => { if (!selectedKategori) { setHata('Lutfen bir kategori secin.'); return; } setHata(''); setAdimVeKaydet(2); };
-  const handleAdim2 = () => { if (!aciklama) { setHata('Ilan detayi zorunludur.'); return; } setHata(''); setAdimVeKaydet(3); };
+  const handleAdim2 = () => {
+  if (!baslik) { setHata('İlan başlığı zorunludur.'); return; }
+  if (!aciklama) { setHata('İlan detayı zorunludur.'); return; }
+  setHata('');
+  setAdimVeKaydet(3);
+};
   const handleGeriDon = () => {
     if (adim > 1) { setAdimVeKaydet(adim - 1); }
     else { sessionStorage.removeItem('ilan-ekle-adim'); sessionStorage.removeItem('ilan-ekle-kategori'); onGoBack(); }
@@ -430,7 +436,16 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
     else if (selectedKategori === 'plaka_satiyorum') ekbilgiler = plakaSatiyorum;
     else if (selectedKategori === 'aracimi_satiyorum') ekbilgiler = { ...aracimiSatiyorum, resimler: yuklenenResimUrller };
 
-    const { error } = await ilanEkle({ kategori: selectedKategori!, servis_turu: isimVarArac.servis_turu, aciklama, ilan_veren: user?.full_name || user?.phone_number || '', user_id: user?.id || userId, guzergahlar: ilanGuzergahlar, ekbilgiler } as any);
+    const { error } = await ilanEkle({
+  kategori: selectedKategori!,
+  baslik,                         // ← EKLE
+  servis_turu: isimVarArac.servis_turu,
+  aciklama,
+  ilan_veren: user?.full_name || user?.phone_number || '',
+  user_id: user?.id || userId,
+  guzergahlar: ilanGuzergahlar,
+  ekbilgiler,
+} as any);
     setYukleniyor(false);
     if (error) { setHata('Hata: ' + error.message); return; }
     sessionStorage.removeItem('ilan-ekle-adim'); sessionStorage.removeItem('ilan-ekle-kategori');
@@ -719,24 +734,52 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                 )}
 
                 {/* İLAN DETAYI */}
-                <div className="border border-slate-200 rounded-xl p-4 md:p-5">
-                  <h3 className="font-semibold text-slate-700 mb-3">Ilan Detayi</h3>
-                  <textarea value={aciklama} onChange={(e)=>setAciklama(e.target.value)} placeholder="Ilan detaylarini yazin..." rows={5} className={ic+' resize-none'}/>
-                </div>
+<div className="border border-slate-200 rounded-xl p-4 md:p-5">
+  <h3 className="font-semibold text-slate-700 mb-3">İlan Bilgileri</h3>
 
-                <div className="flex gap-3">
-                  <button onClick={()=>setAdimVeKaydet(1)} className="flex-1 border border-slate-200 hover:border-slate-300 text-slate-600 py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"><ArrowLeft size={15}/> Geri</button>
-                  <button onClick={handleAdim2} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2">Onizleme <ArrowRight size={15}/></button>
-                </div>
-              </div>
-            )}
+  {/* BAŞLIK */}
+  <div className="mb-3">
+    <label className={lb}>İlan Başlığı <span className="text-red-400">*</span></label>
+    <input
+      value={baslik}
+      onChange={(e) => setBaslik(e.target.value)}
+      placeholder="Örnek: Kadıköy - Ataşehir Personel Servisi, 16+1 Araç Arıyorum"
+      maxLength={100}
+      className={ic}
+    />
+    <p className="text-[10px] text-slate-400 mt-1">{baslik.length}/100 karakter</p>
+  </div>
+
+  {/* AÇIKLAMA */}
+  <label className={lb}>İlan Açıklaması</label>
+  <textarea
+    value={aciklama}
+    onChange={(e) => setAciklama(e.target.value)}
+    placeholder="İlan detaylarını yazın..."
+    rows={5}
+    className={ic + ' resize-none'}
+  />
+</div>
+<div className="flex gap-3">
+  <button onClick={() => setAdimVeKaydet(1)} className="flex-1 border border-slate-200 hover:border-slate-300 text-slate-600 py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"><ArrowLeft size={15} /> Geri</button>
+  <button onClick={handleAdim2} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2">Önizleme <ArrowRight size={15} /></button>
+</div>
+</div>
+)}
 
             {/* ADIM 3 */}
             {adim === 3 && (
               <div>
                 <p className="text-sm font-semibold text-slate-600 mb-4">Ilan Onizleme</p>
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5">
-                  <div className="mb-3"><span className={kategoriRenk[selectedKategori!]+' text-white text-xs font-bold px-3 py-1 rounded-full uppercase'}>{selectedKategoriLabel}</span></div>
+                  <div className="mb-3">
+  <span className={kategoriRenk[selectedKategori!] + ' text-white text-xs font-bold px-3 py-1 rounded-full uppercase'}>
+    {selectedKategoriLabel}
+  </span>
+  {baslik && (
+    <p className="text-base font-bold text-slate-800 mt-3">{baslik}</p>
+  )}
+</div>
                   <p className="text-sm text-slate-600 mb-4">{aciklama}</p>
                   {ilanResimleri.length>0&&(
                     <div className="mb-4">
