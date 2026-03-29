@@ -303,10 +303,6 @@ function KonumBilgisi({ il, ilce, mah, giris, cikis, onIlChange, onIlceChange, o
     <div className="border border-slate-200 rounded-xl p-4 md:p-5 bg-white">
       <h3 className="font-semibold text-slate-700 mb-1">Konum Bilgisi</h3>
       <p className="text-xs text-orange-500 mb-4 font-medium">LUTFEN ASAGIDA BOS OLDUGUNUZ YERLERI VE SAATLERI EKLEYINIZ</p>
-      <div className="flex items-start gap-6 mb-3">
-        <SaatSecici label="Başlangıç Saati" value={giris} onChange={onGirisChange} />
-        <SaatSecici label="Bitiş Saati" value={cikis} onChange={onCikisChange} />
-      </div>
       <IlIlceMahalle il={il} ilce={ilce} mah={mah} onIlChange={onIlChange} onIlceChange={onIlceChange} onMahChange={onMahChange} />
     </div>
   );
@@ -680,7 +676,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                 )}
 
                 {/* GÜZERGAH */}
-                {selectedKategori!=='hostesim_is'&&selectedKategori!=='soforum_is'&&selectedKategori!=='aracimi_satiyorum'&&selectedKategori!=='plaka_satiyorum'&&(
+                {selectedKategori!=='hostesim_is'&&selectedKategori!=='soforum_is'&&selectedKategori!=='aracimi_satiyorum'&&selectedKategori!=='plaka_satiyorum'&&selectedKategori!=='aracim_var_is'&&(
                   <div className="border border-slate-200 rounded-xl p-4 md:p-5">
                     <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
                       <div><h3 className="font-semibold text-slate-700">Guzergah Listesi</h3><p className="text-xs text-orange-500 mt-1 font-medium">LUTFEN GUZERGAHLARINIZIN BASLANGIC VE BITIS YERLERINI EKLEYINIZ</p></div>
@@ -698,7 +694,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                 )}
 
                 {/* KONUM - saat yok */}
-                {(selectedKategori==='plaka_satiyorum'||selectedKategori==='aracimi_satiyorum')&&(
+                {(selectedKategori==='plaka_satiyorum'||selectedKategori==='aracimi_satiyorum'||selectedKategori==='aracim_var_is')&&(
                   <div className="border border-slate-200 rounded-xl p-4 md:p-5">
                     <h3 className="font-semibold text-slate-700 mb-1">Konum Bilgisi</h3>
                     <p className="text-xs text-orange-500 mb-4 font-medium">Aracin bulundugu sehir, ilce ve mahalleyi secin</p>
