@@ -520,6 +520,40 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
             {adim === 2 && (
               <div className="flex flex-col gap-5">
 
+{/* İLAN DETAYI */}
+<div className="border border-slate-200 rounded-xl p-4 md:p-5">
+  <h3 className="font-semibold text-slate-700 mb-3">İlan Bilgileri</h3>
+
+  {/* BAŞLIK */}
+  <div className="mb-3">
+    <label className={lb}>İlan Başlığı <span className="text-red-400">*</span></label>
+    <input
+      value={baslik}
+      onChange={(e) => setBaslik(e.target.value)}
+      placeholder="Örnek: Kadıköy - Ataşehir Personel Servisi, 16+1 Araç Arıyorum"
+      maxLength={100}
+      className={ic}
+    />
+    <p className="text-[10px] text-slate-400 mt-1">{baslik.length}/100 karakter</p>
+  </div>
+
+  {/* AÇIKLAMA */}
+  <label className={lb}>İlan Açıklaması</label>
+  <textarea
+    value={aciklama}
+    onChange={(e) => setAciklama(e.target.value)}
+    placeholder="İlan detaylarını yazın..."
+    rows={5}
+    className={ic + ' resize-none'}
+  />
+</div>
+<div className="flex gap-3">
+  <button onClick={() => setAdimVeKaydet(1)} className="flex-1 border border-slate-200 hover:border-slate-300 text-slate-600 py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"><ArrowLeft size={15} /> Geri</button>
+  <button onClick={handleAdim2} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2">Önizleme <ArrowRight size={15} /></button>
+</div>
+</div>
+)}
+                
                 {/* İŞİM VAR ARAÇ */}
                 {selectedKategori === 'isim_var_arac' && (
                   <div className="border border-slate-200 rounded-xl p-4 md:p-5">
@@ -827,39 +861,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                   </div>
                 )}
 
-                {/* İLAN DETAYI */}
-<div className="border border-slate-200 rounded-xl p-4 md:p-5">
-  <h3 className="font-semibold text-slate-700 mb-3">İlan Bilgileri</h3>
-
-  {/* BAŞLIK */}
-  <div className="mb-3">
-    <label className={lb}>İlan Başlığı <span className="text-red-400">*</span></label>
-    <input
-      value={baslik}
-      onChange={(e) => setBaslik(e.target.value)}
-      placeholder="Örnek: Kadıköy - Ataşehir Personel Servisi, 16+1 Araç Arıyorum"
-      maxLength={100}
-      className={ic}
-    />
-    <p className="text-[10px] text-slate-400 mt-1">{baslik.length}/100 karakter</p>
-  </div>
-
-  {/* AÇIKLAMA */}
-  <label className={lb}>İlan Açıklaması</label>
-  <textarea
-    value={aciklama}
-    onChange={(e) => setAciklama(e.target.value)}
-    placeholder="İlan detaylarını yazın..."
-    rows={5}
-    className={ic + ' resize-none'}
-  />
-</div>
-<div className="flex gap-3">
-  <button onClick={() => setAdimVeKaydet(1)} className="flex-1 border border-slate-200 hover:border-slate-300 text-slate-600 py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"><ArrowLeft size={15} /> Geri</button>
-  <button onClick={handleAdim2} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2">Önizleme <ArrowRight size={15} /></button>
-</div>
-</div>
-)}
+                
 
             {/* ADIM 3 */}
             {adim === 3 && (
