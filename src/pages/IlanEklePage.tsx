@@ -50,7 +50,7 @@ const kategoriRenk: Record<string, string> = {
 };
 
 const tumIller = Object.keys(ilceler).sort();
-const MAX_RESIM = 6;
+const MAX_RESIM = 12;
 
 interface Guzergah {
   giris_saati: string;
