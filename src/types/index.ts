@@ -12,6 +12,7 @@ export type KategoriType =
 
 export interface Ilan {
   id: string;
+  baslik?: string;
   ilan_veren: string;
   aciklama?: string;
   kategori: KategoriType;
