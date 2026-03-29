@@ -33,6 +33,13 @@ function zamanFarki(tarih: string): string {
 }
 
 function GuzergahBasliklari({ kategori }: { kategori: KategoriType }) {
+  if (kategori === 'isim_var_arac') {
+    return (
+      <div className="grid grid-cols-6 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
+        <span>Giriş</span><span>Nereden</span><span>Nereye</span><span>Çıkış</span><span>Başlangıç</span><span>Bitiş</span>
+      </div>
+    );
+  }
   if (kategori === 'aracim_var_is') {
     return (
       <div className="grid grid-cols-3 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
@@ -62,6 +69,18 @@ function GuzergahBasliklari({ kategori }: { kategori: KategoriType }) {
 }
 
 function GuzergahSatiri({ g, kategori }: { g: any; kategori: KategoriType }) {
+  if (kategori === 'isim_var_arac') {
+    return (
+      <div className="grid grid-cols-6 text-center items-center py-2">
+        <span className="text-sm font-bold text-gray-800">{g.giris_saati || '—'}</span>
+        <div><p className="text-sm font-bold text-gray-900 uppercase">{g.kalkis_mah || '—'}</p>{g.kalkis_ilce && <p className="text-[11px] text-gray-500 uppercase">{g.kalkis_ilce}</p>}</div>
+        <div><p className="text-sm font-bold text-gray-900 uppercase">{g.varis_mah || '—'}</p>{g.varis_ilce && <p className="text-[11px] text-gray-500 uppercase">{g.varis_ilce}</p>}</div>
+        <span className="text-sm font-bold text-gray-800">{g.cikis_saati || '—'}</span>
+        <span className="text-sm font-bold text-gray-800">{g.baslangic_saati || '—'}</span>
+        <span className="text-sm font-bold text-gray-800">{g.bitis_saati || '—'}</span>
+      </div>
+    );
+  }
   if (kategori === 'aracim_var_is' || kategori === 'soforum_is' || kategori === 'hostesim_is') {
     return (
       <div className="grid grid-cols-3 text-center items-center py-2">
