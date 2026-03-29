@@ -44,6 +44,7 @@ const MARKA_MODELLER: Record<string, string[]> = {
   'Neoplan': ['Cityliner', 'Tourliner', 'Skyliner'],
   'Opel': ['Movano', 'Vivaro', 'Combo'],
 };
+const markalar = Object.keys(MARKA_MODELLER);
 const iller = Object.keys(ilceler).sort();
 const aracTipleri = ['Minibus 16+1', 'Midibus 27+1', 'Otobüs 45+1', 'Sedan', 'Van'];
 const markalar = ['Mercedes', 'Fiat', 'Ford', 'Volkswagen', 'Renault', 'Peugeot', 'Citroen', 'Iveco', 'Temsa', 'Isuzu'];
@@ -1153,21 +1154,57 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                   <div className="mx-4 mt-4 bg-slate-50 border border-slate-200 rounded-xl p-4">
                     <p className="text-sm font-semibold text-slate-700 mb-3">Yeni Araç Ekle</p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
-                      {[
-                        { label: 'Marka', type: 'select', options: markalar, field: 'marka' },
-                        { label: 'Model', type: 'input', placeholder: 'Sprinter, Transit...', field: 'model' },
-                        { label: 'Yıl', type: 'input', placeholder: '2020', field: 'yil' },
-                        { label: 'Plaka', type: 'input', placeholder: '34 ABC 123', field: 'plaka' },
-                        { label: 'Koltuk Sayısı', type: 'input', placeholder: '16+1', field: 'koltuk_sayisi' },
-                        { label: 'Araç Tipi', type: 'select', options: aracTipleri, field: 'arac_tipi' },
-                      ].map(({ label, type, options, placeholder, field }: any) => (
-                        <div key={field}>
-                          <label className="text-xs text-slate-500 mb-1 block">{label}</label>
-                          {type === 'select'
-                            ? <select className={ic} value={(aracForm as any)[field]} onChange={e => setAracForm({ ...aracForm, [field]: e.target.value })}><option value="">Seçin</option>{options.map((o: string) => <option key={o} value={o}>{o}</option>)}</select>
-                            : <input className={ic} value={(aracForm as any)[field]} placeholder={placeholder} onChange={e => setAracForm({ ...aracForm, [field]: e.target.value })} />}
-                        </div>
-                      ))}
+  {/* Marka */}
+  <div>
+    <label className="text-xs text-slate-500 mb-1 block">Marka</label>
+    <select className={ic} value={aracForm.marka}
+      onChange={e => setAracForm({ ...aracForm, marka: e.target.value, model: '' })}>
+      <option value="">Seçin</option>
+      {markalar.map(m => <option key={m} value={m}>{m}</option>)}
+    </select>
+  </div>
+
+  {/* Model */}
+  <div>
+    <label className="text-xs text-slate-500 mb-1 block">Model</label>
+    <select className={ic} value={aracForm.model} disabled={!aracForm.marka}
+      onChange={e => setAracForm({ ...aracForm, model: e.target.value })}>
+      <option value="">Seçin</option>
+      {(MARKA_MODELLER[aracForm.marka] || []).map(m => <option key={m} value={m}>{m}</option>)}
+    </select>
+  </div>
+
+  {/* Yıl */}
+  <div>
+    <label className="text-xs text-slate-500 mb-1 block">Yıl</label>
+    <input className={ic} value={aracForm.yil} placeholder="2020"
+      onChange={e => setAracForm({ ...aracForm, yil: e.target.value })} />
+  </div>
+
+  {/* Plaka */}
+  <div>
+    <label className="text-xs text-slate-500 mb-1 block">Plaka</label>
+    <input className={ic} value={aracForm.plaka} placeholder="34 ABC 123"
+      onChange={e => setAracForm({ ...aracForm, plaka: e.target.value })} />
+  </div>
+
+  {/* Koltuk Sayısı */}
+  <div>
+    <label className="text-xs text-slate-500 mb-1 block">Koltuk Sayısı</label>
+    <input className={ic} value={aracForm.koltuk_sayisi} placeholder="16+1"
+      onChange={e => setAracForm({ ...aracForm, koltuk_sayisi: e.target.value })} />
+  </div>
+
+  {/* Araç Tipi */}
+  <div>
+    <label className="text-xs text-slate-500 mb-1 block">Araç Tipi</label>
+    <select className={ic} value={aracForm.arac_tipi}
+      onChange={e => setAracForm({ ...aracForm, arac_tipi: e.target.value })}>
+      <option value="">Seçin</option>
+      {aracTipleri.map(t => <option key={t} value={t}>{t}</option>)}
+    </select>
+  </div>
+</div>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => setAracFormAcik(false)} className={btnS + ' flex-1'}>İptal</button>
