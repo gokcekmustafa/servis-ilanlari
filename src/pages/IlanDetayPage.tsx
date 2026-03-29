@@ -81,7 +81,7 @@ function ResimGalerisi({ resimler }: { resimler: string[] }) {
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="bg-slate-600 px-4 py-2.5 flex items-center gap-2">
           <Images size={14} className="text-orange-400" />
-          <span className="text-white text-xs font-semibold uppercase tracking-wider">Araç Fotoğrafları</span>
+          <span className="text-white text-xs font-semibold uppercase tracking-wider">Fotoğraf Ekle</span>
           <span className="ml-auto text-white/60 text-xs">{resimler.length} fotoğraf</span>
         </div>
 
@@ -93,7 +93,7 @@ function ResimGalerisi({ resimler }: { resimler: string[] }) {
         >
           <img
             src={resimler[aktif]}
-            alt={`Araç fotoğrafı ${aktif + 1}`}
+            alt={`Fotoğraf Ekle ${aktif + 1}`}
             className="w-full h-full object-contain"
           />
 
