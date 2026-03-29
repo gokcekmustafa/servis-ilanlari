@@ -824,6 +824,9 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
   const [destekForm, setDestekForm] = useState({ konu: '', mesaj: '' });
   const [aracForm, setAracForm] = useState({ marka: '', model: '', yil: '', plaka: '', koltuk_sayisi: '', arac_tipi: '' });
   const [menuAcik, setMenuAcik] = useState(false);
+  const [notlar, setNotlar] = useState<Record<string, string>>({});
+const [notDuzenle, setNotDuzenle] = useState<string | null>(null); // hangi favori notunun açık olduğu
+const [notMetin, setNotMetin] = useState('');
   const [duzenleIlan, setDuzenleIlan] = useState<Ilan | null>(null);
   const [duzenleYukleniyor, setDuzenleYukleniyor] = useState(false);
 
@@ -856,7 +859,17 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
 
   const ilanlariYukle = async () => { setYukleniyor(true); const { data } = await kullaniciIlanlari(userId); if (data) setIlanlar(data as Ilan[]); setYukleniyor(false); };
   const araclarimYukle = async () => { setYukleniyor(true); const { data } = await araclarGetir(userId); if (data) setAraclar(data); setYukleniyor(false); };
-  const favorileriYukle = async () => { setYukleniyor(true); const { data } = await favorileriGetir(userId); if (data) setFavoriler(data); setYukleniyor(false); };
+  const favorileriYukle = async () => {
+  setYukleniyor(true);
+  const { data } = await favorileriGetir(userId);
+  if (data) {
+    setFavoriler(data);
+    // Notları localStorage'dan yükle
+    const kayitliNotlar = JSON.parse(localStorage.getItem(`favori_notlar_${userId}`) || '{}');
+    setNotlar(kayitliNotlar);
+  }
+  setYukleniyor(false);
+};
   const mesajlariYukle = async () => { setYukleniyor(true); const { data } = await gelenMesajlar(userId); if (data) setMesajlar(data); setYukleniyor(false); };
 
   const handleIlanSil = async (id: string) => {
@@ -899,6 +912,20 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
     await favoriKaldir(userId, ilanId);
     setFavoriler(favoriler.filter(f => f.ilan_id !== ilanId));
   };
+  const handleNotKaydet = (ilanId: string) => {
+  const yeniNotlar = { ...notlar, [ilanId]: notMetin };
+  setNotlar(yeniNotlar);
+  localStorage.setItem(`favori_notlar_${userId}`, JSON.stringify(yeniNotlar));
+  setNotDuzenle(null);
+  setNotMetin('');
+};
+
+const handleNotSil = (ilanId: string) => {
+  const yeniNotlar = { ...notlar };
+  delete yeniNotlar[ilanId];
+  setNotlar(yeniNotlar);
+  localStorage.setItem(`favori_notlar_${userId}`, JSON.stringify(yeniNotlar));
+};
 
   const handleMesajOku = async (mesajId: string) => {
     await mesajOkunduIsaretle(mesajId);
@@ -1286,13 +1313,49 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                   ) : (
                     <div className="flex flex-col gap-3">
                       {favoriler.map(fav => (
-                        <div key={fav.id} className="border border-slate-200 rounded-xl p-4 flex items-center justify-between hover:bg-slate-50 transition">
-                          <div className="min-w-0"><p className="font-semibold text-slate-700 text-sm line-clamp-1">{fav.ilanlar?.aciklama}</p><p className="text-xs text-slate-400 mt-0.5">{fav.ilanlar?.ilan_veren} · {fav.ilanlar?.kategori?.replace(/_/g, ' ')}</p></div>
-                          <div className="flex items-center gap-1 flex-shrink-0 ml-3">
-                            <button onClick={() => onIlanDetay(fav.ilanlar)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition"><Eye size={14} /></button>
-                            <button onClick={() => handleFavoriKaldir(fav.ilan_id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"><Heart size={14} /></button>
-                          </div>
-                        </div>
+                        <div key={fav.id} className="border border-slate-200 rounded-xl overflow-hidden hover:border-orange-200 transition">
+  <div className="p-4 flex items-center justify-between">
+    <div className="min-w-0">
+      <p className="font-semibold text-slate-700 text-sm line-clamp-1">{fav.ilanlar?.aciklama}</p>
+      <p className="text-xs text-slate-400 mt-0.5">{fav.ilanlar?.ilan_veren} · {fav.ilanlar?.kategori?.replace(/_/g, ' ')}</p>
+      {notlar[fav.ilan_id] && notDuzenle !== fav.ilan_id && (
+        <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-2 line-clamp-2">
+          📝 {notlar[fav.ilan_id]}
+        </p>
+      )}
+    </div>
+    <div className="flex items-center gap-1 flex-shrink-0 ml-3">
+      <button
+        onClick={() => { setNotDuzenle(notDuzenle === fav.ilan_id ? null : fav.ilan_id); setNotMetin(notlar[fav.ilan_id] || ''); }}
+        className={`p-2 rounded-xl transition ${notlar[fav.ilan_id] ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
+        title="Not ekle"
+      >
+        <Pencil size={14} />
+      </button>
+      <button onClick={() => onIlanDetay(fav.ilanlar)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition"><Eye size={14} /></button>
+      <button onClick={() => handleFavoriKaldir(fav.ilan_id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"><Heart size={14} /></button>
+    </div>
+  </div>
+  {notDuzenle === fav.ilan_id && (
+    <div className="px-4 pb-4 border-t border-slate-100 pt-3 bg-amber-50/50">
+      <p className="text-xs font-semibold text-slate-500 mb-2">📝 Kişisel Not (Sadece sen görebilirsin)</p>
+      <textarea
+        className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white resize-none"
+        rows={3}
+        placeholder="Bu ilan hakkında notunuzu yazın..."
+        value={notMetin}
+        onChange={e => setNotMetin(e.target.value)}
+      />
+      <div className="flex gap-2 mt-2">
+        <button onClick={() => setNotDuzenle(null)} className="flex-1 text-xs text-slate-500 border border-slate-200 py-1.5 rounded-lg hover:bg-slate-100 transition">İptal</button>
+        {notlar[fav.ilan_id] && (
+          <button onClick={() => handleNotSil(fav.ilan_id)} className="text-xs text-red-400 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition">Sil</button>
+        )}
+        <button onClick={() => handleNotKaydet(fav.ilan_id)} className="flex-1 text-xs bg-amber-500 hover:bg-amber-600 text-white py-1.5 rounded-lg font-semibold transition">Kaydet</button>
+      </div>
+    </div>
+  )}
+</div>
                       ))}
                     </div>
                   )}
