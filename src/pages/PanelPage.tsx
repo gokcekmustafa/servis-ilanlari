@@ -49,7 +49,7 @@ const markalar = Object.keys(MARKA_MODELLER);
 const iller = Object.keys(ilceler).sort();
 const aracTipleri = ['Minibus 16+1', 'Midibus 27+1', 'Otobüs 45+1', 'Sedan', 'Van'];
 const tumIller = Object.keys(ilceler).sort();
-const MAX_RESIM = 6;
+const MAX_RESIM = 12;
 
 const KONUMLU_KATEGORILER = ['hostesim_is', 'soforum_is', 'plaka_satiyorum', 'aracimi_satiyorum'];
 const RESIMLI_KATEGORILER = ['aracimi_satiyorum', 'aracim_var_is', 'hostesim_is', 'soforum_is'];
