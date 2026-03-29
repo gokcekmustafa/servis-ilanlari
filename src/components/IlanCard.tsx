@@ -3,6 +3,7 @@ import { Phone, MessageCircle, Clock, ArrowRight, Heart, MapPin, ImageOff, X } f
 import { Ilan, KategoriType } from '../types';
 import { favoriEkle, favoriKaldir, favoriKontrol } from '../lib/ilanlar';
 import { mevcutKullanici } from '../lib/auth';
+import { supabase } from '../lib/supabase';
 
 // Görüntülenen ilanları localStorage'da tut
 const gorilenIlanlariGetir = (): Set<string> => {
@@ -164,19 +165,22 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn, kompakt
   const kullaniciId = mevcutKullanici()?.id || 'misafir';
 const gizliKey = `gizli_ilan_${kullaniciId}_${ilan.id}`;
 
-const [gizli, setGizli] = useState(() => {
-  try { return localStorage.getItem(`gizli_ilan_${mevcutKullanici()?.id || 'misafir'}_${ilan.id}`) === '1'; }
-  catch { return false; }
-});
+const kullanici = mevcutKullanici();
+const [gizli, setGizli] = useState(false);
+const [hover, setHover] = useState(false);
 
 useEffect(() => {
-  const key = `gizli_ilan_${mevcutKullanici()?.id || 'misafir'}_${ilan.id}`;
-  try {
-    const kayitliDurum = localStorage.getItem(key) === '1';
-    setGizli(kayitliDurum);
-  } catch {}
-}, [ilan.id]);
-const [hover, setHover] = useState(false);
+  if (!kullanici?.id) return;
+  supabase
+    .from('gizli_ilanlar')
+    .select('id')
+    .eq('user_id', kullanici.id)
+    .eq('ilan_id', ilan.id)
+    .maybeSingle()
+    .then(({ data }) => {
+      if (data) setGizli(true);
+    });
+}, [ilan.id, kullanici?.id]);
 
   // Resim gösteren kategoriler
   const resimliKategori = ilan.kategori === 'aracimi_satiyorum' || ilan.kategori === 'aracim_var_is' || ilan.kategori === 'hostesim_is' || ilan.kategori === 'soforum_is';
@@ -208,33 +212,53 @@ if (kompakt) return (
     className={`relative bg-white border border-gray-200 hover:border-[#f7971e] hover:shadow-sm transition-all duration-150 cursor-pointer rounded overflow-hidden flex items-center gap-0 ${gizli ? 'opacity-40 grayscale' : ''}`}
   >
     {/* GİZLE BUTONU */}
-    {!gizli && hover && (
-      <div className="absolute top-1 right-1 z-10 group/gizle">
-        <button
-          onClick={(e) => { e.stopPropagation(); setGizli(true); }}
-          className="w-5 h-5 rounded-full bg-gray-600/70 hover:bg-red-500 text-white flex items-center justify-center transition-all duration-150"
-          title="Bu ilanla ilgilenmiyorum, gizle."
-        >
-          <X size={10} />
-        </button>
-        <div className="absolute right-0 top-6 bg-gray-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/gizle:opacity-100 transition-opacity pointer-events-none">
-          Bu ilanla ilgilenmiyorum, gizle.
-        </div>
-      </div>
-    )}
+{!gizli && hover && (
+  <div className="absolute top-1 right-1 z-20 group/gizle">
+    <button
+      onClick={async (e) => {
+        e.stopPropagation();
+        setGizli(true);
+        if (kullanici?.id) {
+          await supabase.from('gizli_ilanlar').upsert({
+            user_id: kullanici.id,
+            ilan_id: ilan.id,
+          });
+        } else {
+          localStorage.setItem(`gizli_misafir_${ilan.id}`, '1');
+        }
+      }}
+      className="w-6 h-6 rounded-full bg-gray-600/70 hover:bg-red-500 text-white flex items-center justify-center transition-all duration-150"
+    >
+      <X size={12} />
+    </button>
+    <div className="absolute right-0 top-7 bg-gray-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/gizle:opacity-100 transition-opacity pointer-events-none">
+      Bu ilanla ilgilenmiyorum, gizle.
+    </div>
+  </div>
+)}
 
-    {/* GÖSTER BUTONU */}
-    {gizli && (
-      <div className="absolute top-1 right-1 z-10">
-        <button
-          onClick={(e) => { e.stopPropagation(); setGizli(false); }}
-          className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700/80 hover:bg-gray-900 text-white text-[10px] font-semibold transition"
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          Göster
-        </button>
-      </div>
-    )}
+{/* GÖSTER BUTONU */}
+{gizli && (
+  <div className="absolute top-1 right-1 z-20">
+    <button
+      onClick={async (e) => {
+        e.stopPropagation();
+        setGizli(false);
+        if (kullanici?.id) {
+          await supabase.from('gizli_ilanlar').delete()
+            .eq('user_id', kullanici.id)
+            .eq('ilan_id', ilan.id);
+        } else {
+          localStorage.removeItem(`gizli_misafir_${ilan.id}`);
+        }
+      }}
+      className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700/80 hover:bg-gray-900 text-white text-[10px] font-semibold transition"
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Göster
+    </button>
+  </div>
+)}
 
     {/* Sol renkli şerit */}
     <div className={`${config.bg} w-1 self-stretch flex-shrink-0`} />
@@ -301,40 +325,53 @@ if (kompakt) return (
     className={`relative bg-white border border-gray-200 hover:border-[#f7971e] hover:shadow-sm transition-all duration-150 cursor-pointer rounded overflow-hidden ${gizli ? 'opacity-40 grayscale' : ''}`}
   >
     {/* GİZLE BUTONU */}
-    {!gizli && hover && (
-      <div className="absolute top-1 right-1 z-20 group/gizle">
-        <button
-          onClick={(e) => {
+{!gizli && hover && (
+  <div className="absolute top-1 right-1 z-20 group/gizle">
+    <button
+      onClick={async (e) => {
   e.stopPropagation();
   setGizli(true);
-  localStorage.setItem(gizliKey, '1');
+  if (kullanici?.id) {
+    await supabase.from('gizli_ilanlar').upsert({
+      user_id: kullanici.id,
+      ilan_id: ilan.id,
+    });
+  } else {
+    localStorage.setItem(`gizli_misafir_${ilan.id}`, '1');
+  }
 }}
-          className="w-6 h-6 rounded-full bg-gray-600/70 hover:bg-red-500 text-white flex items-center justify-center transition-all duration-150"
-        >
-          <X size={12} />
-        </button>
-        <div className="absolute right-0 top-7 bg-gray-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/gizle:opacity-100 transition-opacity pointer-events-none">
-          Bu ilanla ilgilenmiyorum, gizle.
-        </div>
-      </div>
-    )}
+      className="w-5 h-5 rounded-full bg-gray-600/70 hover:bg-red-500 text-white flex items-center justify-center transition-all duration-150"
+    >
+      <X size={10} />
+    </button>
+    <div className="absolute right-0 top-7 bg-gray-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/gizle:opacity-100 transition-opacity pointer-events-none">
+      Bu ilanla ilgilenmiyorum, gizle.
+    </div>
+  </div>
+)}
 
-    {/* GÖSTER BUTONU */}
-    {gizli && (
-      <div className="absolute top-2 right-2 z-10">
-        <button
-          onClick={(e) => {
+{/* GÖSTER BUTONU */}
+{gizli && (
+  <div className="absolute top-1 right-1 z-20">
+    <button
+      onClick={async (e) => {
   e.stopPropagation();
   setGizli(false);
-  localStorage.removeItem(gizliKey);
+  if (kullanici?.id) {
+    await supabase.from('gizli_ilanlar').delete()
+      .eq('user_id', kullanici.id)
+      .eq('ilan_id', ilan.id);
+  } else {
+    localStorage.removeItem(`gizli_misafir_${ilan.id}`);
+  }
 }}
-          className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700/80 hover:bg-gray-900 text-white text-[10px] font-semibold transition"
-        >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          Göster
-        </button>
-      </div>
-    )}
+      className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700/80 hover:bg-gray-900 text-white text-[10px] font-semibold transition"
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Göster
+    </button>
+  </div>
+)}
       {/* ÜST BAŞLIK */}
       <div className={`${config.bg} flex items-center justify-between px-4 py-2`}>
         <span className={`text-xs font-bold tracking-wide ${config.text}`}>{config.label}</span>
