@@ -587,7 +587,10 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
                           ? ['Başlangıç Saati', 'Boş Olduğu Yer', 'Bitiş Saati'].map(h => (
                               <th key={h} className="px-3 sm:px-4 py-2.5 text-center text-xs font-semibold text-slate-500">{h}</th>
                             ))
-                          : ['Giriş Saati', 'Nereden', 'Nereye', 'Çıkış Saati'].map(h => (
+                          : (ilan.kategori === 'isim_var_arac'
+    ? ['Giriş Saati', 'Nereden', 'Nereye', 'Çıkış Saati', 'Başlangıç', 'Bitiş']
+    : ['Giriş Saati', 'Nereden', 'Nereye', 'Çıkış Saati']
+  ).map(h => (
                               <th key={h} className="px-3 sm:px-4 py-2.5 text-left text-xs font-semibold text-slate-500">{h}</th>
                             ))
                         }
@@ -608,11 +611,17 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
                             </>
                           ) : (
                             <>
-                              <td className="px-3 sm:px-4 py-3"><span className="flex items-center gap-1.5 text-orange-600 font-bold text-sm whitespace-nowrap"><Clock size={12} />{g.giris_saati}</span></td>
-                              <td className="px-3 sm:px-4 py-3 text-slate-600 text-sm"><p className="font-semibold uppercase">{g.kalkis_mah}</p><p className="text-xs text-slate-400">{g.kalkis_ilce}{g.kalkis_il ? ` / ${g.kalkis_il}` : ''}</p></td>
-                              <td className="px-3 sm:px-4 py-3 text-slate-600 text-sm"><p className="font-semibold uppercase">{g.varis_mah}</p><p className="text-xs text-slate-400">{g.varis_ilce}{g.varis_il ? ` / ${g.varis_il}` : ''}</p></td>
-                              <td className="px-3 sm:px-4 py-3"><span className="flex items-center gap-1.5 text-orange-600 font-bold text-sm whitespace-nowrap"><Clock size={12} />{g.cikis_saati}</span></td>
-                            </>
+                <td className="px-3 sm:px-4 py-3"><span className="flex items-center gap-1.5 text-orange-600 font-bold text-sm whitespace-nowrap"><Clock size={12} />{g.giris_saati}</span></td>
+                <td className="px-3 sm:px-4 py-3 text-slate-600 text-sm"><p className="font-semibold uppercase">{g.kalkis_mah}</p><p className="text-xs text-slate-400">{g.kalkis_ilce}{g.kalkis_il ? ` / ${g.kalkis_il}` : ''}</p></td>
+                <td className="px-3 sm:px-4 py-3 text-slate-600 text-sm"><p className="font-semibold uppercase">{g.varis_mah}</p><p className="text-xs text-slate-400">{g.varis_ilce}{g.varis_il ? ` / ${g.varis_il}` : ''}</p></td>
+                <td className="px-3 sm:px-4 py-3"><span className="flex items-center gap-1.5 text-orange-600 font-bold text-sm whitespace-nowrap"><Clock size={12} />{g.cikis_saati}</span></td>
+                {ilan.kategori === 'isim_var_arac' && (
+                  <>
+                    <td className="px-3 sm:px-4 py-3"><span className="text-orange-600 font-bold text-sm">{g.baslangic_saati || '—'}</span></td>
+                    <td className="px-3 sm:px-4 py-3"><span className="text-orange-600 font-bold text-sm">{g.bitis_saati || '—'}</span></td>
+                  </>
+                )}
+              </>
                           )}
                         </tr>
                       ))}
