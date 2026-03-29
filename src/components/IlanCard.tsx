@@ -9,6 +9,7 @@ type IlanCardProps = {
   onDetay: (ilan: Ilan) => void;
   onGoLogin?: () => void;
   isLoggedIn?: boolean;
+  kompakt?: boolean; // bunu ekle
 };
 
 const kategoriConfig: Record<KategoriType, { label: string; bg: string; text: string; serit: string }> = {
@@ -143,7 +144,7 @@ function IlanThumbnail({ resimler }: { resimler: string[] }) {
   );
 }
 
-export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanCardProps) {
+export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn, kompakt = false }: IlanCardProps) {
   const config = kategoriConfig[ilan.kategori] ?? { label: 'DİĞER', bg: 'bg-gray-500', text: 'text-white', serit: 'bg-gray-300' };
   const ilanVeren = ilan.profiles?.full_name || ilan.ilan_veren || 'Kullanıcı';
   const telefon = ilan.profiles?.phone_number || '';
@@ -172,7 +173,67 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
     if (isFavori) { await favoriKaldir(user.id, ilan.id); setIsFavori(false); }
     else { await favoriEkle(user.id, ilan.id); setIsFavori(true); }
   };
+{/* KOMPAKT GÖRÜNÜM */}
+if (kompakt) return (
+  <div
+    onClick={() => onDetay(ilan)}
+    className="bg-white border border-gray-200 hover:border-[#f7971e] hover:shadow-sm transition-all duration-150 cursor-pointer rounded overflow-hidden flex items-center gap-0"
+  >
+    {/* Sol renkli şerit */}
+    <div className={`${config.bg} w-1 self-stretch flex-shrink-0`} />
 
+    {/* İçerik */}
+    <div className="flex-1 flex items-center gap-3 px-3 py-2 min-w-0">
+      {/* Kategori etiketi */}
+      <span className={`hidden sm:inline-block text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0 ${config.bg} ${config.text}`}>
+        {config.label.split(' ').slice(0, 2).join(' ')}
+      </span>
+
+      {/* Thumbnail — sadece resimli kategorilerde */}
+      {resimliKategori && resimler.length > 0 && (
+        <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden border border-gray-200 bg-gray-100">
+          <img src={resimler[0]} alt="Araç" className="w-full h-full object-cover"
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+        </div>
+      )}
+
+      {/* Açıklama */}
+      <p className="text-xs text-gray-700 line-clamp-1 flex-1 min-w-0">{ilan.aciklama}</p>
+
+      {/* Konum */}
+      {ilan.guzergahlar?.[0]?.kalkis_il && (
+        <span className="hidden md:flex items-center gap-1 text-[11px] text-gray-400 flex-shrink-0">
+          <MapPin size={10} />
+          {ilan.guzergahlar[0].kalkis_ilce || ilan.guzergahlar[0].kalkis_il}
+        </span>
+      )}
+
+      {/* Ücret */}
+      {ekBilgi.ucret && (
+        <span className="text-xs font-bold text-blue-600 flex-shrink-0 whitespace-nowrap">
+          {Number(ekBilgi.ucret).toLocaleString('tr-TR')} ₺
+        </span>
+      )}
+
+      {/* Zaman */}
+      <span className="hidden sm:flex items-center gap-0.5 text-[10px] text-gray-400 flex-shrink-0 whitespace-nowrap">
+        <Clock size={10} /> {zamanFarki(ilan.created_at)}
+      </span>
+    </div>
+
+    {/* Sağ: butonlar */}
+    <div className="flex items-center gap-1 px-2 flex-shrink-0">
+      <button onClick={e => { e.stopPropagation(); if (telefon) window.open(`https://wa.me/90${telefon.replace(/\D/g,'').replace(/^0/,'')}`, '_blank'); }}
+        className="p-1.5 text-[#25D366] hover:bg-green-50 rounded-lg transition">
+        <MessageCircle size={14} />
+      </button>
+      <button onClick={e => { e.stopPropagation(); if (telefon) window.location.href = `tel:${telefon}`; }}
+        className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition">
+        <Phone size={14} />
+      </button>
+    </div>
+  </div>
+);
   return (
     <div
       onClick={() => onDetay(ilan)}
