@@ -161,7 +161,11 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn, kompakt
   const ekBilgi = ilan.ekbilgiler || {};
   const [isFavori, setIsFavori] = useState(false);
   const [goruldu, setGoruldu] = useState(() => gorilenIlanlariGetir().has(ilan.id));
-  const [gizli, setGizli] = useState(false);
+  const gizliKey = `gizli_ilan_${mevcutKullanici()?.id || 'misafir'}_${ilan.id}`;
+  const [gizli, setGizli] = useState(() => {
+  try { return localStorage.getItem(gizliKey) === '1'; }
+  catch { return false; }
+});
 const [hover, setHover] = useState(false);
 
   // Resim gösteren kategoriler
@@ -257,9 +261,13 @@ if (kompakt) return (
   >
     {/* GİZLE BUTONU */}
     {!gizli && hover && (
-      <div className="absolute top-2 right-2 z-10 group/gizle">
+      <div className="absolute top-1 right-1 z-20 group/gizle">
         <button
-          onClick={(e) => { e.stopPropagation(); setGizli(true); }}
+          onClick={(e) => {
+  e.stopPropagation();
+  setGizli(true);
+  localStorage.setItem(gizliKey, '1');
+}}
           className="w-6 h-6 rounded-full bg-gray-600/70 hover:bg-red-500 text-white flex items-center justify-center transition-all duration-150"
         >
           <X size={12} />
@@ -274,7 +282,11 @@ if (kompakt) return (
     {gizli && (
       <div className="absolute top-2 right-2 z-10">
         <button
-          onClick={(e) => { e.stopPropagation(); setGizli(false); }}
+          onClick={(e) => {
+  e.stopPropagation();
+  setGizli(false);
+  localStorage.removeItem(gizliKey);
+}}
           className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700/80 hover:bg-gray-900 text-white text-[10px] font-semibold transition"
         >
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -286,11 +298,11 @@ if (kompakt) return (
       <div className={`${config.bg} flex items-center justify-between px-4 py-2`}>
         <span className={`text-xs font-bold tracking-wide ${config.text}`}>{config.label}</span>
         <button
-          onClick={(e) => { e.stopPropagation(); ilanGorulduIsaretle(ilan.id); setGoruldu(true); onDetay(ilan); }}
-          className="text-[11px] font-semibold text-white/90 hover:text-white flex items-center gap-1 transition"
-        >
-          İlan Detayı <ArrowRight size={11} />
-        </button>
+  onClick={(e) => { e.stopPropagation(); ilanGorulduIsaretle(ilan.id); setGoruldu(true); onDetay(ilan); }}
+  className="text-[11px] font-semibold text-white/90 hover:text-white flex items-center gap-1 transition mr-6"
+>
+  İlan Detayı <ArrowRight size={11} />
+</button>
       </div>
 
       <div className="px-4 pt-3 pb-2">
