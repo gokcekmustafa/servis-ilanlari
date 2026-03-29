@@ -284,7 +284,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
   const [konumIlce, setKonumIlce] = useState(konumGuzergah.kalkis_ilce || '');
   const [konumMah, setKonumMah] = useState(konumGuzergah.kalkis_mah || '');
   const [guzergahlar, setGuzergahlar] = useState<any[]>(
-  ilan.guzergahlar && ilan.guzergahlar.length > 0 ? ilan.guzergahlar : [{ giris_saati: '', kalkis_il: '', kalkis_ilce: '', kalkis_mah: '', varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }]
+  ilan.guzergahlar && ilan.guzergahlar.length > 0 ? ilan.guzergahlar : [{ giris_saati: '', kalkis_il: '', kalkis_ilce: '', kalkis_mah: '', varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '', baslangic_saati: '', bitis_saati: '' }]
 );
 
   const handleKaydet = async () => {
@@ -390,9 +390,15 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
           )}
         </div>
         <div className="grid grid-cols-2 gap-2 mb-2">
-          <div><label className={lb}>Giriş Saati</label><input type="time" value={g.giris_saati} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, giris_saati: e.target.value} : x))} className={ic}/></div>
-          <div><label className={lb}>Çıkış Saati</label><input type="time" value={g.cikis_saati} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, cikis_saati: e.target.value} : x))} className={ic}/></div>
-        </div>
+  <div className="flex flex-col gap-2">
+    <div><label className={lb}>Giriş Saati</label><input type="time" value={g.giris_saati} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, giris_saati: e.target.value} : x))} className={ic}/></div>
+    <div><label className={lb}>Başlangıç Saati</label><input type="time" value={g.baslangic_saati || ''} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, baslangic_saati: e.target.value} : x))} className={ic}/></div>
+  </div>
+  <div className="flex flex-col gap-2">
+    <div><label className={lb}>Çıkış Saati</label><input type="time" value={g.cikis_saati} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, cikis_saati: e.target.value} : x))} className={ic}/></div>
+    <div><label className={lb}>Bitiş Saati</label><input type="time" value={g.bitis_saati || ''} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, bitis_saati: e.target.value} : x))} className={ic}/></div>
+  </div>
+</div>
         <p className="text-xs font-semibold text-slate-400 mb-1">Kalkış</p>
         <IlIlceMahalle il={g.kalkis_il} ilce={g.kalkis_ilce} mah={g.kalkis_mah}
           onIlChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, kalkis_il: v, kalkis_ilce: '', kalkis_mah: ''} : x))}
