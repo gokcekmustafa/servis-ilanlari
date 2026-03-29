@@ -30,9 +30,9 @@ const iller = [
 export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: RegisterPageProps) {
   const [tab, setTab] = useState<'bireysel' | 'kurumsal'>('bireysel');
   const [form, setForm] = useState({
-    ad: '', firma: '', vergiNo: '', telefon: '',
-    sifre: '', sifre2: '', il: '', sozlesme: false,
-  });
+  ad: '', firma: '', vergiNo: '', telefon: '',
+  email: '', sifre: '', sifre2: '', il: '', sozlesme: false,
+});
   const [goster, setGoster] = useState(false);
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
@@ -67,7 +67,7 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
     setYukleniyor(true);
     setHata('');
     const fullName = tab === 'bireysel' ? form.ad : form.firma;
-    const { error } = await kayitOl(form.telefon, form.sifre, fullName, tab, form.il);
+    const { error } = await kayitOl(form.telefon, form.sifre, fullName, tab, form.il, form.email);
     setYukleniyor(false);
     if (error) {
       setHata(error.message || 'Kayit sirasinda hata olustu.');
@@ -162,6 +162,14 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
                 </div>
               )}
 
+              <div>
+                <label className="text-xs font-semibold text-slate-500 mb-1.5 block">
+                  E-posta <span className="text-slate-400 font-normal">(opsiyonel)</span>
+                </label>
+                <input name="email" type="email" value={form.email} onChange={handleChange}
+                  placeholder="ornek@email.com" className={ic} />
+              </div>
+              
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">
