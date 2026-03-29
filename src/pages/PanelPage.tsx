@@ -50,9 +50,7 @@ const markalar = ['Mercedes', 'Fiat', 'Ford', 'Volkswagen', 'Renault', 'Peugeot'
 const tumIller = Object.keys(ilceler).sort();
 const MAX_RESIM = 6;
 
-// Konum (il/ilçe/mahalle) gösterir mi?
 const KONUMLU_KATEGORILER = ['hostesim_is', 'soforum_is', 'plaka_satiyorum', 'aracimi_satiyorum'];
-// Resim yükleme gerektiren kategoriler
 const RESIMLI_KATEGORILER = ['aracimi_satiyorum', 'aracim_var_is', 'hostesim_is', 'soforum_is'];
 
 const ic = 'w-full border border-slate-200 rounded-xl px-3 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
@@ -304,8 +302,10 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
   const [konumIlce, setKonumIlce] = useState(konumGuzergah.kalkis_ilce || '');
   const [konumMah, setKonumMah] = useState(konumGuzergah.kalkis_mah || '');
   const [guzergahlar, setGuzergahlar] = useState<any[]>(
-  ilan.guzergahlar && ilan.guzergahlar.length > 0 ? ilan.guzergahlar : [{ giris_saati: '', kalkis_il: '', kalkis_ilce: '', kalkis_mah: '', varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '', baslangic_saati: '', bitis_saati: '' }]
-);
+    ilan.guzergahlar && ilan.guzergahlar.length > 0
+      ? ilan.guzergahlar
+      : [{ giris_saati: '', kalkis_il: '', kalkis_ilce: '', kalkis_mah: '', varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '', baslangic_saati: '', bitis_saati: '' }]
+  );
 
   const handleKaydet = async () => {
     let yeniEkbilgiler: any = { ...ek };
@@ -332,10 +332,10 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
     } else if (kategori === 'hostes_ariyorum') {
       yeniEkbilgiler = { ...hostesAriyorum };
     } else if (kategori === 'hostesim_is') {
-  yeniEkbilgiler = { ...hostesimIs, resimler: yuklenenUrller };
+      yeniEkbilgiler = { ...hostesimIs, resimler: yuklenenUrller };
       yeniGuzergahlar = [{ giris_saati: '', kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah, varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }];
     } else if (kategori === 'soforum_is') {
-  yeniEkbilgiler = { ...soforumIs, resimler: yuklenenUrller };
+      yeniEkbilgiler = { ...soforumIs, resimler: yuklenenUrller };
       yeniGuzergahlar = [{ giris_saati: '', kalkis_il: konumIl, kalkis_ilce: konumIlce, kalkis_mah: konumMah, varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }];
     } else if (kategori === 'plaka_satiyorum') {
       yeniEkbilgiler = { ...plakaSatiyorum };
@@ -357,89 +357,137 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">Araç Bilgileri</h3>
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div><label className={lb}>Araç Markası</label>
-              <select value={isimVarArac.arac_markasi} onChange={e => setIsimVarArac({...isimVarArac, arac_markasi: e.target.value, model: ''})} className={ic}>
-  <option value="">Seçin</option><option value="farketmez">Farketmez</option>
-  {Object.keys(MARKA_MODELLER).map(m=><option key={m} value={m}>{m}</option>)}
-</select>
-            <div><label className={lb}>Model</label>
-              <select value={isimVarArac.model} onChange={e => setIsimVarArac({...isimVarArac, model: e.target.value})} disabled={!isimVarArac.arac_markasi || isimVarArac.arac_markasi === 'farketmez'} className={ic + ' disabled:bg-slate-50 disabled:text-slate-400'}>
-  <option value="">Seçin</option><option value="farketmez">Farketmez</option>
-  {(MARKA_MODELLER[isimVarArac.arac_markasi] || []).map(m=><option key={m} value={m}>{m}</option>)}
-</select>
-            <div><label className={lb}>Araç Yılı</label>
-              <select value={isimVarArac.arac_yili} onChange={e => setIsimVarArac({...isimVarArac,arac_yili:e.target.value})} className={ic}>
-                <option value="">Seçin</option><option value="farketmez">Farketmez</option>
-                {Array.from({length:20},(_,i)=>2025-i).map(y=><option key={y} value={y}>{y}</option>)}
-              </select></div>
-            <div><label className={lb}>Kapasite</label>
-              <select value={isimVarArac.arac_kapasitesi} onChange={e => setIsimVarArac({...isimVarArac,arac_kapasitesi:e.target.value})} className={ic}>
-                <option value="">Seçin</option><option value="farketmez">Farketmez</option>
-                {['4+1','8+1','14+1','16+1','27+1','36+1','45+1'].map(k=><option key={k} value={k}>{k}</option>)}
-              </select></div>
-            <div><label className={lb}>Ücret (TL)</label><input type="number" value={isimVarArac.ucret} onChange={e=>setIsimVarArac({...isimVarArac,ucret:e.target.value})} className={ic}/></div>
-            <div><label className={lb}>KM</label><input type="number" value={isimVarArac.km} onChange={e=>setIsimVarArac({...isimVarArac,km:e.target.value})} className={ic}/></div>
-            <div><label className={lb}>Çalışacak Gün</label><input type="number" value={isimVarArac.calisılacak_gun} onChange={e=>setIsimVarArac({...isimVarArac,calisılacak_gun:e.target.value})} className={ic}/></div>
-            <div><label className={lb}>Servis Süresi (Dk)</label><input type="number" value={isimVarArac.servis_suresi} onChange={e=>setIsimVarArac({...isimVarArac,servis_suresi:e.target.value})} className={ic}/></div>
+            <div>
+              <label className={lb}>Araç Markası</label>
+              <select
+                value={isimVarArac.arac_markasi}
+                onChange={e => setIsimVarArac({ ...isimVarArac, arac_markasi: e.target.value, model: '' })}
+                className={ic}
+              >
+                <option value="">Seçin</option>
+                <option value="farketmez">Farketmez</option>
+                {Object.keys(MARKA_MODELLER).map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={lb}>Model</label>
+              <select
+                value={isimVarArac.model}
+                onChange={e => setIsimVarArac({ ...isimVarArac, model: e.target.value })}
+                disabled={!isimVarArac.arac_markasi || isimVarArac.arac_markasi === 'farketmez'}
+                className={ic + ' disabled:bg-slate-50 disabled:text-slate-400'}
+              >
+                <option value="">Seçin</option>
+                <option value="farketmez">Farketmez</option>
+                {(MARKA_MODELLER[isimVarArac.arac_markasi] || []).map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={lb}>Araç Yılı</label>
+              <select value={isimVarArac.arac_yili} onChange={e => setIsimVarArac({ ...isimVarArac, arac_yili: e.target.value })} className={ic}>
+                <option value="">Seçin</option>
+                <option value="farketmez">Farketmez</option>
+                {Array.from({ length: 20 }, (_, i) => 2025 - i).map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={lb}>Kapasite</label>
+              <select value={isimVarArac.arac_kapasitesi} onChange={e => setIsimVarArac({ ...isimVarArac, arac_kapasitesi: e.target.value })} className={ic}>
+                <option value="">Seçin</option>
+                <option value="farketmez">Farketmez</option>
+                {['4+1', '8+1', '14+1', '16+1', '27+1', '36+1', '45+1'].map(k => <option key={k} value={k}>{k}</option>)}
+              </select>
+            </div>
+            <div><label className={lb}>Ücret (TL)</label><input type="number" value={isimVarArac.ucret} onChange={e => setIsimVarArac({ ...isimVarArac, ucret: e.target.value })} className={ic} /></div>
+            <div><label className={lb}>KM</label><input type="number" value={isimVarArac.km} onChange={e => setIsimVarArac({ ...isimVarArac, km: e.target.value })} className={ic} /></div>
+            <div><label className={lb}>Çalışacak Gün</label><input type="number" value={isimVarArac.calisılacak_gun} onChange={e => setIsimVarArac({ ...isimVarArac, calisılacak_gun: e.target.value })} className={ic} /></div>
+            <div><label className={lb}>Servis Süresi (Dk)</label><input type="number" value={isimVarArac.servis_suresi} onChange={e => setIsimVarArac({ ...isimVarArac, servis_suresi: e.target.value })} className={ic} /></div>
           </div>
-          <div className="mb-4"><label className={lb}>Yolcu Sayısı</label><input type="number" value={isimVarArac.aracki_yolcu_sayisi} onChange={e=>setIsimVarArac({...isimVarArac,aracki_yolcu_sayisi:e.target.value})} className={ic+' max-w-xs'}/></div>
-          <div><label className={lb+' mb-2'}>Servis Türü</label>
+          <div className="mb-4">
+            <label className={lb}>Yolcu Sayısı</label>
+            <input type="number" value={isimVarArac.aracki_yolcu_sayisi} onChange={e => setIsimVarArac({ ...isimVarArac, aracki_yolcu_sayisi: e.target.value })} className={ic + ' max-w-xs'} />
+          </div>
+          <div>
+            <label className={lb + ' mb-2'}>Servis Türü</label>
             <div className="flex flex-wrap gap-3">
-              {['Okul','Personel','Hafif Minibus','Turizm','Diğer'].map(t=>(
+              {['Okul', 'Personel', 'Hafif Minibus', 'Turizm', 'Diğer'].map(t => (
                 <label key={t} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                  <input type="checkbox" checked={isimVarArac.servis_turu.includes(t)} onChange={()=>setIsimVarArac({...isimVarArac,servis_turu:toggleArr(isimVarArac.servis_turu,t)})} className="accent-orange-500 w-4 h-4"/>{t}
+                  <input type="checkbox" checked={isimVarArac.servis_turu.includes(t)} onChange={() => setIsimVarArac({ ...isimVarArac, servis_turu: toggleArr(isimVarArac.servis_turu, t) })} className="accent-orange-500 w-4 h-4" />{t}
                 </label>
               ))}
             </div>
           </div>
         </div>
       )}
+
+      {/* GÜZERGAHLAR - isim_var_arac */}
       {kategori === 'isim_var_arac' && (
-  <div className="border border-slate-200 rounded-xl p-4">
-    <div className="flex items-center justify-between mb-3">
-      <h3 className="font-semibold text-slate-700 text-sm">Güzergahlar</h3>
-      <button type="button" onClick={() => setGuzergahlar([...guzergahlar, { giris_saati: '', kalkis_il: '', kalkis_ilce: '', kalkis_mah: '', varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }])}
-        className="text-xs bg-slate-800 text-white px-3 py-1.5 rounded-lg">+ Güzergah Ekle</button>
-    </div>
-    {guzergahlar.map((g, i) => (
-      <div key={i} className="border border-slate-100 rounded-xl p-3 mb-3 bg-slate-50">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-xs font-semibold text-slate-500">Güzergah {i + 1}</span>
-          {guzergahlar.length > 1 && (
-            <button onClick={() => setGuzergahlar(guzergahlar.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600"><X size={14} /></button>
-          )}
+        <div className="border border-slate-200 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-700 text-sm">Güzergahlar</h3>
+            <button
+              type="button"
+              onClick={() => setGuzergahlar([...guzergahlar, { giris_saati: '', kalkis_il: '', kalkis_ilce: '', kalkis_mah: '', varis_il: '', varis_ilce: '', varis_mah: '', cikis_saati: '' }])}
+              className="text-xs bg-slate-800 text-white px-3 py-1.5 rounded-lg"
+            >
+              + Güzergah Ekle
+            </button>
+          </div>
+          {guzergahlar.map((g, i) => (
+            <div key={i} className="border border-slate-100 rounded-xl p-3 mb-3 bg-slate-50">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-semibold text-slate-500">Güzergah {i + 1}</span>
+                {guzergahlar.length > 1 && (
+                  <button onClick={() => setGuzergahlar(guzergahlar.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600"><X size={14} /></button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="flex flex-col gap-2">
+                  <div>
+                    <label className={lb}>Giriş Saati</label>
+                    <input type="time" value={g.giris_saati} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? { ...x, giris_saati: e.target.value } : x))} className={ic} />
+                  </div>
+                  <div>
+                    <label className={lb}>Başlangıç Saati</label>
+                    <input type="time" value={g.baslangic_saati || ''} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? { ...x, baslangic_saati: e.target.value } : x))} className={ic} />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div>
+                    <label className={lb}>Çıkış Saati</label>
+                    <input type="time" value={g.cikis_saati} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? { ...x, cikis_saati: e.target.value } : x))} className={ic} />
+                  </div>
+                  <div>
+                    <label className={lb}>Bitiş Saati</label>
+                    <input type="time" value={g.bitis_saati || ''} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? { ...x, bitis_saati: e.target.value } : x))} className={ic} />
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs font-semibold text-slate-400 mb-1">Kalkış</p>
+              <IlIlceMahalle
+                il={g.kalkis_il} ilce={g.kalkis_ilce} mah={g.kalkis_mah}
+                onIlChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? { ...x, kalkis_il: v, kalkis_ilce: '', kalkis_mah: '' } : x))}
+                onIlceChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? { ...x, kalkis_ilce: v, kalkis_mah: '' } : x))}
+                onMahChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? { ...x, kalkis_mah: v } : x))}
+              />
+              <p className="text-xs font-semibold text-slate-400 mb-1 mt-2">Varış</p>
+              <IlIlceMahalle
+                il={g.varis_il} ilce={g.varis_ilce} mah={g.varis_mah}
+                onIlChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? { ...x, varis_il: v, varis_ilce: '', varis_mah: '' } : x))}
+                onIlceChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? { ...x, varis_ilce: v, varis_mah: '' } : x))}
+                onMahChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? { ...x, varis_mah: v } : x))}
+              />
+            </div>
+          ))}
         </div>
-        <div className="grid grid-cols-2 gap-2 mb-2">
-  <div className="flex flex-col gap-2">
-    <div><label className={lb}>Giriş Saati</label><input type="time" value={g.giris_saati} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, giris_saati: e.target.value} : x))} className={ic}/></div>
-    <div><label className={lb}>Başlangıç Saati</label><input type="time" value={g.baslangic_saati || ''} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, baslangic_saati: e.target.value} : x))} className={ic}/></div>
-  </div>
-  <div className="flex flex-col gap-2">
-    <div><label className={lb}>Çıkış Saati</label><input type="time" value={g.cikis_saati} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, cikis_saati: e.target.value} : x))} className={ic}/></div>
-    <div><label className={lb}>Bitiş Saati</label><input type="time" value={g.bitis_saati || ''} onChange={e => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, bitis_saati: e.target.value} : x))} className={ic}/></div>
-  </div>
-</div>
-        <p className="text-xs font-semibold text-slate-400 mb-1">Kalkış</p>
-        <IlIlceMahalle il={g.kalkis_il} ilce={g.kalkis_ilce} mah={g.kalkis_mah}
-          onIlChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, kalkis_il: v, kalkis_ilce: '', kalkis_mah: ''} : x))}
-          onIlceChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, kalkis_ilce: v, kalkis_mah: ''} : x))}
-          onMahChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, kalkis_mah: v} : x))} />
-        <p className="text-xs font-semibold text-slate-400 mb-1 mt-2">Varış</p>
-        <IlIlceMahalle il={g.varis_il} ilce={g.varis_ilce} mah={g.varis_mah}
-          onIlChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, varis_il: v, varis_ilce: '', varis_mah: ''} : x))}
-          onIlceChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, varis_ilce: v, varis_mah: ''} : x))}
-          onMahChange={v => setGuzergahlar(guzergahlar.map((x, idx) => idx === i ? {...x, varis_mah: v} : x))} />
-      </div>
-    ))}
-  </div>
-)}
+      )}
 
       {/* ARACIM VAR İŞ */}
       {kategori === 'aracim_var_is' && (
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">Araç Bilgileri</h3>
-          <div className="mb-3"><label className={lb}>Seçilen Araç (Plaka)</label><input value={aracimVarIs.secilen_arac} onChange={e=>setAracimVarIs({...aracimVarIs,secilen_arac:e.target.value})} className={ic} placeholder="Araç plakası"/></div>
-          <div><label className={lb}>Çalışma Yerleri / İstenen Güzergah</label><input value={aracimVarIs.calisma_yerleri} onChange={e=>setAracimVarIs({...aracimVarIs,calisma_yerleri:e.target.value})} placeholder="Kadıköy, Üsküdar, Beşiktaş" className={ic}/></div>
+          <div className="mb-3"><label className={lb}>Seçilen Araç (Plaka)</label><input value={aracimVarIs.secilen_arac} onChange={e => setAracimVarIs({ ...aracimVarIs, secilen_arac: e.target.value })} className={ic} placeholder="Araç plakası" /></div>
+          <div><label className={lb}>Çalışma Yerleri / İstenen Güzergah</label><input value={aracimVarIs.calisma_yerleri} onChange={e => setAracimVarIs({ ...aracimVarIs, calisma_yerleri: e.target.value })} placeholder="Kadıköy, Üsküdar, Beşiktaş" className={ic} /></div>
         </div>
       )}
 
@@ -449,24 +497,24 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">İlan Detayları</h3>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div><label className={lb}>Ödeme Şekli</label>
-              <select value={soforAriyorum.odeme_sekli} onChange={e=>setSoforAriyorum({...soforAriyorum,odeme_sekli:e.target.value})} className={ic}>
+              <select value={soforAriyorum.odeme_sekli} onChange={e => setSoforAriyorum({ ...soforAriyorum, odeme_sekli: e.target.value })} className={ic}>
                 <option value="aylik">Aylık</option><option value="haftalik">Haftalık</option><option value="gunluk">Günlük</option>
               </select></div>
-            <div><label className={lb}>Ücret (TL)</label><input type="number" value={soforAriyorum.ucret} onChange={e=>setSoforAriyorum({...soforAriyorum,ucret:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Ücret (TL)</label><input type="number" value={soforAriyorum.ucret} onChange={e => setSoforAriyorum({ ...soforAriyorum, ucret: e.target.value })} className={ic} /></div>
             <div><label className={lb}>Aranan Tecrübe</label>
-              <select value={soforAriyorum.aranan_tecrube} onChange={e=>setSoforAriyorum({...soforAriyorum,aranan_tecrube:e.target.value})} className={ic}>
+              <select value={soforAriyorum.aranan_tecrube} onChange={e => setSoforAriyorum({ ...soforAriyorum, aranan_tecrube: e.target.value })} className={ic}>
                 <option value="">Farketmez</option><option value="1">1 Yıl</option><option value="2">2 Yıl</option><option value="3">3 Yıl+</option>
               </select></div>
-            <div><label className={lb}>Ort. Servis Süresi (Dk)</label><input type="number" value={soforAriyorum.ortalama_servis_suresi} onChange={e=>setSoforAriyorum({...soforAriyorum,ortalama_servis_suresi:e.target.value})} className={ic}/></div>
-            <div><label className={lb}>Yolcu Sayısı</label><input type="number" value={soforAriyorum.yolcu_sayisi} onChange={e=>setSoforAriyorum({...soforAriyorum,yolcu_sayisi:e.target.value})} className={ic}/></div>
-            <div><label className={lb}>KM</label><input type="number" value={soforAriyorum.km} onChange={e=>setSoforAriyorum({...soforAriyorum,km:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Ort. Servis Süresi (Dk)</label><input type="number" value={soforAriyorum.ortalama_servis_suresi} onChange={e => setSoforAriyorum({ ...soforAriyorum, ortalama_servis_suresi: e.target.value })} className={ic} /></div>
+            <div><label className={lb}>Yolcu Sayısı</label><input type="number" value={soforAriyorum.yolcu_sayisi} onChange={e => setSoforAriyorum({ ...soforAriyorum, yolcu_sayisi: e.target.value })} className={ic} /></div>
+            <div><label className={lb}>KM</label><input type="number" value={soforAriyorum.km} onChange={e => setSoforAriyorum({ ...soforAriyorum, km: e.target.value })} className={ic} /></div>
           </div>
-          <div className="mb-4"><label className={lb}>Çalışacak Gün</label><input type="number" value={soforAriyorum.calisılacak_gun} onChange={e=>setSoforAriyorum({...soforAriyorum,calisılacak_gun:e.target.value})} className={ic+' max-w-xs'}/></div>
-          <div><label className={lb+' mb-2'}>İstenen Yabancı Diller</label>
+          <div className="mb-4"><label className={lb}>Çalışacak Gün</label><input type="number" value={soforAriyorum.calisılacak_gun} onChange={e => setSoforAriyorum({ ...soforAriyorum, calisılacak_gun: e.target.value })} className={ic + ' max-w-xs'} /></div>
+          <div><label className={lb + ' mb-2'}>İstenen Yabancı Diller</label>
             <div className="flex flex-wrap gap-3">
-              {dilSecenekleri.map(d=>(
+              {dilSecenekleri.map(d => (
                 <label key={d} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                  <input type="checkbox" checked={soforAriyorum.yabanci_diller.includes(d)} onChange={()=>setSoforAriyorum({...soforAriyorum,yabanci_diller:toggleArr(soforAriyorum.yabanci_diller,d)})} className="accent-orange-500 w-4 h-4"/>{d}
+                  <input type="checkbox" checked={soforAriyorum.yabanci_diller.includes(d)} onChange={() => setSoforAriyorum({ ...soforAriyorum, yabanci_diller: toggleArr(soforAriyorum.yabanci_diller, d) })} className="accent-orange-500 w-4 h-4" />{d}
                 </label>
               ))}
             </div>
@@ -479,27 +527,27 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">İlan Detayları</h3>
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div><label className={lb}>Ücret (TL)</label><input type="number" value={hostesAriyorum.ucret} onChange={e=>setHostesAriyorum({...hostesAriyorum,ucret:e.target.value})} className={ic}/></div>
-            <div><label className={lb}>Çalışacak Okul</label><input value={hostesAriyorum.calisılacak_okul} onChange={e=>setHostesAriyorum({...hostesAriyorum,calisılacak_okul:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Ücret (TL)</label><input type="number" value={hostesAriyorum.ucret} onChange={e => setHostesAriyorum({ ...hostesAriyorum, ucret: e.target.value })} className={ic} /></div>
+            <div><label className={lb}>Çalışacak Okul</label><input value={hostesAriyorum.calisılacak_okul} onChange={e => setHostesAriyorum({ ...hostesAriyorum, calisılacak_okul: e.target.value })} className={ic} /></div>
             <div><label className={lb}>Aranan Tecrübe</label>
-              <select value={hostesAriyorum.aranan_tecrube} onChange={e=>setHostesAriyorum({...hostesAriyorum,aranan_tecrube:e.target.value})} className={ic}>
+              <select value={hostesAriyorum.aranan_tecrube} onChange={e => setHostesAriyorum({ ...hostesAriyorum, aranan_tecrube: e.target.value })} className={ic}>
                 <option value="">Farketmez</option><option value="1">1 Yıl</option><option value="2">2 Yıl</option><option value="3">3 Yıl+</option>
               </select></div>
           </div>
-          <div className="mb-4"><label className={lb+' mb-2'}>Okul Türü</label>
+          <div className="mb-4"><label className={lb + ' mb-2'}>Okul Türü</label>
             <div className="flex flex-wrap gap-4">
-              {['Anaokulu Kres','İlk Öğretim','Lise'].map(t=>(
+              {['Anaokulu Kres', 'İlk Öğretim', 'Lise'].map(t => (
                 <label key={t} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                  <input type="radio" checked={hostesAriyorum.okul_turu===t} onChange={()=>setHostesAriyorum({...hostesAriyorum,okul_turu:t})} className="accent-orange-500"/>{t}
+                  <input type="radio" checked={hostesAriyorum.okul_turu === t} onChange={() => setHostesAriyorum({ ...hostesAriyorum, okul_turu: t })} className="accent-orange-500" />{t}
                 </label>
               ))}
             </div>
           </div>
-          <div><label className={lb+' mb-2'}>Yabancı Diller</label>
+          <div><label className={lb + ' mb-2'}>Yabancı Diller</label>
             <div className="flex flex-wrap gap-3">
-              {dilSecenekleri.map(d=>(
+              {dilSecenekleri.map(d => (
                 <label key={d} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                  <input type="checkbox" checked={hostesAriyorum.yabanci_diller.includes(d)} onChange={()=>setHostesAriyorum({...hostesAriyorum,yabanci_diller:toggleArr(hostesAriyorum.yabanci_diller,d)})} className="accent-orange-500 w-4 h-4"/>{d}
+                  <input type="checkbox" checked={hostesAriyorum.yabanci_diller.includes(d)} onChange={() => setHostesAriyorum({ ...hostesAriyorum, yabanci_diller: toggleArr(hostesAriyorum.yabanci_diller, d) })} className="accent-orange-500 w-4 h-4" />{d}
                 </label>
               ))}
             </div>
@@ -512,27 +560,27 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">İlan Detayları</h3>
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div><label className={lb}>Doğum Tarihi</label><input type="date" value={hostesimIs.dogum_tarihi} onChange={e=>setHostesimIs({...hostesimIs,dogum_tarihi:e.target.value})} className={ic}/></div>
-            <div><label className={lb}>Doğum Yeri</label><input value={hostesimIs.dogum_yeri} onChange={e=>setHostesimIs({...hostesimIs,dogum_yeri:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Doğum Tarihi</label><input type="date" value={hostesimIs.dogum_tarihi} onChange={e => setHostesimIs({ ...hostesimIs, dogum_tarihi: e.target.value })} className={ic} /></div>
+            <div><label className={lb}>Doğum Yeri</label><input value={hostesimIs.dogum_yeri} onChange={e => setHostesimIs({ ...hostesimIs, dogum_yeri: e.target.value })} className={ic} /></div>
             <div className="col-span-2"><label className={lb}>Eğitim Durumu</label>
-              <select value={hostesimIs.egitim_durumu} onChange={e=>setHostesimIs({...hostesimIs,egitim_durumu:e.target.value})} className={ic}>
+              <select value={hostesimIs.egitim_durumu} onChange={e => setHostesimIs({ ...hostesimIs, egitim_durumu: e.target.value })} className={ic}>
                 <option value="">Seçiniz</option><option value="ilkokul">İlkokul</option><option value="ortaokul">Ortaokul</option><option value="lise">Lise</option><option value="universite">Üniversite</option>
               </select></div>
           </div>
-          <div className="mb-4"><label className={lb+' mb-2'}>Yabancı Diller</label>
+          <div className="mb-4"><label className={lb + ' mb-2'}>Yabancı Diller</label>
             <div className="flex flex-wrap gap-3">
-              {dilSecenekleri.map(d=>(
+              {dilSecenekleri.map(d => (
                 <label key={d} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                  <input type="checkbox" checked={hostesimIs.yabanci_diller.includes(d)} onChange={()=>setHostesimIs({...hostesimIs,yabanci_diller:toggleArr(hostesimIs.yabanci_diller,d)})} className="accent-orange-500 w-4 h-4"/>{d}
+                  <input type="checkbox" checked={hostesimIs.yabanci_diller.includes(d)} onChange={() => setHostesimIs({ ...hostesimIs, yabanci_diller: toggleArr(hostesimIs.yabanci_diller, d) })} className="accent-orange-500 w-4 h-4" />{d}
                 </label>
               ))}
             </div>
           </div>
-          <div><label className={lb+' mb-2'}>Servis Taşımacılık Deneyimi</label>
+          <div><label className={lb + ' mb-2'}>Servis Taşımacılık Deneyimi</label>
             <div className="flex gap-4">
-              {['var','yok'].map(v=>(
+              {['var', 'yok'].map(v => (
                 <label key={v} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                  <input type="radio" checked={hostesimIs.servis_tasimacilik_deneyimi===v} onChange={()=>setHostesimIs({...hostesimIs,servis_tasimacilik_deneyimi:v})} className="accent-orange-500"/>{v==='var'?'Var':'Yok'}
+                  <input type="radio" checked={hostesimIs.servis_tasimacilik_deneyimi === v} onChange={() => setHostesimIs({ ...hostesimIs, servis_tasimacilik_deneyimi: v })} className="accent-orange-500" />{v === 'var' ? 'Var' : 'Yok'}
                 </label>
               ))}
             </div>
@@ -546,55 +594,55 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">Ehliyet ve Araç Bilgileri</h3>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div><label className={lb}>Sürücü Belgesi</label>
-              <select value={soforumIs.surucubelgesi} onChange={e=>setSoforumIs({...soforumIs,surucubelgesi:e.target.value})} className={ic}>
-                <option value="">Seçin</option>{['B','D','D1','D2','D+E'].map(b=><option key={b} value={b}>{b}</option>)}
+              <select value={soforumIs.surucubelgesi} onChange={e => setSoforumIs({ ...soforumIs, surucubelgesi: e.target.value })} className={ic}>
+                <option value="">Seçin</option>{['B', 'D', 'D1', 'D2', 'D+E'].map(b => <option key={b} value={b}>{b}</option>)}
               </select></div>
-            <div><label className={lb}>Ehliyet Tarihi</label><input type="date" value={soforumIs.ehliyet_alinma_tarihi} onChange={e=>setSoforumIs({...soforumIs,ehliyet_alinma_tarihi:e.target.value})} className={ic}/></div>
-            <div><label className={lb}>SRC Belgeleri</label><input value={soforumIs.sinav_belgeleri} placeholder="SRC2, SRC3" onChange={e=>setSoforumIs({...soforumIs,sinav_belgeleri:e.target.value})} className={ic}/></div>
-            <div><label className={lb}>Doğum Tarihi</label><input type="date" value={soforumIs.dogum_tarihi} onChange={e=>setSoforumIs({...soforumIs,dogum_tarihi:e.target.value})} className={ic}/></div>
-            <div><label className={lb}>Doğum Yeri</label><input value={soforumIs.dogum_yeri} onChange={e=>setSoforumIs({...soforumIs,dogum_yeri:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Ehliyet Tarihi</label><input type="date" value={soforumIs.ehliyet_alinma_tarihi} onChange={e => setSoforumIs({ ...soforumIs, ehliyet_alinma_tarihi: e.target.value })} className={ic} /></div>
+            <div><label className={lb}>SRC Belgeleri</label><input value={soforumIs.sinav_belgeleri} placeholder="SRC2, SRC3" onChange={e => setSoforumIs({ ...soforumIs, sinav_belgeleri: e.target.value })} className={ic} /></div>
+            <div><label className={lb}>Doğum Tarihi</label><input type="date" value={soforumIs.dogum_tarihi} onChange={e => setSoforumIs({ ...soforumIs, dogum_tarihi: e.target.value })} className={ic} /></div>
+            <div><label className={lb}>Doğum Yeri</label><input value={soforumIs.dogum_yeri} onChange={e => setSoforumIs({ ...soforumIs, dogum_yeri: e.target.value })} className={ic} /></div>
           </div>
-          <div className="mb-4"><label className={lb+' mb-2'}>Araç Türü</label>
+          <div className="mb-4"><label className={lb + ' mb-2'}>Araç Türü</label>
             <div className="flex flex-wrap gap-3">
-              {['Minibus','Midibus','Otobus','Van','Otomobil'].map(t=>(
+              {['Minibus', 'Midibus', 'Otobus', 'Van', 'Otomobil'].map(t => (
                 <label key={t} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                  <input type="checkbox" checked={soforumIs.arac_turu.includes(t)} onChange={()=>setSoforumIs({...soforumIs,arac_turu:toggleArr(soforumIs.arac_turu,t)})} className="accent-orange-500 w-4 h-4"/>{t}
+                  <input type="checkbox" checked={soforumIs.arac_turu.includes(t)} onChange={() => setSoforumIs({ ...soforumIs, arac_turu: toggleArr(soforumIs.arac_turu, t) })} className="accent-orange-500 w-4 h-4" />{t}
                 </label>
               ))}
             </div>
           </div>
           <div className="mb-4">
-            <label className={lb+' mb-2'}>Belgeler</label>
+            <label className={lb + ' mb-2'}>Belgeler</label>
             <div className="flex flex-wrap gap-3 mb-3">
-              {['Src','Src1','Src2','Src3','Diğer','Tam Şoför Kart'].map(b=>(
+              {['Src', 'Src1', 'Src2', 'Src3', 'Diğer', 'Tam Şoför Kart'].map(b => (
                 <label key={b} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                  <input type="checkbox" checked={soforumIs.belgeler.includes(b)} onChange={()=>setSoforumIs({...soforumIs,belgeler:toggleArr(soforumIs.belgeler,b)})} className="accent-orange-500 w-4 h-4"/>{b}
+                  <input type="checkbox" checked={soforumIs.belgeler.includes(b)} onChange={() => setSoforumIs({ ...soforumIs, belgeler: toggleArr(soforumIs.belgeler, b) })} className="accent-orange-500 w-4 h-4" />{b}
                 </label>
               ))}
             </div>
-            <label className={lb+' mb-2'}>Yabancı Diller</label>
+            <label className={lb + ' mb-2'}>Yabancı Diller</label>
             <div className="flex flex-wrap gap-3">
-              {dilSecenekleri.map(d=>(
+              {dilSecenekleri.map(d => (
                 <label key={d} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                  <input type="checkbox" checked={soforumIs.yabanci_diller.includes(d)} onChange={()=>setSoforumIs({...soforumIs,yabanci_diller:toggleArr(soforumIs.yabanci_diller,d)})} className="accent-orange-500 w-4 h-4"/>{d}
+                  <input type="checkbox" checked={soforumIs.yabanci_diller.includes(d)} onChange={() => setSoforumIs({ ...soforumIs, yabanci_diller: toggleArr(soforumIs.yabanci_diller, d) })} className="accent-orange-500 w-4 h-4" />{d}
                 </label>
               ))}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             {[
-              {label:'Emekli misiniz?',key:'emekli'},
-              {label:'Mesleki Yeterlilik?',key:'mesleki_yeterlilik'},
-              {label:'Sabıka kaydı?',key:'sabika_kaydi'},
-              {label:'Tam zamanlı?',key:'tam_zamanlimi'},
-              {label:'Servis Deneyimi?',key:'servis_tasimacilik_deneyimi'},
-              {label:'Başka işe gider?',key:'baska_ise_gider_misiniz'},
-            ].map(item=>(
-              <div key={item.key}><label className={lb+' mb-2'}>{item.label}</label>
+              { label: 'Emekli misiniz?', key: 'emekli' },
+              { label: 'Mesleki Yeterlilik?', key: 'mesleki_yeterlilik' },
+              { label: 'Sabıka kaydı?', key: 'sabika_kaydi' },
+              { label: 'Tam zamanlı?', key: 'tam_zamanlimi' },
+              { label: 'Servis Deneyimi?', key: 'servis_tasimacilik_deneyimi' },
+              { label: 'Başka işe gider?', key: 'baska_ise_gider_misiniz' },
+            ].map(item => (
+              <div key={item.key}><label className={lb + ' mb-2'}>{item.label}</label>
                 <div className="flex gap-3">
-                  {['Evet','Hayır'].map(v=>(
+                  {['Evet', 'Hayır'].map(v => (
                     <label key={v} className="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer">
-                      <input type="radio" checked={(soforumIs as any)[item.key]===v.toLowerCase().replace('ı','i')} onChange={()=>setSoforumIs({...soforumIs,[item.key]:v.toLowerCase().replace('ı','i')})} className="accent-orange-500"/>{v}
+                      <input type="radio" checked={(soforumIs as any)[item.key] === v.toLowerCase().replace('ı', 'i')} onChange={() => setSoforumIs({ ...soforumIs, [item.key]: v.toLowerCase().replace('ı', 'i') })} className="accent-orange-500" />{v}
                     </label>
                   ))}
                 </div>
@@ -609,18 +657,18 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">Plaka Bilgileri (Gizlenecektir)</h3>
           <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <input value={plakaSatiyorum.plaka_il} placeholder="34" maxLength={2} onChange={e=>setPlakaSatiyorum({...plakaSatiyorum,plaka_il:e.target.value})} className="w-16 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400"/>
-            <input value={plakaSatiyorum.plaka_harf} placeholder="LAL" maxLength={3} onChange={e=>setPlakaSatiyorum({...plakaSatiyorum,plaka_harf:e.target.value.toUpperCase()})} className="w-20 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400"/>
-            <input value={plakaSatiyorum.plaka_no} placeholder="454" maxLength={4} onChange={e=>setPlakaSatiyorum({...plakaSatiyorum,plaka_no:e.target.value})} className="w-20 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400"/>
+            <input value={plakaSatiyorum.plaka_il} placeholder="34" maxLength={2} onChange={e => setPlakaSatiyorum({ ...plakaSatiyorum, plaka_il: e.target.value })} className="w-16 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            <input value={plakaSatiyorum.plaka_harf} placeholder="LAL" maxLength={3} onChange={e => setPlakaSatiyorum({ ...plakaSatiyorum, plaka_harf: e.target.value.toUpperCase() })} className="w-20 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            <input value={plakaSatiyorum.plaka_no} placeholder="454" maxLength={4} onChange={e => setPlakaSatiyorum({ ...plakaSatiyorum, plaka_no: e.target.value })} className="w-20 border border-slate-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400" />
             <div className="flex items-center gap-2">
-              <input type="number" value={plakaSatiyorum.ucret} placeholder="1.000.000" onChange={e=>setPlakaSatiyorum({...plakaSatiyorum,ucret:e.target.value})} className="w-36 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"/>
+              <input type="number" value={plakaSatiyorum.ucret} placeholder="1.000.000" onChange={e => setPlakaSatiyorum({ ...plakaSatiyorum, ucret: e.target.value })} className="w-36 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
               <span className="text-sm text-slate-500 font-medium">TL</span>
             </div>
           </div>
           <div className="flex flex-wrap gap-4">
-            {[{key:'aracla_birlikte',label:'Araçla Birlikte'},{key:'yol_belgesi_var',label:'Yol Belgesi Var'},{key:'noter_satisi',label:'Noter Satışı'},{key:'hisseli',label:'Hisseli'}].map(item=>(
+            {[{ key: 'aracla_birlikte', label: 'Araçla Birlikte' }, { key: 'yol_belgesi_var', label: 'Yol Belgesi Var' }, { key: 'noter_satisi', label: 'Noter Satışı' }, { key: 'hisseli', label: 'Hisseli' }].map(item => (
               <label key={item.key} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                <input type="checkbox" checked={(plakaSatiyorum as any)[item.key]} onChange={e=>setPlakaSatiyorum({...plakaSatiyorum,[item.key]:e.target.checked})} className="accent-orange-500 w-4 h-4"/>{item.label}
+                <input type="checkbox" checked={(plakaSatiyorum as any)[item.key]} onChange={e => setPlakaSatiyorum({ ...plakaSatiyorum, [item.key]: e.target.checked })} className="accent-orange-500 w-4 h-4" />{item.label}
               </label>
             ))}
           </div>
@@ -633,33 +681,33 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">Araç Bilgileri</h3>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div><label className={lb}>Marka</label>
-              <select value={aracimiSatiyorum.marka} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,marka:e.target.value})} className={ic}>
-                <option value="">Seçin</option>{markalar.map(m=><option key={m} value={m}>{m}</option>)}
+              <select value={aracimiSatiyorum.marka} onChange={e => setAracimiSatiyorum({ ...aracimiSatiyorum, marka: e.target.value })} className={ic}>
+                <option value="">Seçin</option>{markalar.map(m => <option key={m} value={m}>{m}</option>)}
               </select></div>
-            <div><label className={lb}>Model</label><input value={aracimiSatiyorum.model} placeholder="Sprinter, Ducato..." onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,model:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Model</label><input value={aracimiSatiyorum.model} placeholder="Sprinter, Ducato..." onChange={e => setAracimiSatiyorum({ ...aracimiSatiyorum, model: e.target.value })} className={ic} /></div>
             <div><label className={lb}>Yıl</label>
-              <select value={aracimiSatiyorum.yil} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,yil:e.target.value})} className={ic}>
-                <option value="">Seçin</option>{Array.from({length:20},(_,i)=>2025-i).map(y=><option key={y} value={y}>{y}</option>)}
+              <select value={aracimiSatiyorum.yil} onChange={e => setAracimiSatiyorum({ ...aracimiSatiyorum, yil: e.target.value })} className={ic}>
+                <option value="">Seçin</option>{Array.from({ length: 20 }, (_, i) => 2025 - i).map(y => <option key={y} value={y}>{y}</option>)}
               </select></div>
-            <div><label className={lb}>Plaka (Gizlenecektir)</label><input value={aracimiSatiyorum.plaka} placeholder="34 ABC 123" onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,plaka:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>Plaka (Gizlenecektir)</label><input value={aracimiSatiyorum.plaka} placeholder="34 ABC 123" onChange={e => setAracimiSatiyorum({ ...aracimiSatiyorum, plaka: e.target.value })} className={ic} /></div>
             <div><label className={lb}>Koltuk Sayısı</label>
-              <select value={aracimiSatiyorum.koltuk_sayisi} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,koltuk_sayisi:e.target.value})} className={ic}>
-                <option value="">Seçin</option>{['4+1','8+1','14+1','16+1','27+1','36+1','45+1'].map(k=><option key={k} value={k}>{k}</option>)}
+              <select value={aracimiSatiyorum.koltuk_sayisi} onChange={e => setAracimiSatiyorum({ ...aracimiSatiyorum, koltuk_sayisi: e.target.value })} className={ic}>
+                <option value="">Seçin</option>{['4+1', '8+1', '14+1', '16+1', '27+1', '36+1', '45+1'].map(k => <option key={k} value={k}>{k}</option>)}
               </select></div>
             <div><label className={lb}>Araç Tipi</label>
-              <select value={aracimiSatiyorum.arac_tipi} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,arac_tipi:e.target.value})} className={ic}>
-                <option value="">Seçin</option>{['Minibus','Midibus','Otobus','Van','Sedan'].map(t=><option key={t} value={t}>{t}</option>)}
+              <select value={aracimiSatiyorum.arac_tipi} onChange={e => setAracimiSatiyorum({ ...aracimiSatiyorum, arac_tipi: e.target.value })} className={ic}>
+                <option value="">Seçin</option>{['Minibus', 'Midibus', 'Otobus', 'Van', 'Sedan'].map(t => <option key={t} value={t}>{t}</option>)}
               </select></div>
-            <div><label className={lb}>KM</label><input type="number" value={aracimiSatiyorum.km} placeholder="150000" onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,km:e.target.value})} className={ic}/></div>
-            <div><label className={lb}>Fiyat (TL)</label><input type="number" value={aracimiSatiyorum.ucret} placeholder="1200000" onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,ucret:e.target.value})} className={ic}/></div>
+            <div><label className={lb}>KM</label><input type="number" value={aracimiSatiyorum.km} placeholder="150000" onChange={e => setAracimiSatiyorum({ ...aracimiSatiyorum, km: e.target.value })} className={ic} /></div>
+            <div><label className={lb}>Fiyat (TL)</label><input type="number" value={aracimiSatiyorum.ucret} placeholder="1200000" onChange={e => setAracimiSatiyorum({ ...aracimiSatiyorum, ucret: e.target.value })} className={ic} /></div>
             <div><label className={lb}>Hasar Kaydı</label>
-              <select value={aracimiSatiyorum.hasar_kaydi} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,hasar_kaydi:e.target.value})} className={ic}>
+              <select value={aracimiSatiyorum.hasar_kaydi} onChange={e => setAracimiSatiyorum({ ...aracimiSatiyorum, hasar_kaydi: e.target.value })} className={ic}>
                 <option value="yok">Yok</option><option value="var">Var</option>
               </select></div>
           </div>
           <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer"><input type="checkbox" checked={aracimiSatiyorum.noter_satisi} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,noter_satisi:e.target.checked})} className="accent-orange-500 w-4 h-4"/>Noter Satışı</label>
-            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer"><input type="checkbox" checked={aracimiSatiyorum.aracla_birlikte_plaka} onChange={e=>setAracimiSatiyorum({...aracimiSatiyorum,aracla_birlikte_plaka:e.target.checked})} className="accent-orange-500 w-4 h-4"/>Plakayla Birlikte</label>
+            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer"><input type="checkbox" checked={aracimiSatiyorum.noter_satisi} onChange={e => setAracimiSatiyorum({ ...aracimiSatiyorum, noter_satisi: e.target.checked })} className="accent-orange-500 w-4 h-4" />Noter Satışı</label>
+            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer"><input type="checkbox" checked={aracimiSatiyorum.aracla_birlikte_plaka} onChange={e => setAracimiSatiyorum({ ...aracimiSatiyorum, aracla_birlikte_plaka: e.target.checked })} className="accent-orange-500 w-4 h-4" />Plakayla Birlikte</label>
           </div>
         </div>
       )}
@@ -669,7 +717,7 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
         <ResimYukleme resimler={resimler} onEkle={handleResimEkle} onSil={handleResimSil} />
       )}
 
-      {/* KONUM (güzergahsız kategoriler - güzergah bölümü yoktur) */}
+      {/* KONUM */}
       {KONUMLU_KATEGORILER.includes(kategori) && (
         <div className="border border-slate-200 rounded-xl p-4">
           <h3 className="font-semibold text-slate-700 mb-1 text-sm">Konum Bilgisi</h3>
@@ -731,26 +779,26 @@ function AracDuzenleModal({ arac, onKaydet, onKapat }: {
         <div className="p-5 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><label className={lb}>Marka</label>
-              <select value={form.marka} onChange={e=>setForm({...form,marka:e.target.value})} className={ic}>
-                <option value="">Seçin</option>{markalar.map(m=><option key={m} value={m}>{m}</option>)}
+              <select value={form.marka} onChange={e => setForm({ ...form, marka: e.target.value })} className={ic}>
+                <option value="">Seçin</option>{markalar.map(m => <option key={m} value={m}>{m}</option>)}
               </select></div>
             <div><label className={lb}>Model</label>
-              <input value={form.model} onChange={e=>setForm({...form,model:e.target.value})} placeholder="Sprinter, Transit..." className={ic}/></div>
+              <input value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} placeholder="Sprinter, Transit..." className={ic} /></div>
             <div><label className={lb}>Yıl</label>
-              <input value={form.yil} onChange={e=>setForm({...form,yil:e.target.value})} placeholder="2020" className={ic}/></div>
+              <input value={form.yil} onChange={e => setForm({ ...form, yil: e.target.value })} placeholder="2020" className={ic} /></div>
             <div><label className={lb}>Plaka</label>
-              <input value={form.plaka} onChange={e=>setForm({...form,plaka:e.target.value})} placeholder="34 ABC 123" className={ic}/></div>
+              <input value={form.plaka} onChange={e => setForm({ ...form, plaka: e.target.value })} placeholder="34 ABC 123" className={ic} /></div>
             <div><label className={lb}>Koltuk Sayısı</label>
-              <input value={form.koltuk_sayisi} onChange={e=>setForm({...form,koltuk_sayisi:e.target.value})} placeholder="16+1" className={ic}/></div>
+              <input value={form.koltuk_sayisi} onChange={e => setForm({ ...form, koltuk_sayisi: e.target.value })} placeholder="16+1" className={ic} /></div>
             <div><label className={lb}>Araç Tipi</label>
-              <select value={form.arac_tipi} onChange={e=>setForm({...form,arac_tipi:e.target.value})} className={ic}>
-                <option value="">Seçin</option>{aracTipleri.map(t=><option key={t} value={t}>{t}</option>)}
+              <select value={form.arac_tipi} onChange={e => setForm({ ...form, arac_tipi: e.target.value })} className={ic}>
+                <option value="">Seçin</option>{aracTipleri.map(t => <option key={t} value={t}>{t}</option>)}
               </select></div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button onClick={onKapat} className={btnS+' flex-1'}>İptal</button>
-            <button onClick={()=>onKaydet(form)} className={btnO+' flex-1 flex items-center justify-center gap-2'}>
-              <Save size={14}/> Kaydet
+            <button onClick={onKapat} className={btnS + ' flex-1'}>İptal</button>
+            <button onClick={() => onKaydet(form)} className={btnO + ' flex-1 flex items-center justify-center gap-2'}>
+              <Save size={14} /> Kaydet
             </button>
           </div>
         </div>
@@ -914,12 +962,12 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
   const ilceleri = profil.il ? (ilceler[profil.il] || []) : [];
 
   const menuItems = [
-    { id: 'profil',    label: 'Profilim',    icon: User },
-    { id: 'ilanlar',   label: 'İlanlarım',   icon: Eye },
-    { id: 'araclar',   label: 'Araçlarım',   icon: Car },
-    { id: 'mesajlar',  label: 'Mesajlar',    icon: MessageSquare, badge: okunmamisSayi },
+    { id: 'profil', label: 'Profilim', icon: User },
+    { id: 'ilanlar', label: 'İlanlarım', icon: Eye },
+    { id: 'araclar', label: 'Araçlarım', icon: Car },
+    { id: 'mesajlar', label: 'Mesajlar', icon: MessageSquare, badge: okunmamisSayi },
     { id: 'favoriler', label: 'Favorilerim', icon: Heart },
-    { id: 'destek',    label: 'Destek',      icon: HelpCircle },
+    { id: 'destek', label: 'Destek', icon: HelpCircle },
   ];
 
   const sekmeBulunan = menuItems.find(m => m.id === aktifSekme);
@@ -1041,7 +1089,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                 </div>
                 {basari && <div className="mx-4 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">{basari}</div>}
                 {yukleniyor ? (
-                  <div className="p-4 flex flex-col gap-3">{[1,2,3].map(i => <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />)}</div>
+                  <div className="p-4 flex flex-col gap-3">{[1, 2, 3].map(i => <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />)}</div>
                 ) : ilanlar.length === 0 ? (
                   <div className="text-center py-16 text-slate-400"><p className="text-sm font-medium mb-3">Henüz ilanınız yok</p><button onClick={onIlanEkle} className={btnO}>İlan Ver</button></div>
                 ) : (
@@ -1067,14 +1115,14 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                     </div>
                     <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full text-sm">
-                        <thead><tr className="bg-slate-50 border-b border-slate-200">{['İlan','Kategori','Tarih','Durum','İşlem'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500">{h}</th>)}</tr></thead>
+                        <thead><tr className="bg-slate-50 border-b border-slate-200">{['İlan', 'Kategori', 'Tarih', 'Durum', 'İşlem'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500">{h}</th>)}</tr></thead>
                         <tbody>
                           {ilanlar.map(ilan => (
                             <tr key={ilan.id} className="border-b border-slate-50 hover:bg-slate-50 transition">
                               <td className="px-4 py-3"><p className="text-slate-700 font-medium text-sm line-clamp-1 max-w-xs">{ilan.aciklama}</p></td>
-                              <td className="px-4 py-3"><span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full">{ilan.kategori.replace(/_/g,' ')}</span></td>
+                              <td className="px-4 py-3"><span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full">{ilan.kategori.replace(/_/g, ' ')}</span></td>
                               <td className="px-4 py-3 text-slate-400 text-xs">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</td>
-                              <td className="px-4 py-3"><span className={'text-xs font-semibold px-2 py-0.5 rounded-full '+(ilan.durum==='aktif'?'bg-green-100 text-green-700':'bg-slate-100 text-slate-500')}>{ilan.durum==='aktif'?'Aktif':'Pasif'}</span></td>
+                              <td className="px-4 py-3"><span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500')}>{ilan.durum === 'aktif' ? 'Aktif' : 'Pasif'}</span></td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-1">
                                   <button onClick={() => onIlanDetay(ilan)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition"><Eye size={14} /></button>
@@ -1129,7 +1177,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                 )}
                 <div className="p-4 sm:p-5">
                   {yukleniyor ? (
-                    <div className="flex flex-col gap-3">{[1,2].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
+                    <div className="flex flex-col gap-3">{[1, 2].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
                   ) : araclar.length === 0 ? (
                     <div className="text-center py-12 text-slate-400"><Car size={40} className="mx-auto mb-3 opacity-30" /><p className="text-sm font-medium">Henüz araç eklemediniz</p></div>
                   ) : (
@@ -1164,7 +1212,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                 </div>
                 <div className="p-4 sm:p-5">
                   {yukleniyor ? (
-                    <div className="flex flex-col gap-3">{[1,2].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
+                    <div className="flex flex-col gap-3">{[1, 2].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
                   ) : mesajlar.length === 0 ? (
                     <div className="text-center py-12 text-slate-400"><MessageSquare size={40} className="mx-auto mb-3 opacity-30" /><p className="text-sm font-medium">Henüz mesajınız yok</p></div>
                   ) : (
@@ -1197,17 +1245,17 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                 <div className="px-4 sm:px-5 py-4 border-b border-slate-100"><h2 className="font-bold text-slate-800 text-base">Favori İlanlarım</h2></div>
                 <div className="p-4 sm:p-5">
                   {yukleniyor ? (
-                    <div className="flex flex-col gap-3">{[1,2].map(i=><div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse"/>)}</div>
+                    <div className="flex flex-col gap-3">{[1, 2].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
                   ) : favoriler.length === 0 ? (
-                    <div className="text-center py-12 text-slate-400"><Heart size={40} className="mx-auto mb-3 opacity-30"/><p className="text-sm font-medium">Henüz favori ilanınız yok</p></div>
+                    <div className="text-center py-12 text-slate-400"><Heart size={40} className="mx-auto mb-3 opacity-30" /><p className="text-sm font-medium">Henüz favori ilanınız yok</p></div>
                   ) : (
                     <div className="flex flex-col gap-3">
-                      {favoriler.map(fav=>(
+                      {favoriler.map(fav => (
                         <div key={fav.id} className="border border-slate-200 rounded-xl p-4 flex items-center justify-between hover:bg-slate-50 transition">
-                          <div className="min-w-0"><p className="font-semibold text-slate-700 text-sm line-clamp-1">{fav.ilanlar?.aciklama}</p><p className="text-xs text-slate-400 mt-0.5">{fav.ilanlar?.ilan_veren} · {fav.ilanlar?.kategori?.replace(/_/g,' ')}</p></div>
+                          <div className="min-w-0"><p className="font-semibold text-slate-700 text-sm line-clamp-1">{fav.ilanlar?.aciklama}</p><p className="text-xs text-slate-400 mt-0.5">{fav.ilanlar?.ilan_veren} · {fav.ilanlar?.kategori?.replace(/_/g, ' ')}</p></div>
                           <div className="flex items-center gap-1 flex-shrink-0 ml-3">
-                            <button onClick={()=>onIlanDetay(fav.ilanlar)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition"><Eye size={14}/></button>
-                            <button onClick={()=>handleFavoriKaldir(fav.ilan_id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"><Heart size={14}/></button>
+                            <button onClick={() => onIlanDetay(fav.ilanlar)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition"><Eye size={14} /></button>
+                            <button onClick={() => handleFavoriKaldir(fav.ilan_id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"><Heart size={14} /></button>
                           </div>
                         </div>
                       ))}
@@ -1231,8 +1279,8 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
                 ) : (
                   <div className="flex flex-col gap-3">
                     {hata && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">{hata}</div>}
-                    <div><label className="text-xs font-semibold text-slate-500 mb-1 block">Konu</label><input className={ic} value={destekForm.konu} placeholder="Destek konusu" onChange={e=>setDestekForm({...destekForm,konu:e.target.value})}/></div>
-                    <div><label className="text-xs font-semibold text-slate-500 mb-1 block">Mesaj</label><textarea className={ic+' resize-none'} value={destekForm.mesaj} placeholder="Mesajınızı yazın..." rows={5} onChange={e=>setDestekForm({...destekForm,mesaj:e.target.value})}/></div>
+                    <div><label className="text-xs font-semibold text-slate-500 mb-1 block">Konu</label><input className={ic} value={destekForm.konu} placeholder="Destek konusu" onChange={e => setDestekForm({ ...destekForm, konu: e.target.value })} /></div>
+                    <div><label className="text-xs font-semibold text-slate-500 mb-1 block">Mesaj</label><textarea className={ic + ' resize-none'} value={destekForm.mesaj} placeholder="Mesajınızı yazın..." rows={5} onChange={e => setDestekForm({ ...destekForm, mesaj: e.target.value })} /></div>
                     <button onClick={handleDestekGonder} className={btnO}>Gönder</button>
                   </div>
                 )}
