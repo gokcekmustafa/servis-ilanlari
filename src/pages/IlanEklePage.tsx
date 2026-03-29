@@ -114,7 +114,7 @@ function ResimYukleme({ resimler, onEkle, onSil, onDegistir }: {
     <div className="border border-slate-200 rounded-xl p-4 md:p-5">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="font-semibold text-slate-700">Arac Fotograflari</h3>
+          <h3 className="font-semibold text-slate-700">Fotograf Ekle</h3>
           <p className="text-xs text-slate-400 mt-0.5">En fazla {MAX_RESIM} fotograf · JPEG, PNG, WEBP</p>
         </div>
         <span className={`text-xs font-bold px-2 py-1 rounded-lg ${resimler.length >= MAX_RESIM ? 'bg-red-50 text-red-500' : 'bg-slate-100 text-slate-500'}`}>
