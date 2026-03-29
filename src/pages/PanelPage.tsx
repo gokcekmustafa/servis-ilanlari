@@ -20,8 +20,9 @@ type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'favoriler' | 'dest
 type PanelPageProps = {
   onLogout: () => void;
   onIlanEkle: () => void;
-  onIlanDetay: (ilan: Ilan) => void;
+  onIlanDetay: (ilan: Ilan, sekme?: string) => void;
   userId: string;
+  baslangicSekme?: string;
 };
 
 const MARKA_MODELLER: Record<string, string[]> = {
@@ -808,8 +809,8 @@ function AracDuzenleModal({ arac, onKaydet, onKapat }: {
 }
 
 // ─── Ana Bileşen ──────────────────────────────────────────────────────────────
-export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }: PanelPageProps) {
-  const [aktifSekme, setAktifSekme] = useState<Sekme>('profil');
+export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId, baslangicSekme = 'profil' }: PanelPageProps) {
+  const [aktifSekme, setAktifSekme] = useState<Sekme>((baslangicSekme as Sekme) || 'profil');
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [araclar, setAraclar] = useState<any[]>([]);
   const [favoriler, setFavoriler] = useState<any[]>([]);
@@ -1332,7 +1333,7 @@ const handleNotSil = (ilanId: string) => {
       >
         <Pencil size={14} />
       </button>
-      <button onClick={() => onIlanDetay(fav.ilanlar)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition"><Eye size={14} /></button>
+      <button onClick={() => onIlanDetay(fav.ilanlar, 'favoriler')} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition"><Eye size={14} /></button>
       <button onClick={() => handleFavoriKaldir(fav.ilan_id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"><Heart size={14} /></button>
     </div>
   </div>
