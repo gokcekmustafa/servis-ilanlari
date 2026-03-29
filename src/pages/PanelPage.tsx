@@ -372,7 +372,8 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
               ))}
             </div>
           </div>
-       )}
+        </div>
+      )}
       {kategori === 'isim_var_arac' && (
   <div className="border border-slate-200 rounded-xl p-4">
     <div className="flex items-center justify-between mb-3">
