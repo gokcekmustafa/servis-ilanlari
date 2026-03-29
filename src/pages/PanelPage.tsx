@@ -24,6 +24,26 @@ type PanelPageProps = {
   userId: string;
 };
 
+const MARKA_MODELLER: Record<string, string[]> = {
+  'Mercedes': ['Sprinter', 'Vito', 'V-Class', 'Tourismo', 'Travego', 'Citaro'],
+  'Fiat': ['Ducato', 'Doblo', 'Scudo'],
+  'Ford': ['Transit', 'Transit Custom', 'Tourneo'],
+  'Volkswagen': ['Crafter', 'Transporter', 'Caravelle'],
+  'Renault': ['Master', 'Trafic', 'Kangoo'],
+  'Peugeot': ['Boxer', 'Expert', 'Traveller'],
+  'Citroen': ['Jumper', 'Jumpy', 'SpaceTourer'],
+  'Iveco': ['Daily', 'Crossway', 'Evadys'],
+  'Temsa': ['MD9', 'Maraton', 'Safari', 'Avenue', 'Opalin'],
+  'Isuzu': ['Novo', 'Turquoise', 'Citiport', 'Visigo'],
+  'Toyota': ['HiAce', 'Proace'],
+  'Hyundai': ['H350', 'Solati', 'County', 'Universe'],
+  'MAN': ["Lion's City", "Lion's Coach", 'TGE'],
+  'Scania': ['Touring', 'Interlink', 'OmniCity'],
+  'Volvo': ['9700', '9900', 'B8R'],
+  'Karsan': ['Jest', 'Atak', 'e-ATAK'],
+  'Neoplan': ['Cityliner', 'Tourliner', 'Skyliner'],
+  'Opel': ['Movano', 'Vivaro', 'Combo'],
+};
 const iller = Object.keys(ilceler).sort();
 const aracTipleri = ['Minibus 16+1', 'Midibus 27+1', 'Otobüs 45+1', 'Sedan', 'Van'];
 const markalar = ['Mercedes', 'Fiat', 'Ford', 'Volkswagen', 'Renault', 'Peugeot', 'Citroen', 'Iveco', 'Temsa', 'Isuzu'];
@@ -338,15 +358,15 @@ function DuzenleIcerik({ ilan, onKaydet, onKapat }: {
           <h3 className="font-semibold text-slate-700 mb-4 text-sm">Araç Bilgileri</h3>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div><label className={lb}>Araç Markası</label>
-              <select value={isimVarArac.arac_markasi} onChange={e => setIsimVarArac({...isimVarArac,arac_markasi:e.target.value})} className={ic}>
-                <option value="">Seçin</option><option value="farketmez">Farketmez</option>
-                {markalar.map(m=><option key={m} value={m}>{m}</option>)}
-              </select></div>
+              <select value={isimVarArac.arac_markasi} onChange={e => setIsimVarArac({...isimVarArac, arac_markasi: e.target.value, model: ''})} className={ic}>
+  <option value="">Seçin</option><option value="farketmez">Farketmez</option>
+  {Object.keys(MARKA_MODELLER).map(m=><option key={m} value={m}>{m}</option>)}
+</select>
             <div><label className={lb}>Model</label>
-              <select value={isimVarArac.model} onChange={e => setIsimVarArac({...isimVarArac,model:e.target.value})} className={ic}>
-                <option value="">Seçin</option><option value="farketmez">Farketmez</option>
-                {['Sprinter','Ducato','Transit','Crafter','Jumper','Boxer','Daily','Minibus'].map(m=><option key={m} value={m}>{m}</option>)}
-              </select></div>
+              <select value={isimVarArac.model} onChange={e => setIsimVarArac({...isimVarArac, model: e.target.value})} disabled={!isimVarArac.arac_markasi || isimVarArac.arac_markasi === 'farketmez'} className={ic + ' disabled:bg-slate-50 disabled:text-slate-400'}>
+  <option value="">Seçin</option><option value="farketmez">Farketmez</option>
+  {(MARKA_MODELLER[isimVarArac.arac_markasi] || []).map(m=><option key={m} value={m}>{m}</option>)}
+</select>
             <div><label className={lb}>Araç Yılı</label>
               <select value={isimVarArac.arac_yili} onChange={e => setIsimVarArac({...isimVarArac,arac_yili:e.target.value})} className={ic}>
                 <option value="">Seçin</option><option value="farketmez">Farketmez</option>
