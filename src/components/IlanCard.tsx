@@ -133,7 +133,7 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn }: IlanC
   const [isFavori, setIsFavori] = useState(false);
 
   // Resim gösteren kategoriler
-  const resimliKategori = ilan.kategori === 'aracimi_satiyorum' || ilan.kategori === 'aracim_var_is';
+  const resimliKategori = ilan.kategori === 'aracimi_satiyorum' || ilan.kategori === 'aracim_var_is' || ilan.kategori === 'hostesim_is' || ilan.kategori === 'soforum_is';
   const resimler: string[] = ekBilgi.resimler || [];
 
   useEffect(() => {
