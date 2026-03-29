@@ -852,12 +852,14 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                       <p className="text-xs text-slate-400">Maks 20MB, JPEG/PNG/GIF</p>
                     </div>
                   </div>
-  <div className="flex gap-3">
+                )}
+
+                <div className="flex gap-3">
                   <button onClick={() => setAdimVeKaydet(1)} className="flex-1 border border-slate-200 hover:border-slate-300 text-slate-600 py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"><ArrowLeft size={15} /> Geri</button>
                   <button onClick={handleAdim2} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2">Önizleme <ArrowRight size={15} /></button>
                 </div>
+
               </div>
-            )}
             )}
 
             {/* ADIM 3 */}
