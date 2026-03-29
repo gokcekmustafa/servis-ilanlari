@@ -289,14 +289,20 @@ if (kompakt) return (
                 </button>
               )}
             </div>
-            {ilan.aciklama && (
-              {/* BAŞLIK — açıklama yerine */}
+            {/* BAŞLIK — açıklama yerine */}
 {ilan.baslik ? (
   <p className={`text-sm font-semibold line-clamp-2 leading-snug ${goruldu ? 'text-purple-700' : 'text-[#1a3c6e]'}`}>
     {ilan.baslik}
   </p>
 ) : (
   <p className="text-xs text-gray-400 italic">Başlık girilmemiş</p>
+)}
+{/* Araç bilgileri özeti (aracimi_satiyorum için) */}
+{ilan.kategori === 'aracimi_satiyorum' && (ekBilgi.marka || ekBilgi.model || ekBilgi.yil) && (
+  <p className="text-xs text-gray-500 mt-1 font-medium">
+    {[ekBilgi.marka, ekBilgi.model, ekBilgi.yil].filter(Boolean).join(' · ')}
+    {ekBilgi.km && <span className="text-gray-400"> · {Number(ekBilgi.km).toLocaleString('tr-TR')} km</span>}
+  </p>
 )}
             {/* Araç bilgileri özeti (aracimi_satiyorum için) */}
             {ilan.kategori === 'aracimi_satiyorum' && (ekBilgi.marka || ekBilgi.model || ekBilgi.yil) && (
