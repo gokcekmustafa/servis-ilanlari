@@ -1205,7 +1205,6 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId }:
     </select>
   </div>
 </div>
-                    </div>
                     <div className="flex gap-2">
                       <button onClick={() => setAracFormAcik(false)} className={btnS + ' flex-1'}>İptal</button>
                       <button onClick={handleAracEkle} className={btnO + ' flex-1'}>Kaydet</button>
