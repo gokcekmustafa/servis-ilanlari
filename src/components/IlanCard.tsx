@@ -202,9 +202,40 @@ const [hover, setHover] = useState(false);
 {/* KOMPAKT GÖRÜNÜM */}
 if (kompakt) return (
   <div
+    onMouseEnter={() => setHover(true)}
+    onMouseLeave={() => setHover(false)}
     onClick={() => onDetay(ilan)}
-    className="bg-white border border-gray-200 hover:border-[#f7971e] hover:shadow-sm transition-all duration-150 cursor-pointer rounded overflow-hidden flex items-center gap-0"
+    className={`relative bg-white border border-gray-200 hover:border-[#f7971e] hover:shadow-sm transition-all duration-150 cursor-pointer rounded overflow-hidden flex items-center gap-0 ${gizli ? 'opacity-40 grayscale' : ''}`}
   >
+    {/* GİZLE BUTONU */}
+    {!gizli && hover && (
+      <div className="absolute top-1 right-1 z-10 group/gizle">
+        <button
+          onClick={(e) => { e.stopPropagation(); setGizli(true); }}
+          className="w-5 h-5 rounded-full bg-gray-600/70 hover:bg-red-500 text-white flex items-center justify-center transition-all duration-150"
+          title="Bu ilanla ilgilenmiyorum, gizle."
+        >
+          <X size={10} />
+        </button>
+        <div className="absolute right-0 top-6 bg-gray-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/gizle:opacity-100 transition-opacity pointer-events-none">
+          Bu ilanla ilgilenmiyorum, gizle.
+        </div>
+      </div>
+    )}
+
+    {/* GÖSTER BUTONU */}
+    {gizli && (
+      <div className="absolute top-1 right-1 z-10">
+        <button
+          onClick={(e) => { e.stopPropagation(); setGizli(false); }}
+          className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700/80 hover:bg-gray-900 text-white text-[10px] font-semibold transition"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Göster
+        </button>
+      </div>
+    )}
+
     {/* Sol renkli şerit */}
     <div className={`${config.bg} w-1 self-stretch flex-shrink-0`} />
 
