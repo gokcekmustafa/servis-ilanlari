@@ -286,67 +286,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
     setSeciliPersonel(p);
     setPersonelForm({ full_name: p.full_name, phone_number: p.phone_number, password: '', aktif: p.aktif ?? true, yetkiler: { ...Object.fromEntries(Object.keys(PERSONEL_YETKI_TANIM).map(k => [k, false])), ...(p.yetkiler || {}) } as PersonelYetkiler });
     setPersonelFormAcik(true);
-{/* ─── LOGO YÖNETİMİ ─── */}
-          {!yukleniyor && aktifSekme === 'logo' && (
-            !isSuperAdmin ? <YetkisizUyari sekme="Logo Yönetimi" /> : (
-            <div className="max-w-lg">
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
-                <p className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                  <Image size={15} className="text-orange-500" /> Platform Logosu
-                </p>
-                <p className="text-xs text-slate-400 mb-4">
-                  Yüklediğiniz logo, sitenin header bölümünde araç ikonu yerine görünecektir.
-                </p>
 
-                {/* Mevcut logo önizleme */}
-                <div className="mb-4">
-                  <p className="text-xs font-medium text-slate-500 mb-2">Mevcut Logo</p>
-                  {platformLogo ? (
-                    <div className="relative inline-block">
-                      <img src={platformLogo} alt="Platform Logo" className="h-16 w-auto object-contain border border-slate-200 rounded-lg p-2 bg-white" />
-                      <button
-                        onClick={async () => {
-                          await supabase.from('ayarlar').delete().eq('anahtar', 'platform_logo');
-                          setPlatformLogo('');
-                        }}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
-                      >×</button>
-                    </div>
-                  ) : (
-                    <div className="h-16 w-32 bg-slate-50 border border-dashed border-slate-200 rounded-lg flex items-center justify-center">
-                      <span className="text-xs text-slate-300">Logo yok</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Yeni logo yükleme */}
-                <div
-                  onClick={() => document.getElementById('logo-input')?.click()}
-                  className="border-2 border-dashed border-slate-200 hover:border-orange-300 hover:bg-orange-50 rounded-xl p-8 text-center cursor-pointer transition"
-                >
-                  {logoYukleniyor ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                      <p className="text-xs text-slate-400">Yükleniyor...</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <Image size={24} className="text-slate-300" />
-                      <p className="text-sm text-slate-500 font-medium">Logo yüklemek için tıkla</p>
-                      <p className="text-xs text-slate-400">PNG, JPG, SVG · Şeffaf arka plan önerilir</p>
-                    </div>
-                  )}
-                  <input id="logo-input" type="file" accept="image/*" className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) logoYukle(f); e.target.value = ''; }} />
-                </div>
-
-                {platformLogo && (
-                  <p className="text-xs text-green-600 mt-3 font-medium text-center">✓ Logo aktif — header'da görünüyor</p>
-                )}
-              </div>
-            </div>
-            )
-          )}
   };
 
   // ─── STILLER ────────────────────────────────────────────────────────────────
@@ -1015,6 +955,63 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+            )
+          )}
+
+          {/* ─── LOGO YÖNETİMİ ─── */}
+          {!yukleniyor && aktifSekme === 'logo' && (
+            !isSuperAdmin ? <YetkisizUyari sekme="Logo Yönetimi" /> : (
+            <div className="max-w-lg">
+              <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <p className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                  <Image size={15} className="text-orange-500" /> Platform Logosu
+                </p>
+                <p className="text-xs text-slate-400 mb-4">
+                  Yüklediğiniz logo, sitenin header bölümünde araç ikonu yerine görünecektir.
+                </p>
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-slate-500 mb-2">Mevcut Logo</p>
+                  {platformLogo ? (
+                    <div className="relative inline-block">
+                      <img src={platformLogo} alt="Platform Logo" className="h-16 w-auto object-contain border border-slate-200 rounded-lg p-2 bg-white" />
+                      <button
+                        onClick={async () => {
+                          await supabase.from('ayarlar').delete().eq('anahtar', 'platform_logo');
+                          setPlatformLogo('');
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                      >×</button>
+                    </div>
+                  ) : (
+                    <div className="h-16 w-32 bg-slate-50 border border-dashed border-slate-200 rounded-lg flex items-center justify-center">
+                      <span className="text-xs text-slate-300">Logo yok</span>
+                    </div>
+                  )}
+                </div>
+                <div
+                  onClick={() => document.getElementById('logo-input')?.click()}
+                  className="border-2 border-dashed border-slate-200 hover:border-orange-300 hover:bg-orange-50 rounded-xl p-8 text-center cursor-pointer transition"
+                >
+                  {logoYukleniyor ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                      <p className="text-xs text-slate-400">Yükleniyor...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <Image size={24} className="text-slate-300" />
+                      <p className="text-sm text-slate-500 font-medium">Logo yüklemek için tıkla</p>
+                      <p className="text-xs text-slate-400">PNG, JPG, SVG · Şeffaf arka plan önerilir</p>
+                    </div>
+                  )}
+                  <input id="logo-input" type="file" accept="image/*" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) logoYukle(f); e.target.value = ''; }} />
+                </div>
+                {platformLogo && (
+                  <p className="text-xs text-green-600 mt-3 font-medium text-center">✓ Logo aktif — header'da görünüyor</p>
+                )}
               </div>
             </div>
             )
