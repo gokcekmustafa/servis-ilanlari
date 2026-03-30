@@ -972,7 +972,7 @@ const handleMesajCevapla = async () => {
 const handleMesajSil = async (mesajId: string) => {
   if (!confirm('Bu mesajı silmek istediğinizden emin misiniz?')) return;
 
-  const { error } = await mesajSil(mesajId);
+  const { error } = await mesajSil(mesajId, userId);
   if (!error) {
     setMesajlar(prev => prev.filter(m => m.id !== mesajId));
   }
