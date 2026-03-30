@@ -3,6 +3,7 @@ import { Calendar, User, Bus, ArrowLeft, Heart, MessageSquare, MapPin, Clock, Ta
 import { Ilan, KategoriType } from '../types';
 import { favoriEkle, favoriKaldir, favoriKontrol, mesajGonder } from '../lib/ilanlar';
 import { mevcutKullanici } from '../lib/auth';
+import { mesajGecmisiniGetir } from '../lib/ilanlar';
 
 type IlanDetayPageProps = {
   ilan: Ilan;
@@ -199,6 +200,100 @@ function ResimGalerisi({ resimler }: { resimler: string[] }) {
 }
 
 // ─── Ana Bileşen ──────────────────────────────────────────────────────────────
+type IletisimProps = {
+  isLoggedIn: boolean;
+  mesajGonderildi: boolean;
+  mesajFormuAcik: boolean;
+  mesajMetni: string;
+  yukleniyor: boolean;
+  kendiIlani: boolean;
+  isFavori: boolean;
+  ilanVeren: string;
+  telefon?: string;
+  onGoLogin: () => void;
+  onMesajMetniDegis: (v: string) => void;
+  onMesajGonder: () => void;
+  onFormAc: () => void;
+  onFormKapat: () => void;
+  onFavori: () => void;
+};
+
+function IletisimIcerik({
+  isLoggedIn, mesajGonderildi, mesajFormuAcik, mesajMetni,
+  yukleniyor, kendiIlani, isFavori, ilanVeren, telefon,
+  onGoLogin, onMesajMetniDegis, onMesajGonder, onFormAc, onFormKapat, onFavori
+}: IletisimProps) {
+  if (!isLoggedIn) return (
+    <div className="text-center py-2">
+      <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-3">
+        <MessageSquare size={20} className="text-orange-400" />
+      </div>
+      <p className="text-slate-500 text-sm mb-4 leading-relaxed">
+        İlan sahibiyle iletişime geçmek için giriş yapmanız gerekiyor.
+      </p>
+      <button onClick={onGoLogin} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition">
+        Giriş Yap
+      </button>
+    </div>
+  );
+
+  if (mesajGonderildi) return (
+    <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+        <span className="text-green-600 text-lg">✓</span>
+      </div>
+      <p className="text-green-700 text-sm font-medium">Mesaj Gönderildi</p>
+      <p className="text-green-600 text-xs mt-1">İlan sahibi en kısa sürede size dönecek.</p>
+    </div>
+  );
+
+  if (mesajFormuAcik) return (
+    <div className="flex flex-col gap-3">
+      <textarea
+        value={mesajMetni}
+        onChange={e => onMesajMetniDegis(e.target.value)}
+        placeholder="Mesajınızı yazın..."
+        rows={5}
+        autoFocus
+        className="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+      />
+      <button onClick={onMesajGonder} disabled={yukleniyor || !mesajMetni.trim()}
+        className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition disabled:opacity-50">
+        {yukleniyor ? 'Gönderiliyor...' : 'Gönder'}
+      </button>
+      <button onClick={onFormKapat}
+        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-medium text-sm transition">
+        İptal
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="bg-slate-50 rounded-xl p-3 text-center">
+        <p className="text-xs text-slate-400 mb-0.5">İlan Veren</p>
+        <p className="text-sm font-semibold text-slate-700">{ilanVeren}</p>
+        {telefon && <p className="text-sm font-bold text-orange-600 mt-1">{telefon}</p>}
+      </div>
+      {kendiIlani ? (
+        <div className="w-full bg-slate-100 text-slate-400 py-3 rounded-xl text-sm text-center">Bu sizin ilanınız</div>
+      ) : (
+        <button onClick={onFormAc}
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2">
+          <MessageSquare size={15} /> Mesaj Gönder
+        </button>
+      )}
+      {!kendiIlani && (
+        <button onClick={onFavori}
+          className={'w-full py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2 border ' +
+            (isFavori ? 'bg-red-50 border-red-200 text-red-500' : 'bg-white border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-400')}>
+          <Heart size={15} className={isFavori ? 'fill-red-500' : ''} />
+          {isFavori ? 'Favorilerden Kaldır' : 'Favoriye Ekle'}
+        </button>
+      )}
+    </div>
+  );
+}
 export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, tumIlanlar }: IlanDetayPageProps) {
   const badge = kategoriBadge[ilan.kategori];
   const user = mevcutKullanici();
@@ -254,72 +349,6 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
       setIletisimAcik(false);
     }
   };
-
-  const IletisimIcerik = () => (
-    <>
-      {!isLoggedIn ? (
-        <div className="text-center py-2">
-          <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-3">
-            <MessageSquare size={20} className="text-orange-400" />
-          </div>
-          <p className="text-slate-500 text-sm mb-4 leading-relaxed">
-            İlan sahibiyle iletişime geçmek için giriş yapmanız gerekiyor.
-          </p>
-          <button onClick={onGoLogin} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition">
-            Giriş Yap
-          </button>
-        </div>
-      ) : mesajGonderildi ? (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
-          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <span className="text-green-600 text-lg">✓</span>
-          </div>
-          <p className="text-green-700 text-sm font-medium">Mesaj Gönderildi</p>
-          <p className="text-green-600 text-xs mt-1">İlan sahibi en kısa sürede size dönecek.</p>
-        </div>
-      ) : mesajFormuAcik ? (
-        <div className="flex flex-col gap-3">
-          <textarea value={mesajMetni} onChange={e => setMesajMetni(e.target.value)}
-            placeholder="Mesajınızı yazın..." rows={5}
-            className="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none" />
-          <button onClick={handleMesajGonder} disabled={yukleniyor || !mesajMetni.trim()}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition disabled:opacity-50">
-            {yukleniyor ? 'Gönderiliyor...' : 'Gönder'}
-          </button>
-          <button onClick={() => setMesajFormuAcik(false)}
-            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-medium text-sm transition">
-            İptal
-          </button>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <div className="bg-slate-50 rounded-xl p-3 text-center">
-            <p className="text-xs text-slate-400 mb-0.5">İlan Veren</p>
-            <p className="text-sm font-semibold text-slate-700">{ilan.profiles?.full_name || ilan.ilan_veren}</p>
-            {ilan.profiles?.phone_number && (
-              <p className="text-sm font-bold text-orange-600 mt-1">{ilan.profiles.phone_number}</p>
-            )}
-          </div>
-          {kendiIlani ? (
-            <div className="w-full bg-slate-100 text-slate-400 py-3 rounded-xl text-sm text-center">Bu sizin ilanınız</div>
-          ) : (
-            <button onClick={() => setMesajFormuAcik(true)}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2">
-              <MessageSquare size={15} /> Mesaj Gönder
-            </button>
-          )}
-          {!kendiIlani && (
-            <button onClick={handleFavori}
-              className={'w-full py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2 border ' +
-                (isFavori ? 'bg-red-50 border-red-200 text-red-500' : 'bg-white border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-400')}>
-              <Heart size={15} className={isFavori ? 'fill-red-500' : ''} />
-              {isFavori ? 'Favorilerden Kaldır' : 'Favoriye Ekle'}
-            </button>
-          )}
-        </div>
-      )}
-    </>
-  );
 
   return (
     <div className="bg-slate-100 min-h-screen py-4 sm:py-6">
@@ -644,7 +673,23 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
                 <span className="text-white text-xs font-semibold uppercase tracking-wider">İletişim</span>
               </div>
               <div className="p-4">
-                <IletisimIcerik />
+                <IletisimIcerik
+  isLoggedIn={isLoggedIn}
+  mesajGonderildi={mesajGonderildi}
+  mesajFormuAcik={mesajFormuAcik}
+  mesajMetni={mesajMetni}
+  yukleniyor={yukleniyor}
+  kendiIlani={kendiIlani}
+  isFavori={isFavori}
+  ilanVeren={ilan.profiles?.full_name || ilan.ilan_veren || '-'}
+  telefon={ilan.profiles?.phone_number}
+  onGoLogin={onGoLogin}
+  onMesajMetniDegis={setMesajMetni}
+  onMesajGonder={handleMesajGonder}
+  onFormAc={() => setMesajFormuAcik(true)}
+  onFormKapat={() => setMesajFormuAcik(false)}
+  onFavori={handleFavori}
+/>
               </div>
             </div>
           </div>
