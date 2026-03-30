@@ -449,12 +449,13 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
               <div className="bg-white rounded-xl border border-slate-200 p-4">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Şoför Bilgileri</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
-                  <BilgiKutusu icon={<FileText size={14} />} label="Sürücü Belgesi" value={ek.surucubelgesi} />
-                  <BilgiKutusu icon={<Calendar size={14} />} label="Ehliyet Tarihi" value={ek.ehliyet_alinma_tarihi} />
-                  <BilgiKutusu icon={<FileText size={14} />} label="SRC Belgeleri" value={ek.sinav_belgeleri} />
-                  <BilgiKutusu icon={<Calendar size={14} />} label="Doğum Tarihi" value={ek.dogum_tarihi} />
-                  <BilgiKutusu icon={<MapPin size={14} />} label="Doğum Yeri" value={ek.dogum_yeri} />
-                </div>
+  <BilgiKutusu icon={<FileText size={14} />} label="Sürücü Belgesi" value={ek.surucubelgesi} />
+  <BilgiKutusu icon={<Calendar size={14} />} label="Ehliyet Tarihi" value={ek.ehliyet_alinma_tarihi} />
+  <BilgiKutusu icon={<FileText size={14} />} label="SRC Belgeleri" value={ek.sinav_belgeleri} />
+  <BilgiKutusu icon={<Calendar size={14} />} label="Doğum Tarihi" value={ek.dogum_tarihi} />
+  <BilgiKutusu icon={<MapPin size={14} />} label="Doğum Yeri" value={ek.dogum_yeri} />
+  <BilgiKutusu icon={<Tag size={14} />} label="Maaş Beklentisi" value={ek.maas_beklentisi ? `${Number(ek.maas_beklentisi).toLocaleString('tr-TR')} ₺` : ''} />
+</div>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {ek.emekli && <EvetHayirBadge label="Emekli" deger={ek.emekli} />}
                   {ek.mesleki_yeterlilik && <EvetHayirBadge label="Mesleki Yeterlilik" deger={ek.mesleki_yeterlilik} />}
@@ -498,13 +499,12 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
 
             {/* HOSTESİM İŞ ARIYORUM */}
             {ilan.kategori === 'hostesim_is' && (
-              <div className="bg-white rounded-xl border border-slate-200 p-4">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Hostes Bilgileri</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
-                  <BilgiKutusu icon={<Calendar size={14} />} label="Doğum Tarihi" value={ek.dogum_tarihi} />
-                  <BilgiKutusu icon={<MapPin size={14} />} label="Doğum Yeri" value={ek.dogum_yeri} />
-                  <BilgiKutusu icon={<Award size={14} />} label="Eğitim Durumu" value={ek.egitim_durumu} />
-                </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+  <BilgiKutusu icon={<Calendar size={14} />} label="Doğum Tarihi" value={ek.dogum_tarihi} />
+  <BilgiKutusu icon={<MapPin size={14} />} label="Doğum Yeri" value={ek.dogum_yeri} />
+  <BilgiKutusu icon={<Award size={14} />} label="Eğitim Durumu" value={ek.egitim_durumu} />
+  <BilgiKutusu icon={<Tag size={14} />} label="Maaş Beklentisi" value={ek.maas_beklentisi ? `${Number(ek.maas_beklentisi).toLocaleString('tr-TR')} ₺` : ''} />
+</div>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {ek.servis_tasimacilik_deneyimi && <EvetHayirBadge label="Servis Deneyimi" deger={ek.servis_tasimacilik_deneyimi} />}
                 </div>
