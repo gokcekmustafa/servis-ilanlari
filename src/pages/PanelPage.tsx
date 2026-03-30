@@ -1426,6 +1426,7 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                   </p>
                 </div>
 
+                <div className="h-[420px] overflow-y-auto pr-1 flex flex-col gap-3">
                 {aktifKonusma.mesajlar.map((mesaj: any) => {
                   const benimMesajim = mesaj.gonderen_id === userId;
 
