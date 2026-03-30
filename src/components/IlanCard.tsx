@@ -226,7 +226,6 @@ if (kompakt) return (
       user_id: kullaniciId,
       ilan_id: ilan.id,
     });
-    console.log('Gizle sonucu:', data, error); // ← ekle
   } else {
     localStorage.setItem(`gizli_misafir_${ilan.id}`, '1');
   }
@@ -340,7 +339,6 @@ if (kompakt) return (
       user_id: kullaniciId,
       ilan_id: ilan.id,
     });
-    console.log('Gizle sonucu:', data, error); // ← ekle
   } else {
     localStorage.setItem(`gizli_misafir_${ilan.id}`, '1');
   }
