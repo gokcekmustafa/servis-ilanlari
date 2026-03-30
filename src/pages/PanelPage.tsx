@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   kullaniciIlanlari, ilanSil, ilanGuncelle, araclarGetir, aracEkle, aracSil,
-  favorileriGetir, favoriKaldir, gelenMesajlar, okunmamisMesajSayisi,
-  mesajOkunduIsaretle, destekGonder
+  favorileriGetir, favoriKaldir, konusmaMesajlariniGetir, okunmamisMesajSayisi,
+mesajOkunduIsaretle, destekGonder
 } from '../lib/ilanlar';
 import { Ilan } from '../types';
 import { ilceler } from '../data/ilceler';
@@ -816,6 +816,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId, b
   const [favoriler, setFavoriler] = useState<any[]>([]);
   const [mesajlar, setMesajlar] = useState<any[]>([]);
   const [okunmamisSayi, setOkunmamisSayi] = useState(0);
+  const [aktifKonusmaId, setAktifKonusmaId] = useState<string | null>(null);
   const [yukleniyor, setYukleniyor] = useState(false);
   const [basari, setBasari] = useState('');
   const [hata, setHata] = useState('');
@@ -872,7 +873,12 @@ const [notMetin, setNotMetin] = useState('');
   }
   setYukleniyor(false);
 };
-  const mesajlariYukle = async () => { setYukleniyor(true); const { data } = await gelenMesajlar(userId); if (data) setMesajlar(data); setYukleniyor(false); };
+  const mesajlariYukle = async () => {
+  setYukleniyor(true);
+  const { data } = await konusmaMesajlariniGetir(userId);
+  if (data) setMesajlar(data);
+  setYukleniyor(false);
+};
 
   const handleIlanSil = async (id: string) => {
     if (!confirm('Bu ilanı silmek istediğinizden emin misiniz?')) return;
@@ -999,6 +1005,39 @@ const handleNotSil = (ilanId: string) => {
     { id: 'destek', label: 'Destek', icon: HelpCircle },
   ];
 
+const konusmalarMap = mesajlar.reduce((acc: Record<string, any[]>, mesaj) => {
+  const key = mesaj.conversation_id || [mesaj.gonderen_id, mesaj.alan_id].sort().join('_');
+  if (!acc[key]) acc[key] = [];
+  acc[key].push(mesaj);
+  return acc;
+}, {});
+
+const konusmalar = Object.entries(konusmalarMap)
+  .map(([conversationId, mesajlar]) => {
+    const sonMesaj = mesajlar[mesajlar.length - 1];
+    const digerKullanici =
+      sonMesaj.gonderen_id === userId ? sonMesaj.alan : sonMesaj.gonderen;
+
+    const okunmamisAdet = mesajlar.filter(
+      m => m.alan_id === userId && !m.okundu
+    ).length;
+
+    return {
+      conversationId,
+      mesajlar,
+      sonMesaj,
+      digerKullanici,
+      okunmamisAdet,
+    };
+  })
+  .sort(
+    (a, b) =>
+      new Date(b.sonMesaj.created_at).getTime() -
+      new Date(a.sonMesaj.created_at).getTime()
+  );
+
+const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) || null;
+  
   const sekmeBulunan = menuItems.find(m => m.id === aktifSekme);
 
   const SidebarIcerik = () => (
@@ -1281,28 +1320,101 @@ const handleNotSil = (ilanId: string) => {
                   ) : mesajlar.length === 0 ? (
                     <div className="text-center py-12 text-slate-400"><MessageSquare size={40} className="mx-auto mb-3 opacity-30" /><p className="text-sm font-medium">Henüz mesajınız yok</p></div>
                   ) : (
-                    <div className="flex flex-col gap-3">
-                      {mesajlar.map(mesaj => (
-                        <div key={mesaj.id} onClick={() => !mesaj.okundu && handleMesajOku(mesaj.id)}
-                          className={'border rounded-xl p-4 cursor-pointer transition ' + (mesaj.okundu ? 'border-slate-200 bg-white' : 'border-orange-200 bg-orange-50 active:bg-orange-100')}>
-                          <div className="flex items-start justify-between mb-2 gap-2">
-                            <div className="min-w-0">
-                              <p className="font-semibold text-slate-700 text-sm">{mesaj.gonderen?.full_name || mesaj.gonderen?.phone_number}</p>
-                              <p className="text-xs text-slate-400 truncate">{mesaj.ilanlar?.aciklama}</p>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              {!mesaj.okundu && <span className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0" />}
-                              <span className="text-xs text-slate-400 whitespace-nowrap">{new Date(mesaj.created_at).toLocaleDateString('tr-TR')}</span>
-                            </div>
-                          </div>
-                          <p className="text-sm text-slate-600">{mesaj.mesaj}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+                    <div className="grid lg:grid-cols-[320px_1fr] gap-4">
+  <div className="flex flex-col gap-3">
+    {konusmalar.map(konusma => (
+      <div
+        key={konusma.conversationId}
+        onClick={async () => {
+          setAktifKonusmaId(konusma.conversationId);
+
+          const okunmamislar = konusma.mesajlar.filter(
+            m => m.alan_id === userId && !m.okundu
+          );
+
+          for (const mesaj of okunmamislar) {
+            await handleMesajOku(mesaj.id);
+          }
+        }}
+        className={
+          'border rounded-xl p-4 cursor-pointer transition ' +
+          (aktifKonusmaId === konusma.conversationId
+            ? 'border-orange-300 bg-orange-50'
+            : 'border-slate-200 bg-white hover:border-orange-200')
+        }
+      >
+        <div className="flex items-start justify-between mb-2 gap-2">
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-700 text-sm">
+              {konusma.digerKullanici?.full_name || konusma.digerKullanici?.phone_number || 'Kullanıcı'}
+            </p>
+            <p className="text-xs text-slate-400 truncate">
+              {konusma.sonMesaj.ilanlar?.aciklama}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {konusma.okunmamisAdet > 0 && (
+              <span className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                {konusma.okunmamisAdet}
+              </span>
             )}
+            <span className="text-xs text-slate-400 whitespace-nowrap">
+              {new Date(konusma.sonMesaj.created_at).toLocaleDateString('tr-TR')}
+            </span>
+          </div>
+        </div>
+        <p className="text-sm text-slate-600 line-clamp-2">{konusma.sonMesaj.mesaj}</p>
+      </div>
+    ))}
+  </div>
+
+  <div className="border border-slate-200 rounded-xl bg-slate-50 min-h-[420px]">
+    {!aktifKonusma ? (
+      <div className="h-full flex items-center justify-center text-center p-6 text-slate-400">
+        <div>
+          <MessageSquare size={36} className="mx-auto mb-3 opacity-30" />
+          <p className="text-sm font-medium">Bir konuşma seçin</p>
+        </div>
+      </div>
+    ) : (
+      <div className="p-4 flex flex-col gap-3">
+        <div className="pb-3 border-b border-slate-200">
+          <p className="font-semibold text-slate-800">
+            {aktifKonusma.digerKullanici?.full_name || aktifKonusma.digerKullanici?.phone_number || 'Kullanıcı'}
+          </p>
+          <p className="text-xs text-slate-400">
+            {aktifKonusma.sonMesaj.ilanlar?.aciklama}
+          </p>
+        </div>
+
+        {aktifKonusma.mesajlar.map((mesaj) => {
+          const benimMesajim = mesaj.gonderen_id === userId;
+
+          return (
+            <div
+              key={mesaj.id}
+              className={`flex ${benimMesajim ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={
+                  'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ' +
+                  (benimMesajim
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-white border border-slate-200 text-slate-700')
+                }
+              >
+                <p>{mesaj.mesaj}</p>
+                <p className={`text-[11px] mt-1 ${benimMesajim ? 'text-white/80' : 'text-slate-400'}`}>
+                  {new Date(mesaj.created_at).toLocaleString('tr-TR')}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+</div>
 
             {/* FAVORİLER */}
             {aktifSekme === 'favoriler' && (
