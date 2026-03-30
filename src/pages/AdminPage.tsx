@@ -88,7 +88,7 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
   const [destekler, setDestekler]         = useState<any[]>([]);
   const [yukleniyor, setYukleniyor]       = useState(true);
   const [mobilMenuAcik, setMobilMenuAcik] = useState(false);
-  onst [platformLogo, setPlatformLogo] = useState<string>('');
+  const [platformLogo, setPlatformLogo] = useState<string>('');
 const [logoYukleniyor, setLogoYukleniyor] = useState(false);
 
   const [yeniReklam, setYeniReklam]             = useState({ baslik: '', resim_url: '', link_url: '', konum: 'liste' });
