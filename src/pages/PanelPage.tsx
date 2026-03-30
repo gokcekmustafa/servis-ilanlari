@@ -946,7 +946,28 @@ const handleNotSil = (ilanId: string) => {
   const handleMesajCevapla = async () => {
   if (!aktifKonusma || !cevapMetni.trim()) return;
 
-    const handleMesajSil = async (mesajId: string) => {
+  const sonMesaj = aktifKonusma.mesajlar[aktifKonusma.mesajlar.length - 1];
+  const aliciId =
+    sonMesaj.gonderen_id === userId ? sonMesaj.alan_id : sonMesaj.gonderen_id;
+
+  setMesajGonderiliyor(true);
+
+  const { error, data } = await mesajGonder({
+    gonderen_id: userId,
+    alan_id: aliciId,
+    ilan_id: sonMesaj.ilan_id,
+    mesaj: cevapMetni.trim(),
+  });
+
+  setMesajGonderiliyor(false);
+
+  if (!error && data?.[0]) {
+    setMesajlar(prev => [...prev, data[0]]);
+    setCevapMetni('');
+  }
+};
+
+const handleMesajSil = async (mesajId: string) => {
   if (!confirm('Bu mesajı silmek istediğinizden emin misiniz?')) return;
 
   const { error } = await mesajSil(mesajId);
@@ -1416,7 +1437,7 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
             ))}
           </div>
 
-          <div className="border border-slate-200 rounded-xl bg-slate-50 min-h-[420px]">
+          <div className="border border-slate-200 rounded-xl bg-slate-50 h-[620px] flex flex-col">
             {!aktifKonusma ? (
               <div className="h-full flex items-center justify-center text-center p-6 text-slate-400">
                 <div>
@@ -1425,7 +1446,7 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                 </div>
               </div>
             ) : (
-              <div className="p-4 flex flex-col gap-3">
+              <div className="p-4 flex flex-col gap-3 h-full">
                 <div className="pb-3 border-b border-slate-200">
                   <p className="font-semibold text-slate-800">
                     {aktifKonusma.digerKullanici?.full_name || aktifKonusma.digerKullanici?.phone_number || 'Kullanıcı'}
