@@ -1440,7 +1440,6 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                     const benimMesajim = mesaj.gonderen_id === userId;
 
                     return (
-                      <div
   <div
   key={mesaj.id}
   className={`flex ${benimMesajim ? 'justify-end' : 'justify-start'}`}
