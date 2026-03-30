@@ -206,6 +206,15 @@ export async function mesajOkunduIsaretle(mesajId: string) {
   return { error };
 }
 
+export async function mesajSil(mesajId: string) {
+  const { error } = await supabase
+    .from('mesajlar')
+    .delete()
+    .eq('id', mesajId);
+
+  return { error };
+}
+
 export async function destekGonder(talep: {
   user_id: string;
   konu: string;
