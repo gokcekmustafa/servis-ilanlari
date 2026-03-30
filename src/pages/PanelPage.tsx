@@ -1427,30 +1427,32 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                 </div>
 
                 <div className="h-[420px] overflow-y-auto pr-1 flex flex-col gap-3">
-                {aktifKonusma.mesajlar.map((mesaj: any) => {
-                  const benimMesajim = mesaj.gonderen_id === userId;
+                <div className="h-[420px] overflow-y-auto pr-1 flex flex-col gap-3">
+  {aktifKonusma.mesajlar.map((mesaj: any) => {
+    const benimMesajim = mesaj.gonderen_id === userId;
 
-                  return (
-                    <div
-                      key={mesaj.id}
-                      className={`flex ${benimMesajim ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={
-                          'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ' +
-                          (benimMesajim
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-white border border-slate-200 text-slate-700')
-                        }
-                      >
-                        <p>{mesaj.mesaj}</p>
-                        <p className={`text-[11px] mt-1 ${benimMesajim ? 'text-white/80' : 'text-slate-400'}`}>
-                          {new Date(mesaj.created_at).toLocaleString('tr-TR')}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
+    return (
+      <div
+        key={mesaj.id}
+        className={`flex ${benimMesajim ? 'justify-end' : 'justify-start'}`}
+      >
+        <div
+          className={
+            'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ' +
+            (benimMesajim
+              ? 'bg-orange-500 text-white'
+              : 'bg-white border border-slate-200 text-slate-700')
+          }
+        >
+          <p>{mesaj.mesaj}</p>
+          <p className={`text-[11px] mt-1 ${benimMesajim ? 'text-white/80' : 'text-slate-400'}`}>
+            {new Date(mesaj.created_at).toLocaleString('tr-TR')}
+          </p>
+        </div>
+      </div>
+    );
+  })}
+</div>
 
                 <div className="pt-3 border-t border-slate-200 mt-2">
                   <div className="flex flex-col gap-2">
