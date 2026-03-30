@@ -1372,63 +1372,47 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
         <div className="grid lg:grid-cols-[320px_1fr] gap-4">
           <div className="flex flex-col gap-3">
             {konusmalar.map(konusma => (
-              <div
-                key={konusma.conversationId}
-                onClick={async () => {
-                  setAktifKonusmaId(konusma.conversationId);
-                  setCevapMetni('');
-
-                  const okunmamislar = konusma.mesajlar.filter(
-                    (m: any) => m.alan_id === userId && !m.okundu
-                  );
-
-                  for (const mesaj of okunmamislar) {
-                    await handleMesajOku(mesaj.id);
-                  }
-                }}
-                className={
-                  'border rounded-xl p-4 cursor-pointer transition ' +
-                  (aktifKonusmaId === konusma.conversationId
-                    ? 'border-orange-300 bg-orange-50'
-                    : 'border-slate-200 bg-white hover:border-orange-200')
-                }
-              >
-                <div className="flex items-start justify-between mb-2 gap-2">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-slate-700 text-sm">
-                      {konusma.digerKullanici?.full_name || konusma.digerKullanici?.phone_number || 'Kullanıcı'}
-                    </p>
-                    <p className="text-xs text-slate-400 truncate">
-                      {konusma.sonMesaj.ilanlar?.aciklama}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {konusma.okunmamisAdet > 0 && (
-                      <span className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                        {konusma.okunmamisAdet}
-                      </span>
-                    )}
-
-{/* 🆕 SİLME BUTONU */}
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      if (confirm('Bu konuşmayı tamamen silmek istediğinizden emin misiniz?')) {
-        // Aktif konuşma ise kapat
-        if (aktifKonusmaId === konusma.conversationId) {
-          setAktifKonusmaId(null);
-          setCevapMetni('');
-        }
-        // Listeyi güncelle (frontend)
-        setKonusmalar(prev => prev.filter(k => k.conversationId !== konusma.conversationId));
-      }
-    }}
-    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition"
-    title="Konuşmayı sil"
+  <div 
+    key={konusma.conversationId}
+    className="p-4 border-b border-slate-200 hover:bg-slate-50 cursor-pointer flex justify-between items-center"
+    onClick={() => setAktifKonusmaId(konusma.conversationId)}
   >
-    <Trash2 size={14} />
-  </button>
-</div>
+    <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+        <User size={16} className="text-slate-500" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="font-medium text-sm truncate">{konusma.karsiTarafAd}</div>
+        <div className="text-xs text-slate-500 truncate">{konusma.sonMesaj}</div>
+      </div>
+    </div>
+    
+    <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+      {konusma.okunmamisAdet > 0 && (
+        <span className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+          {konusma.okunmamisAdet}
+        </span>
+      )}
+      
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (confirm('Bu konuşmayı tamamen silmek istediğinizden emin misiniz?')) {
+            if (aktifKonusmaId === konusma.conversationId) {
+              setAktifKonusmaId(null);
+              setCevapMetni('');
+            }
+            setKonusmalar(prev => prev.filter(k => k.conversationId !== konusma.conversationId));
+          }
+        }}
+        className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition"
+        title="Konuşmayı sil"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  </div>
+))}
                     
                     <span className="text-xs text-slate-400 whitespace-nowrap">
                       {new Date(konusma.sonMesaj.created_at).toLocaleDateString('tr-TR')}
