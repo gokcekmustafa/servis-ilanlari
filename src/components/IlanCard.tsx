@@ -24,15 +24,15 @@ type IlanCardProps = {
   kompakt?: boolean; // bunu ekle
 };
 
-const kategoriConfig: Record<KategoriType, { label: string; bg: string; text: string; serit: string }> = {
-  isim_var_arac:     { label: 'İŞİM VAR ARAÇ ARIYORUM',     bg: 'bg-blue-500',   text: 'text-white', serit: 'bg-blue-500' },
-  aracim_var_is:     { label: 'ARACIM VAR İŞ ARIYORUM',     bg: 'bg-green-500',  text: 'text-white', serit: 'bg-green-500' },
-  sofor_ariyorum:    { label: 'ARACIM VAR ŞOFÖR ARIYORUM',  bg: 'bg-orange-500', text: 'text-white', serit: 'bg-orange-500' },
-  hostes_ariyorum:   { label: 'ARACIM VAR HOSTES ARIYORUM', bg: 'bg-purple-500', text: 'text-white', serit: 'bg-purple-500' },
-  hostesim_is:       { label: 'HOSTESİM İŞ ARIYORUM',       bg: 'bg-pink-500',   text: 'text-white', serit: 'bg-pink-500' },
-  soforum_is:        { label: 'ŞOFÖRÜM İŞ ARIYORUM',        bg: 'bg-yellow-500', text: 'text-white', serit: 'bg-yellow-500' },
-  plaka_satiyorum:   { label: 'PLAKIMI SATIYORUM',           bg: 'bg-red-500',    text: 'text-white', serit: 'bg-red-500' },
-  aracimi_satiyorum: { label: 'ARACIMI SATIYORUM',           bg: 'bg-teal-500',   text: 'text-white', serit: 'bg-teal-500' },
+const kategoriConfig: Record<KategoriType, { label: string; label1: string; label2: string; bg: string; text: string; serit: string }> = {
+  isim_var_arac:     { label: 'İŞİM VAR ARAÇ ARIYORUM',     label1: 'İşim Var',    label2: 'Araç Arıyorum',  bg: 'bg-blue-500',   text: 'text-white', serit: 'bg-blue-500' },
+  aracim_var_is:     { label: 'ARACIM VAR İŞ ARIYORUM',     label1: 'Aracım Var',  label2: 'İş Arıyorum',    bg: 'bg-green-500',  text: 'text-white', serit: 'bg-green-500' },
+  sofor_ariyorum:    { label: 'ARACIM VAR ŞOFÖR ARIYORUM',  label1: 'Aracım Var',  label2: 'Şoför Arıyorum', bg: 'bg-orange-500', text: 'text-white', serit: 'bg-orange-500' },
+  hostes_ariyorum:   { label: 'ARACIM VAR HOSTES ARIYORUM', label1: 'Aracım Var',  label2: 'Hostes Arıyorum',bg: 'bg-purple-500', text: 'text-white', serit: 'bg-purple-500' },
+  hostesim_is:       { label: 'HOSTESİM İŞ ARIYORUM',       label1: 'Hostesim',    label2: 'İş Arıyorum',    bg: 'bg-pink-500',   text: 'text-white', serit: 'bg-pink-500' },
+  soforum_is:        { label: 'ŞOFÖRÜM İŞ ARIYORUM',        label1: 'Şoförüm',     label2: 'İş Arıyorum',    bg: 'bg-yellow-500', text: 'text-white', serit: 'bg-yellow-500' },
+  plaka_satiyorum:   { label: 'PLAKIMI SATIYORUM',           label1: 'Plakamı',     label2: 'Satıyorum',      bg: 'bg-red-500',    text: 'text-white', serit: 'bg-red-500' },
+  aracimi_satiyorum: { label: 'ARACIMI SATIYORUM',           label1: 'Aracımı',     label2: 'Satıyorum',      bg: 'bg-teal-500',   text: 'text-white', serit: 'bg-teal-500' },
 };
 
 function zamanFarki(tarih: string): string {
@@ -379,11 +379,11 @@ if (kompakt) {
       )}
 
       {/* Sol renkli şerit — kategori isimli */}
-      <div className={`${config.bg} w-16 sm:w-20 self-stretch flex-shrink-0 flex items-center justify-center px-1`}>
-        <span className="text-white text-[8px] font-bold text-center leading-tight writing-mode-vertical"
-          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: '0.05em' }}>
-          {config.label}
-        </span>
+      <div className={`${config.bg} w-20 self-stretch flex-shrink-0 flex items-center justify-center px-1`}>
+        <div className="text-white text-center leading-tight">
+          <div className="text-[9px] font-bold">{config.label1}</div>
+          <div className="text-[9px] font-bold">{config.label2}</div>
+        </div>
       </div>
 
       {/* İçerik */}
