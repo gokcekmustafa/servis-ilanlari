@@ -3,7 +3,6 @@ import { Calendar, User, Bus, ArrowLeft, Heart, MessageSquare, MapPin, Clock, Ta
 import { Ilan, KategoriType } from '../types';
 import { favoriEkle, favoriKaldir, favoriKontrol, mesajGonder } from '../lib/ilanlar';
 import { mevcutKullanici } from '../lib/auth';
-import { mesajGecmisiniGetir } from '../lib/ilanlar';
 
 type IlanDetayPageProps = {
   ilan: Ilan;
@@ -725,7 +724,23 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
               <button onClick={() => setIletisimAcik(false)} className="p-1.5 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full">✕</button>
             </div>
             <div className="p-4">
-              <IletisimIcerik />
+              <IletisimIcerik
+  isLoggedIn={isLoggedIn}
+  mesajGonderildi={mesajGonderildi}
+  mesajFormuAcik={mesajFormuAcik}
+  mesajMetni={mesajMetni}
+  yukleniyor={yukleniyor}
+  kendiIlani={kendiIlani}
+  isFavori={isFavori}
+  ilanVeren={ilan.profiles?.full_name || ilan.ilan_veren || '-'}
+  telefon={ilan.profiles?.phone_number}
+  onGoLogin={onGoLogin}
+  onMesajMetniDegis={setMesajMetni}
+  onMesajGonder={handleMesajGonder}
+  onFormAc={() => setMesajFormuAcik(true)}
+  onFormKapat={() => setMesajFormuAcik(false)}
+  onFavori={handleFavori}
+/>
             </div>
           </div>
         </div>
