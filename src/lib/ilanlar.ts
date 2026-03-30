@@ -206,13 +206,12 @@ export async function mesajOkunduIsaretle(mesajId: string) {
   return { error };
 }
 
-export async function mesajSil(mesajId: string) {
-  const { error } = await supabase
+export async function mesajSil(mesajId: string, userId: string) {
+  return await supabase
     .from('mesajlar')
     .delete()
-    .eq('id', mesajId);
-
-  return { error };
+    .eq('id', mesajId)
+    .eq('gonderen_id', userId);
 }
 
 export async function destekGonder(talep: {
