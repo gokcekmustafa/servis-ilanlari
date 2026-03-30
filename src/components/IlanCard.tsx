@@ -378,8 +378,13 @@ if (kompakt) {
         </div>
       )}
 
-      {/* Sol renkli şerit */}
-      <div className={`${config.bg} w-1 self-stretch flex-shrink-0`} />
+      {/* Sol renkli şerit — kategori isimli */}
+      <div className={`${config.bg} w-16 sm:w-20 self-stretch flex-shrink-0 flex items-center justify-center px-1`}>
+        <span className="text-white text-[8px] font-bold text-center leading-tight writing-mode-vertical"
+          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: '0.05em' }}>
+          {config.label}
+        </span>
+      </div>
 
       {/* İçerik */}
       <div className="flex-1 flex items-center gap-2 px-3 py-2 min-w-0 pr-20">
