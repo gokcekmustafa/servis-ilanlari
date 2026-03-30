@@ -174,6 +174,21 @@ export async function gelenMesajlar(userId: string) {
   return { data, error };
 }
 
+export async function konusmaMesajlariniGetir(userId: string) {
+  const { data, error } = await supabase
+    .from('mesajlar')
+    .select(`
+      *,
+      ilanlar(aciklama),
+      gonderen:profiles!gonderen_id(id, full_name, phone_number),
+      alan:profiles!alan_id(id, full_name, phone_number)
+    `)
+    .or(`gonderen_id.eq.${userId},alan_id.eq.${userId}`)
+    .order('created_at', { ascending: true });
+
+  return { data, error };
+}
+
 export async function okunmamisMesajSayisi(userId: string) {
   const { count, error } = await supabase
     .from('mesajlar')
