@@ -734,6 +734,16 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                     <h3 className="font-semibold text-slate-700 mb-4">Ilan Detaylari</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                       <div><label className={lb}>Dogum Tarihi</label><input type="date" value={hostesimIs.dogum_tarihi} onChange={(e)=>setHostesimIs({...hostesimIs,dogum_tarihi:e.target.value})} className={ic}/></div>
+                      <div>
+  <label className={lb}>Maaş Beklentisi (TL) <span className="text-slate-300 font-normal">- opsiyonel</span></label>
+  <input
+    type="number"
+    value={hostesimIs.maas_beklentisi || ''}
+    placeholder="örn. 18000"
+    onChange={(e) => setHostesimIs({ ...hostesimIs, maas_beklentisi: e.target.value })}
+    className={ic}
+  />
+</div>
                       <div><label className={lb}>Dogum Yeri</label><input value={hostesimIs.dogum_yeri} onChange={(e)=>setHostesimIs({...hostesimIs,dogum_yeri:e.target.value})} className={ic}/></div>
                       <div><label className={lb}>Egitim Durumu</label><select value={hostesimIs.egitim_durumu} onChange={(e)=>setHostesimIs({...hostesimIs,egitim_durumu:e.target.value})} className={ic}><option value="">Seciniz</option><option value="ilkokul">Ilkokul</option><option value="ortaokul">Ortaokul</option><option value="lise">Lise</option><option value="universite">Universite</option></select></div>
                     </div>
@@ -748,6 +758,16 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                     <h3 className="font-semibold text-slate-700 mb-4">Ehliyet ve Arac Bilgileri</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                       <div><label className={lb}>Surucubelgesi</label><select value={soforumIs.surucubelgesi} onChange={(e)=>setSoforumIs({...soforumIs,surucubelgesi:e.target.value})} className={ic}><option value="">Secin</option>{['B','D','D1','D2','D+E'].map(b=><option key={b} value={b}>{b}</option>)}</select></div>
+                      <div>
+  <label className={lb}>Maaş Beklentisi (TL) <span className="text-slate-300 font-normal">- opsiyonel</span></label>
+  <input
+    type="number"
+    value={soforumIs.maas_beklentisi || ''}
+    placeholder="örn. 25000"
+    onChange={(e) => setSoforumIs({ ...soforumIs, maas_beklentisi: e.target.value })}
+    className={ic}
+  />
+</div>
                       <div><label className={lb}>Ehliyet Tarihi</label><input type="date" value={soforumIs.ehliyet_alinma_tarihi} onChange={(e)=>setSoforumIs({...soforumIs,ehliyet_alinma_tarihi:e.target.value})} className={ic}/></div>
                       <div><label className={lb}>SRC Belgeleri</label><input value={soforumIs.sinav_belgeleri} placeholder="SRC2, SRC3" onChange={(e)=>setSoforumIs({...soforumIs,sinav_belgeleri:e.target.value})} className={ic}/></div>
                       <div><label className={lb}>Dogum Tarihi</label><input type="date" value={soforumIs.dogum_tarihi} onChange={(e)=>setSoforumIs({...soforumIs,dogum_tarihi:e.target.value})} className={ic}/></div>
