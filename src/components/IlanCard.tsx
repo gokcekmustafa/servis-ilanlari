@@ -207,119 +207,199 @@ useEffect(() => {
     else { await favoriEkle(user.id, ilan.id); setIsFavori(true); }
   };
 {/* KOMPAKT GÖRÜNÜM */}
-if (kompakt) return (
-  <div
-    onMouseEnter={() => setHover(true)}
-    onMouseLeave={() => setHover(false)}
-    onClick={() => onDetay(ilan)}
-    className={`relative bg-white border border-gray-200 hover:border-[#f7971e] hover:shadow-sm transition-all duration-150 cursor-pointer rounded overflow-hidden flex items-center gap-0 ${gizli ? 'opacity-40 grayscale' : ''}`}
-  >
-    {/* GİZLE BUTONU */}
-{!gizli && hover && (
-  <div className="absolute top-1 right-1 z-20 group/gizle">
-    <button
-      onClick={async (e) => {
-  e.stopPropagation();
-  setGizli(true);
-  if (kullaniciId) {
-    const { data, error } = await supabase.from('gizli_ilanlar').upsert({
-      user_id: kullaniciId,
-      ilan_id: ilan.id,
-    });
-  } else {
-    localStorage.setItem(`gizli_misafir_${ilan.id}`, '1');
-  }
-}}
-      className="w-6 h-6 rounded-full bg-gray-600/70 hover:bg-red-500 text-white flex items-center justify-center transition-all duration-150"
-    >
-      <X size={12} />
-    </button>
-    <div className="absolute right-0 top-7 bg-gray-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/gizle:opacity-100 transition-opacity pointer-events-none">
-      Bu ilanla ilgilenmiyorum, gizle.
+if (kompakt) {
+  const g0 = ilan.guzergahlar?.[0];
+  const kalkisIlce = g0?.kalkis_ilce || g0?.kalkis_il || '';
+  const varisIlce = g0?.varis_ilce || g0?.varis_il || '';
+  const girisSaati = g0?.giris_saati || '';
+  const cikisSaati = g0?.cikis_saati || '';
+  const saatStr = girisSaati && cikisSaati ? `${girisSaati}-${cikisSaati}` : girisSaati || cikisSaati || '';
+  const profilResim = ekBilgi.profil_resmi || '';
+  const aracResim = (ekBilgi.resimler || [])[0] || '';
+
+  // Platform logosu — küçük turuncu kutu
+  const PlatformLogo = () => (
+    <div className="w-8 h-8 flex-shrink-0 bg-orange-500 rounded-lg flex items-center justify-center">
+      <span className="text-white text-[9px] font-bold leading-tight text-center">S</span>
     </div>
-  </div>
-)}
+  );
 
-{/* GÖSTER BUTONU */}
-{gizli && (
-  <div className="absolute top-1 right-1 z-20">
-    <button
-      onClick={async (e) => {
-  e.stopPropagation();
-  setGizli(false);
-  if (kullaniciId) {
-    await supabase.from('gizli_ilanlar').delete()
-      .eq('user_id', kullaniciId)
-      .eq('ilan_id', ilan.id);
+  // Kişi resmi veya platform logosu
+  const KisiResmi = () => profilResim ? (
+    <div className="w-8 h-8 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200">
+      <img src={profilResim} alt="" className="w-full h-full object-cover"
+        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+    </div>
+  ) : <PlatformLogo />;
+
+  // Araç resmi veya platform logosu
+  const AracResmi = () => aracResim ? (
+    <div className="w-8 h-8 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200">
+      <img src={aracResim} alt="" className="w-full h-full object-cover"
+        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+    </div>
+  ) : <PlatformLogo />;
+
+  let icerik: React.ReactNode = null;
+
+  if (ilan.kategori === 'soforum_is') {
+    const dogumYili = ekBilgi.dogum_tarihi ? new Date(ekBilgi.dogum_tarihi).getFullYear() : null;
+    const yas = dogumYili ? new Date().getFullYear() - dogumYili : null;
+    icerik = (
+      <>
+        <KisiResmi />
+        <span className="font-semibold text-gray-800 text-xs truncate max-w-[100px]">{ilanVeren}</span>
+        {kalkisIlce && <span className="text-[11px] text-gray-500 truncate">{kalkisIlce}</span>}
+        {yas && <span className="text-[11px] text-gray-500">D.{yas}</span>}
+        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${ekBilgi.emekli === 'evet' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+          {ekBilgi.emekli === 'evet' ? 'Emekli' : 'Emekli Değil'}
+        </span>
+      </>
+    );
+  } else if (ilan.kategori === 'hostesim_is') {
+    const dogumYili = ekBilgi.dogum_tarihi ? new Date(ekBilgi.dogum_tarihi).getFullYear() : null;
+    const yas = dogumYili ? new Date().getFullYear() - dogumYili : null;
+    icerik = (
+      <>
+        <KisiResmi />
+        <span className="font-semibold text-gray-800 text-xs truncate max-w-[100px]">{ilanVeren}</span>
+        {kalkisIlce && <span className="text-[11px] text-gray-500 truncate">{kalkisIlce}</span>}
+        {yas && <span className="text-[11px] text-gray-500">D.{yas}</span>}
+      </>
+    );
+  } else if (ilan.kategori === 'isim_var_arac') {
+    const guzergahStr = kalkisIlce && varisIlce ? `${kalkisIlce} → ${varisIlce}` : kalkisIlce || varisIlce || '';
+    icerik = (
+      <>
+        <PlatformLogo />
+        {saatStr && <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">{saatStr}</span>}
+        {guzergahStr && <span className="text-[11px] text-gray-500 truncate">{guzergahStr}</span>}
+        {ekBilgi.ucret && (
+          <span className="text-xs font-bold text-blue-600 whitespace-nowrap ml-auto">
+            {Number(ekBilgi.ucret).toLocaleString('tr-TR')} ₺
+          </span>
+        )}
+      </>
+    );
+  } else if (ilan.kategori === 'aracim_var_is') {
+    const guzStr = kalkisIlce || '';
+    const aracAd = [ekBilgi.marka, ekBilgi.model].filter(Boolean).join(' ');
+    icerik = (
+      <>
+        <PlatformLogo />
+        <AracResmi />
+        <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">
+          {saatStr || 'Boşta'}
+        </span>
+        {guzStr && <span className="text-[11px] text-gray-500 truncate">{guzStr}</span>}
+        {aracAd && <span className="text-[11px] text-gray-600 truncate">{aracAd}</span>}
+      </>
+    );
+  } else if (ilan.kategori === 'sofor_ariyorum') {
+    const guzStr = kalkisIlce && varisIlce ? `${kalkisIlce} → ${varisIlce}` : kalkisIlce || '';
+    icerik = (
+      <>
+        <PlatformLogo />
+        <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">
+          {saatStr || (ekBilgi.yolcu_sayisi ? `${ekBilgi.yolcu_sayisi} kişi` : '')}
+        </span>
+        {guzStr && <span className="text-[11px] text-gray-500 truncate">{guzStr}</span>}
+      </>
+    );
+  } else if (ilan.kategori === 'plaka_satiyorum') {
+    icerik = (
+      <>
+        <PlatformLogo />
+        {kalkisIlce && <span className="text-[11px] text-gray-500 truncate">{kalkisIlce}</span>}
+        {ekBilgi.ucret && (
+          <span className="text-xs font-bold text-blue-600 whitespace-nowrap ml-auto">
+            {Number(ekBilgi.ucret).toLocaleString('tr-TR')} ₺
+          </span>
+        )}
+      </>
+    );
+  } else if (ilan.kategori === 'aracimi_satiyorum') {
+    const aracAd = [ekBilgi.marka, ekBilgi.model].filter(Boolean).join(' ');
+    icerik = (
+      <>
+        <AracResmi />
+        {aracAd && <span className="text-xs font-semibold text-gray-700 truncate">{aracAd}</span>}
+        {ekBilgi.km && <span className="text-[11px] text-gray-500 whitespace-nowrap">{Number(ekBilgi.km).toLocaleString('tr-TR')} km</span>}
+        {ekBilgi.ucret && (
+          <span className="text-xs font-bold text-blue-600 whitespace-nowrap ml-auto">
+            {Number(ekBilgi.ucret).toLocaleString('tr-TR')} ₺
+          </span>
+        )}
+      </>
+    );
   } else {
-    localStorage.removeItem(`gizli_misafir_${ilan.id}`);
+    icerik = (
+      <>
+        <PlatformLogo />
+        <p className="text-xs text-gray-600 truncate flex-1">{ilan.aciklama || '—'}</p>
+        {kalkisIlce && <span className="text-[11px] text-gray-400">{kalkisIlce}</span>}
+      </>
+    );
   }
-}}
-      className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700/80 hover:bg-gray-900 text-white text-[10px] font-semibold transition"
+
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onClick={() => onDetay(ilan)}
+      className={`relative bg-white border border-gray-200 hover:border-[#f7971e] hover:shadow-sm transition-all duration-150 cursor-pointer rounded overflow-hidden flex items-center gap-0 ${gizli ? 'opacity-40 grayscale' : ''}`}
     >
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-      Göster
-    </button>
-  </div>
-)}
-
-    {/* Sol renkli şerit */}
-    <div className={`${config.bg} w-1 self-stretch flex-shrink-0`} />
-
-    {/* İçerik */}
-    <div className="flex-1 flex items-center gap-3 px-3 py-2 min-w-0">
-      {/* Kategori etiketi */}
-      <span className={`hidden sm:inline-block text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0 ${config.bg} ${config.text}`}>
-        {config.label.split(' ').slice(0, 2).join(' ')}
-      </span>
-
-      {/* Thumbnail — sadece resimli kategorilerde */}
-      {resimliKategori && resimler.length > 0 && (
-        <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden border border-gray-200 bg-gray-100">
-          <img src={resimler[0]} alt="Araç" className="w-full h-full object-cover"
-            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+      {/* GİZLE BUTONU */}
+      {!gizli && hover && (
+        <div className="absolute top-1 right-1 z-20 group/gizle">
+          <button onClick={async (e) => {
+            e.stopPropagation(); setGizli(true);
+            if (kullaniciId) { await supabase.from('gizli_ilanlar').upsert({ user_id: kullaniciId, ilan_id: ilan.id }); }
+            else { localStorage.setItem(`gizli_misafir_${ilan.id}`, '1'); }
+          }} className="w-6 h-6 rounded-full bg-gray-600/70 hover:bg-red-500 text-white flex items-center justify-center transition-all duration-150">
+            <X size={12} />
+          </button>
+          <div className="absolute right-0 top-7 bg-gray-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/gizle:opacity-100 transition-opacity pointer-events-none">
+            Bu ilanla ilgilenmiyorum, gizle.
+          </div>
+        </div>
+      )}
+      {/* GÖSTER BUTONU */}
+      {gizli && (
+        <div className="absolute top-1 right-1 z-20">
+          <button onClick={async (e) => {
+            e.stopPropagation(); setGizli(false);
+            if (kullaniciId) { await supabase.from('gizli_ilanlar').delete().eq('user_id', kullaniciId).eq('ilan_id', ilan.id); }
+            else { localStorage.removeItem(`gizli_misafir_${ilan.id}`); }
+          }} className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700/80 hover:bg-gray-900 text-white text-[10px] font-semibold transition">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Göster
+          </button>
         </div>
       )}
 
-      {/* Açıklama */}
-      <p className={`text-xs font-medium line-clamp-2 leading-snug flex-1 min-w-0 ${goruldu ? 'text-purple-700' : 'text-[#1a3c6e]'}`}>
-  {ilan.baslik || ilan.aciklama || '—'}
-</p>
+      {/* Sol renkli şerit */}
+      <div className={`${config.bg} w-1 self-stretch flex-shrink-0`} />
 
-      {/* Konum */}
-      {ilan.guzergahlar?.[0]?.kalkis_il && (
-        <span className="hidden md:flex items-center gap-1 text-[11px] text-gray-400 flex-shrink-0">
-          <MapPin size={10} />
-          {ilan.guzergahlar[0].kalkis_ilce || ilan.guzergahlar[0].kalkis_il}
-        </span>
-      )}
+      {/* İçerik */}
+      <div className="flex-1 flex items-center gap-2 px-3 py-2 min-w-0 pr-20">
+        {icerik}
+      </div>
 
-      {/* Ücret */}
-      {ekBilgi.ucret && (
-        <span className="text-xs font-bold text-blue-600 flex-shrink-0 whitespace-nowrap">
-          {Number(ekBilgi.ucret).toLocaleString('tr-TR')} ₺
-        </span>
-      )}
-
-      {/* Zaman */}
-      <span className="hidden sm:flex items-center gap-0.5 text-[10px] text-gray-400 flex-shrink-0 whitespace-nowrap">
-        <Clock size={10} /> {zamanFarki(ilan.created_at)}
-      </span>
+      {/* Sağ: butonlar */}
+      <div className="absolute right-0 top-0 bottom-0 flex items-center gap-1 px-2 flex-shrink-0 bg-white border-l border-gray-100">
+        <button onClick={e => { e.stopPropagation(); if (telefon) window.open(`https://wa.me/90${telefon.replace(/\D/g,'').replace(/^0/,'')}`, '_blank'); }}
+          className="p-1.5 text-[#25D366] hover:bg-green-50 rounded-lg transition">
+          <MessageCircle size={14} />
+        </button>
+        <button onClick={e => { e.stopPropagation(); if (telefon) window.location.href = `tel:${telefon}`; }}
+          className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition">
+          <Phone size={14} />
+        </button>
+      </div>
     </div>
-
-    {/* Sağ: butonlar */}
-    <div className="flex items-center gap-1 px-2 flex-shrink-0">
-      <button onClick={e => { e.stopPropagation(); if (telefon) window.open(`https://wa.me/90${telefon.replace(/\D/g,'').replace(/^0/,'')}`, '_blank'); }}
-        className="p-1.5 text-[#25D366] hover:bg-green-50 rounded-lg transition">
-        <MessageCircle size={14} />
-      </button>
-      <button onClick={e => { e.stopPropagation(); if (telefon) window.location.href = `tel:${telefon}`; }}
-        className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition">
-        <Phone size={14} />
-      </button>
-    </div>
-  </div>
-);
+  );
+}
   return (
   <div
     onMouseEnter={() => setHover(true)}
