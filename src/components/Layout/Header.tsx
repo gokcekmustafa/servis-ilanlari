@@ -24,6 +24,7 @@ export default function Header({
   const [bekleyenDestek, setBekleyenDestek] = useState(0);
   const [menuAcik, setMenuAcik] = useState(false);
   const [headerReklam, setHeaderReklam] = useState<any>(null);
+  const [platformLogo, setPlatformLogo] = useState<string>('');
 
   const bildirimleriYukle = () => {
     if (!isLoggedIn) return;
@@ -36,9 +37,10 @@ export default function Header({
   };
 
   useEffect(() => {
-    kullaniciSayisi().then(({ count }) => { if (count !== null) setSayi(count); });
-    headerReklamYukle();
-  }, []);
+  kullaniciSayisi().then(({ count }) => { if (count !== null) setSayi(count); });
+  headerReklamYukle();
+  platformLogoYukle();
+}, []);
 
   useEffect(() => {
     bildirimleriYukle();
@@ -55,6 +57,11 @@ export default function Header({
     const { data } = await supabase.from('reklamlar').select('*').eq('aktif', true).eq('konum', 'header').limit(1).single();
     if (data) setHeaderReklam(data);
   };
+
+  const platformLogoYukle = async () => {
+  const { data } = await supabase.from('ayarlar').select('deger').eq('anahtar', 'platform_logo').single();
+  if (data?.deger) setPlatformLogo(data.deger);
+};
 
   const handleZilTikla = () => {
   if (isAdmin) {
@@ -173,9 +180,15 @@ export default function Header({
               className="flex items-center gap-1.5 sm:gap-2 cursor-pointer flex-shrink-0 w-full sm:w-auto justify-center sm:justify-start"
               onClick={() => onNavigate('home')}
             >
-              <div className="bg-orange-500 rounded-lg p-1 sm:p-1.5">
-                <Truck className="text-white" size={16} />
-              </div>
+              <div className="rounded-lg overflow-hidden flex-shrink-0">
+  {platformLogo ? (
+    <img src={platformLogo} alt="Logo" className="h-8 w-auto object-contain" />
+  ) : (
+    <div className="bg-orange-500 rounded-lg p-1 sm:p-1.5">
+      <Truck className="text-white" size={16} />
+    </div>
+  )}
+</div>
               <div className="leading-tight">
                 <div className="text-slate-800 font-bold text-base sm:text-xl tracking-tight">
                   salonum<span className="text-orange-500">.site</span>
@@ -225,9 +238,15 @@ export default function Header({
           <div className="md:hidden fixed inset-0 top-0 z-50 bg-white flex flex-col">
             <div className="flex items-center justify-between px-4 py-4 border-b border-slate-100 bg-slate-800">
               <div className="flex items-center gap-2">
-                <div className="bg-orange-500 rounded-lg p-1.5">
-                  <Truck className="text-white" size={18} />
-                </div>
+                <div className="rounded-lg overflow-hidden flex-shrink-0">
+  {platformLogo ? (
+    <img src={platformLogo} alt="Logo" className="h-8 w-auto object-contain" />
+  ) : (
+    <div className="bg-orange-500 rounded-lg p-1.5">
+      <Truck className="text-white" size={18} />
+    </div>
+  )}
+</div>
                 <span className="text-white font-bold text-base">salonum<span className="text-orange-400">.site</span></span>
               </div>
               <button onClick={() => setMenuAcik(false)} className="p-2 text-slate-300 hover:text-white">
