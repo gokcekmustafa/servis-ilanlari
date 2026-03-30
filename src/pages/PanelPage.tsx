@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   kullaniciIlanlari, ilanSil, ilanGuncelle, araclarGetir, aracEkle, aracSil,
   favorileriGetir, favoriKaldir, konusmaMesajlariniGetir, okunmamisMesajSayisi,
-mesajOkunduIsaretle, destekGonder
+mesajOkunduIsaretle, destekGonder, mesajGonder
 } from '../lib/ilanlar';
 import { Ilan } from '../types';
 import { ilceler } from '../data/ilceler';
@@ -817,6 +817,8 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId, b
   const [mesajlar, setMesajlar] = useState<any[]>([]);
   const [okunmamisSayi, setOkunmamisSayi] = useState(0);
   const [aktifKonusmaId, setAktifKonusmaId] = useState<string | null>(null);
+  const [cevapMetni, setCevapMetni] = useState('');
+  const [mesajGonderiliyor, setMesajGonderiliyor] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(false);
   const [basari, setBasari] = useState('');
   const [hata, setHata] = useState('');
@@ -940,6 +942,30 @@ const handleNotSil = (ilanId: string) => {
     setMesajlar(mesajlar.map(m => m.id === mesajId ? { ...m, okundu: true } : m));
     setOkunmamisSayi(Math.max(0, okunmamisSayi - 1));
   };
+
+  const handleMesajCevapla = async () => {
+  if (!aktifKonusma || !cevapMetni.trim()) return;
+
+  const sonMesaj = aktifKonusma.mesajlar[aktifKonusma.mesajlar.length - 1];
+  const aliciId =
+    sonMesaj.gonderen_id === userId ? sonMesaj.alan_id : sonMesaj.gonderen_id;
+
+  setMesajGonderiliyor(true);
+
+  const { error, data } = await mesajGonder({
+    gonderen_id: userId,
+    alan_id: aliciId,
+    ilan_id: sonMesaj.ilan_id,
+    mesaj: cevapMetni.trim(),
+  });
+
+  setMesajGonderiliyor(false);
+
+  if (!error && data?.[0]) {
+    setMesajlar(prev => [...prev, data[0]]);
+    setCevapMetni('');
+  }
+};
 
   const handleProfilGuncelle = async () => {
     setHata(''); setBasari('');
@@ -1339,6 +1365,7 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                 key={konusma.conversationId}
                 onClick={async () => {
                   setAktifKonusmaId(konusma.conversationId);
+                  setCevapMetni('');
 
                   const okunmamislar = konusma.mesajlar.filter(
                     m => m.alan_id === userId && !m.okundu
@@ -1400,37 +1427,50 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                 </div>
 
                 {aktifKonusma.mesajlar.map((mesaj) => {
-                  const benimMesajim = mesaj.gonderen_id === userId;
+  const benimMesajim = mesaj.gonderen_id === userId;
 
-                  return (
-                    <div
-                      key={mesaj.id}
-                      className={`flex ${benimMesajim ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={
-                          'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ' +
-                          (benimMesajim
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-white border border-slate-200 text-slate-700')
-                        }
-                      >
-                        <p>{mesaj.mesaj}</p>
-                        <p className={`text-[11px] mt-1 ${benimMesajim ? 'text-white/80' : 'text-slate-400'}`}>
-                          {new Date(mesaj.created_at).toLocaleString('tr-TR')}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+  return (
+    <div
+      key={mesaj.id}
+      className={`flex ${benimMesajim ? 'justify-end' : 'justify-start'}`}
+    >
+      <div
+        className={
+          'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ' +
+          (benimMesajim
+            ? 'bg-orange-500 text-white'
+            : 'bg-white border border-slate-200 text-slate-700')
+        }
+      >
+        <p>{mesaj.mesaj}</p>
+        <p className={`text-[11px] mt-1 ${benimMesajim ? 'text-white/80' : 'text-slate-400'}`}>
+          {new Date(mesaj.created_at).toLocaleString('tr-TR')}
+        </p>
+      </div>
     </div>
+  );
+})}
+
+<div className="pt-3 border-t border-slate-200 mt-2">
+  <div className="flex flex-col gap-2">
+    <textarea
+      value={cevapMetni}
+      onChange={e => setCevapMetni(e.target.value)}
+      placeholder="Mesajınızı yazın..."
+      rows={3}
+      className="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none bg-white"
+    />
+    <button
+      onClick={handleMesajCevapla}
+      disabled={mesajGonderiliyor || !cevapMetni.trim()}
+      className="self-end bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition disabled:opacity-50"
+    >
+      {mesajGonderiliyor ? 'Gönderiliyor...' : 'Gönder'}
+    </button>
   </div>
-)}
+</div>
+
+</div>
 
             {/* FAVORİLER */}
             {aktifSekme === 'favoriler' && (
