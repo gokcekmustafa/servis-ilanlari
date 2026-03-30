@@ -155,7 +155,7 @@ function IlanThumbnail({ resimler }: { resimler: string[] }) {
 }
 
 export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn, kompakt = false }: IlanCardProps) {
-  const config = kategoriConfig[ilan.kategori] ?? { label: 'DİĞER', bg: 'bg-gray-500', text: 'text-white', serit: 'bg-gray-300' };
+  const config = kategoriConfig[ilan.kategori] ?? { label: 'DİĞER', label1: '', label2: '', bg: 'bg-gray-500', text: 'text-white', serit: 'bg-gray-300' };
   const ilanVeren = ilan.profiles?.full_name || ilan.ilan_veren || 'Kullanıcı';
   const telefon = ilan.profiles?.phone_number || '';
   const tarih = new Date(ilan.created_at).toLocaleDateString('tr-TR');
