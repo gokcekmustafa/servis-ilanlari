@@ -1005,31 +1005,36 @@ const handleNotSil = (ilanId: string) => {
     { id: 'destek', label: 'Destek', icon: HelpCircle },
   ];
 
-const konusmalarMap = mesajlar.reduce((acc: Record<string, any[]>, mesaj) => {
+const konusmalarMap = mesajlar.reduce((acc: Record<string, any[]>, mesaj: any) => {
   const key = mesaj.conversation_id || [mesaj.gonderen_id, mesaj.alan_id].sort().join('_');
   if (!acc[key]) acc[key] = [];
   acc[key].push(mesaj);
   return acc;
-}, {});
+}, {} as Record<string, any[]>);
 
 const konusmalar = Object.entries(konusmalarMap)
-  .map(([conversationId, mesajlar]) => {
-    const sonMesaj = mesajlar[mesajlar.length - 1];
+  .map(([conversationId, konusmaMesajlari]: [string, any[]]) => {
+    const sonMesaj = konusmaMesajlari[konusmaMesajlari.length - 1];
     const digerKullanici =
       sonMesaj.gonderen_id === userId ? sonMesaj.alan : sonMesaj.gonderen;
 
-    const okunmamisAdet = mesajlar.filter(
-      m => m.alan_id === userId && !m.okundu
+    const okunmamisAdet = konusmaMesajlari.filter(
+      (m: any) => m.alan_id === userId && !m.okundu
     ).length;
 
     return {
       conversationId,
-      mesajlar,
+      mesajlar: konusmaMesajlari,
       sonMesaj,
       digerKullanici,
       okunmamisAdet,
     };
   })
+  .sort(
+    (a, b) =>
+      new Date(b.sonMesaj.created_at).getTime() -
+      new Date(a.sonMesaj.created_at).getTime()
+  );
   .sort(
     (a, b) =>
       new Date(b.sonMesaj.created_at).getTime() -
