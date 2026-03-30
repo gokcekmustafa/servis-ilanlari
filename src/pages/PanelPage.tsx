@@ -847,9 +847,11 @@ const [notMetin, setNotMetin] = useState('');
 });
 
   useEffect(() => {
-    okunmamisMesajSayisi(userId).then(({ count }) => { if (count) setOkunmamisSayi(count); });
-  }, [userId]);
-
+  okunmamisMesajSayisi(userId).then(({ count }) => {
+    setOkunmamisSayi(count || 0);
+  });
+}, [userId]);
+  
   useEffect(() => {
     if (aktifSekme === 'ilanlar') ilanlariYukle();
     if (aktifSekme === 'araclar') araclarimYukle();
@@ -938,12 +940,12 @@ const handleNotSil = (ilanId: string) => {
 };
 
   const handleMesajOku = async (mesajId: string) => {
-    await mesajOkunduIsaretle(mesajId);
-    setMesajlar(mesajlar.map(m => m.id === mesajId ? { ...m, okundu: true } : m));
-    setOkunmamisSayi(Math.max(0, okunmamisSayi - 1));
-  };
+  await mesajOkunduIsaretle(mesajId);
+  setMesajlar(mesajlar.map(m => m.id === mesajId ? { ...m, okundu: true } : m));
+  setOkunmamisSayi(Math.max(0, okunmamisSayi - 1));
+};
 
-  const handleMesajCevapla = async () => {
+const handleMesajCevapla = async () => {
   if (!aktifKonusma || !cevapMetni.trim()) return;
 
   const sonMesaj = aktifKonusma.mesajlar[aktifKonusma.mesajlar.length - 1];
@@ -973,27 +975,6 @@ const handleMesajSil = async (mesajId: string) => {
   const { error } = await mesajSil(mesajId);
   if (!error) {
     setMesajlar(prev => prev.filter(m => m.id !== mesajId));
-  }
-};
-
-  const sonMesaj = aktifKonusma.mesajlar[aktifKonusma.mesajlar.length - 1];
-  const aliciId =
-    sonMesaj.gonderen_id === userId ? sonMesaj.alan_id : sonMesaj.gonderen_id;
-
-  setMesajGonderiliyor(true);
-
-  const { error, data } = await mesajGonder({
-    gonderen_id: userId,
-    alan_id: aliciId,
-    ilan_id: sonMesaj.ilan_id,
-    mesaj: cevapMetni.trim(),
-  });
-
-  setMesajGonderiliyor(false);
-
-  if (!error && data?.[0]) {
-    setMesajlar(prev => [...prev, data[0]]);
-    setCevapMetni('');
   }
 };
 
