@@ -1032,8 +1032,6 @@ const konusmalar = Object.entries(konusmalarMap)
   })
   .sort(
     (a, b) =>
-      .sort(
-    (a, b) =>
       new Date(b.sonMesaj.created_at).getTime() -
       new Date(a.sonMesaj.created_at).getTime()
   );
