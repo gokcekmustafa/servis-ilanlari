@@ -1308,113 +1308,129 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
             )}
 
             {/* MESAJLAR */}
-            {aktifSekme === 'mesajlar' && (
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-slate-100">
-                  <h2 className="font-bold text-slate-800 text-base">İlan Mesajları</h2>
-                  {okunmamisSayi > 0 && <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{okunmamisSayi} okunmamış</span>}
-                </div>
-                <div className="p-4 sm:p-5">
-                  {yukleniyor ? (
-                    <div className="flex flex-col gap-3">{[1, 2].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
-                  ) : mesajlar.length === 0 ? (
-                    <div className="text-center py-12 text-slate-400"><MessageSquare size={40} className="mx-auto mb-3 opacity-30" /><p className="text-sm font-medium">Henüz mesajınız yok</p></div>
-                  ) : (
-                    <div className="grid lg:grid-cols-[320px_1fr] gap-4">
-  <div className="flex flex-col gap-3">
-    {konusmalar.map(konusma => (
-      <div
-        key={konusma.conversationId}
-        onClick={async () => {
-          setAktifKonusmaId(konusma.conversationId);
+{aktifSekme === 'mesajlar' && (
+  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-slate-100">
+      <h2 className="font-bold text-slate-800 text-base">İlan Mesajları</h2>
+      {okunmamisSayi > 0 && (
+        <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+          {okunmamisSayi} okunmamış
+        </span>
+      )}
+    </div>
 
-          const okunmamislar = konusma.mesajlar.filter(
-            m => m.alan_id === userId && !m.okundu
-          );
-
-          for (const mesaj of okunmamislar) {
-            await handleMesajOku(mesaj.id);
-          }
-        }}
-        className={
-          'border rounded-xl p-4 cursor-pointer transition ' +
-          (aktifKonusmaId === konusma.conversationId
-            ? 'border-orange-300 bg-orange-50'
-            : 'border-slate-200 bg-white hover:border-orange-200')
-        }
-      >
-        <div className="flex items-start justify-between mb-2 gap-2">
-          <div className="min-w-0">
-            <p className="font-semibold text-slate-700 text-sm">
-              {konusma.digerKullanici?.full_name || konusma.digerKullanici?.phone_number || 'Kullanıcı'}
-            </p>
-            <p className="text-xs text-slate-400 truncate">
-              {konusma.sonMesaj.ilanlar?.aciklama}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {konusma.okunmamisAdet > 0 && (
-              <span className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                {konusma.okunmamisAdet}
-              </span>
-            )}
-            <span className="text-xs text-slate-400 whitespace-nowrap">
-              {new Date(konusma.sonMesaj.created_at).toLocaleDateString('tr-TR')}
-            </span>
-          </div>
+    <div className="p-4 sm:p-5">
+      {yukleniyor ? (
+        <div className="flex flex-col gap-3">
+          {[1, 2].map(i => (
+            <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />
+          ))}
         </div>
-        <p className="text-sm text-slate-600 line-clamp-2">{konusma.sonMesaj.mesaj}</p>
-      </div>
-    ))}
-  </div>
-
-  <div className="border border-slate-200 rounded-xl bg-slate-50 min-h-[420px]">
-    {!aktifKonusma ? (
-      <div className="h-full flex items-center justify-center text-center p-6 text-slate-400">
-        <div>
-          <MessageSquare size={36} className="mx-auto mb-3 opacity-30" />
-          <p className="text-sm font-medium">Bir konuşma seçin</p>
+      ) : mesajlar.length === 0 ? (
+        <div className="text-center py-12 text-slate-400">
+          <MessageSquare size={40} className="mx-auto mb-3 opacity-30" />
+          <p className="text-sm font-medium">Henüz mesajınız yok</p>
         </div>
-      </div>
-    ) : (
-      <div className="p-4 flex flex-col gap-3">
-        <div className="pb-3 border-b border-slate-200">
-          <p className="font-semibold text-slate-800">
-            {aktifKonusma.digerKullanici?.full_name || aktifKonusma.digerKullanici?.phone_number || 'Kullanıcı'}
-          </p>
-          <p className="text-xs text-slate-400">
-            {aktifKonusma.sonMesaj.ilanlar?.aciklama}
-          </p>
-        </div>
-
-        {aktifKonusma.mesajlar.map((mesaj) => {
-          const benimMesajim = mesaj.gonderen_id === userId;
-
-          return (
-            <div
-              key={mesaj.id}
-              className={`flex ${benimMesajim ? 'justify-end' : 'justify-start'}`}
-            >
+      ) : (
+        <div className="grid lg:grid-cols-[320px_1fr] gap-4">
+          <div className="flex flex-col gap-3">
+            {konusmalar.map(konusma => (
               <div
+                key={konusma.conversationId}
+                onClick={async () => {
+                  setAktifKonusmaId(konusma.conversationId);
+
+                  const okunmamislar = konusma.mesajlar.filter(
+                    m => m.alan_id === userId && !m.okundu
+                  );
+
+                  for (const mesaj of okunmamislar) {
+                    await handleMesajOku(mesaj.id);
+                  }
+                }}
                 className={
-                  'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ' +
-                  (benimMesajim
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-white border border-slate-200 text-slate-700')
+                  'border rounded-xl p-4 cursor-pointer transition ' +
+                  (aktifKonusmaId === konusma.conversationId
+                    ? 'border-orange-300 bg-orange-50'
+                    : 'border-slate-200 bg-white hover:border-orange-200')
                 }
               >
-                <p>{mesaj.mesaj}</p>
-                <p className={`text-[11px] mt-1 ${benimMesajim ? 'text-white/80' : 'text-slate-400'}`}>
-                  {new Date(mesaj.created_at).toLocaleString('tr-TR')}
-                </p>
+                <div className="flex items-start justify-between mb-2 gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-700 text-sm">
+                      {konusma.digerKullanici?.full_name || konusma.digerKullanici?.phone_number || 'Kullanıcı'}
+                    </p>
+                    <p className="text-xs text-slate-400 truncate">
+                      {konusma.sonMesaj.ilanlar?.aciklama}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {konusma.okunmamisAdet > 0 && (
+                      <span className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                        {konusma.okunmamisAdet}
+                      </span>
+                    )}
+                    <span className="text-xs text-slate-400 whitespace-nowrap">
+                      {new Date(konusma.sonMesaj.created_at).toLocaleDateString('tr-TR')}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-600 line-clamp-2">{konusma.sonMesaj.mesaj}</p>
               </div>
-            </div>
-          );
-        })}
-      </div>
-    )}
+            ))}
+          </div>
+
+          <div className="border border-slate-200 rounded-xl bg-slate-50 min-h-[420px]">
+            {!aktifKonusma ? (
+              <div className="h-full flex items-center justify-center text-center p-6 text-slate-400">
+                <div>
+                  <MessageSquare size={36} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-sm font-medium">Bir konuşma seçin</p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 flex flex-col gap-3">
+                <div className="pb-3 border-b border-slate-200">
+                  <p className="font-semibold text-slate-800">
+                    {aktifKonusma.digerKullanici?.full_name || aktifKonusma.digerKullanici?.phone_number || 'Kullanıcı'}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {aktifKonusma.sonMesaj.ilanlar?.aciklama}
+                  </p>
+                </div>
+
+                {aktifKonusma.mesajlar.map((mesaj) => {
+                  const benimMesajim = mesaj.gonderen_id === userId;
+
+                  return (
+                    <div
+                      key={mesaj.id}
+                      className={`flex ${benimMesajim ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={
+                          'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ' +
+                          (benimMesajim
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-white border border-slate-200 text-slate-700')
+                        }
+                      >
+                        <p>{mesaj.mesaj}</p>
+                        <p className={`text-[11px] mt-1 ${benimMesajim ? 'text-white/80' : 'text-slate-400'}`}>
+                          {new Date(mesaj.created_at).toLocaleString('tr-TR')}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   </div>
-</div>
+)}
 
             {/* FAVORİLER */}
             {aktifSekme === 'favoriler' && (
