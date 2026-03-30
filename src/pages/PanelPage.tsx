@@ -978,32 +978,6 @@ const handleMesajSil = async (mesajId: string) => {
   }
 };
   
-const handleKonusmaSil = async (conversationId: string) => {
-  if (!confirm('Bu konuşmayı (tüm mesajları) silmek istediğinizden emin misiniz?')) return;
-  
-  // Tüm konuşma mesajlarını sil
-  const konusmaMesajlari = mesajlar.filter(m => 
-    m.conversation_id === conversationId || 
-    (m.conversation_id === undefined && conversationIdOlustur(m.gonderen_id, m.alan_id) === conversationId)
-  );
-  
-  for (const mesaj of konusmaMesajlari) {
-    await mesajSil(mesaj.id, userId);
-  }
-  
-  // Listeyi güncelle
-  setMesajlar(mesajlar.filter(m => 
-    m.conversation_id !== conversationId && 
-    conversationIdOlustur(m.gonderen_id, m.alan_id) !== conversationId
-  ));
-  
-  // Aktif konuşma açıksa kapat
-  if (aktifKonusmaId === conversationId) {
-    setAktifKonusmaId(null);
-    setCevapMetni('');
-  }
-};
-  
   const handleProfilGuncelle = async () => {
     setHata(''); setBasari('');
     const updates: any = { full_name: profil.ad, email: profil.email, adres: profil.adres, il: profil.il, ilce: profil.ilce };
@@ -1434,6 +1408,28 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                         {konusma.okunmamisAdet}
                       </span>
                     )}
+
+{/* 🆕 SİLME BUTONU */}
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      if (confirm('Bu konuşmayı tamamen silmek istediğinizden emin misiniz?')) {
+        // Aktif konuşma ise kapat
+        if (aktifKonusmaId === konusma.conversationId) {
+          setAktifKonusmaId(null);
+          setCevapMetni('');
+        }
+        // Listeyi güncelle (frontend)
+        setKonusmalar(prev => prev.filter(k => k.conversationId !== konusma.conversationId));
+      }
+    }}
+    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition"
+    title="Konuşmayı sil"
+  >
+    <Trash2 size={14} />
+  </button>
+</div>
+                    
                     <span className="text-xs text-slate-400 whitespace-nowrap">
                       {new Date(konusma.sonMesaj.created_at).toLocaleDateString('tr-TR')}
                     </span>
