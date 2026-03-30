@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   kullaniciIlanlari, ilanSil, ilanGuncelle, araclarGetir, aracEkle, aracSil,
   favorileriGetir, favoriKaldir, konusmaMesajlariniGetir, okunmamisMesajSayisi,
-mesajOkunduIsaretle, destekGonder, mesajGonder
+mesajOkunduIsaretle, destekGonder, mesajGonder, mesajSil
 } from '../lib/ilanlar';
 import { Ilan } from '../types';
 import { ilceler } from '../data/ilceler';
@@ -946,6 +946,15 @@ const handleNotSil = (ilanId: string) => {
   const handleMesajCevapla = async () => {
   if (!aktifKonusma || !cevapMetni.trim()) return;
 
+    const handleMesajSil = async (mesajId: string) => {
+  if (!confirm('Bu mesajı silmek istediğinizden emin misiniz?')) return;
+
+  const { error } = await mesajSil(mesajId);
+  if (!error) {
+    setMesajlar(prev => prev.filter(m => m.id !== mesajId));
+  }
+};
+
   const sonMesaj = aktifKonusma.mesajlar[aktifKonusma.mesajlar.length - 1];
   const aliciId =
     sonMesaj.gonderen_id === userId ? sonMesaj.alan_id : sonMesaj.gonderen_id;
@@ -1432,23 +1441,36 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
 
                     return (
                       <div
-                        key={mesaj.id}
-                        className={`flex ${benimMesajim ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={
-                            'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ' +
-                            (benimMesajim
-                              ? 'bg-orange-500 text-white'
-                              : 'bg-white border border-slate-200 text-slate-700')
-                          }
-                        >
-                          <p>{mesaj.mesaj}</p>
-                          <p className={`text-[11px] mt-1 ${benimMesajim ? 'text-white/80' : 'text-slate-400'}`}>
-                            {new Date(mesaj.created_at).toLocaleString('tr-TR')}
-                          </p>
-                        </div>
-                      </div>
+  <div
+  key={mesaj.id}
+  className={`flex ${benimMesajim ? 'justify-end' : 'justify-start'}`}
+>
+  <div className={`flex items-start gap-2 ${benimMesajim ? 'flex-row-reverse' : ''}`}>
+    <div
+      className={
+        'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ' +
+        (benimMesajim
+          ? 'bg-orange-500 text-white'
+          : 'bg-white border border-slate-200 text-slate-700')
+      }
+    >
+      <p>{mesaj.mesaj}</p>
+      <p className={`text-[11px] mt-1 ${benimMesajim ? 'text-white/80' : 'text-slate-400'}`}>
+        {new Date(mesaj.created_at).toLocaleString('tr-TR')}
+      </p>
+    </div>
+
+    {benimMesajim && (
+      <button
+        onClick={() => handleMesajSil(mesaj.id)}
+        className="text-[11px] text-red-400 hover:text-red-600 mt-2"
+        title="Mesajı sil"
+      >
+        Sil
+      </button>
+    )}
+  </div>
+</div>
                     );
                   })}
                 </div>
