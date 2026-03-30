@@ -364,8 +364,8 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
 });
   const [soforAriyorum, setSoforAriyorum] = useState({ odeme_sekli: 'aylik', ucret: '', aranan_tecrube: '', ortalama_servis_suresi: '', yolcu_sayisi: '', km: '', calisılacak_gun: '', yabanci_diller: [] as string[] });
   const [hostesAriyorum, setHostesAriyorum] = useState({ ucret: '', calisılacak_okul: '', aranan_tecrube: '', okul_turu: 'Anaokulu Kres', yabanci_diller: [] as string[] });
-  const [hostesimIs, setHostesimIs] = useState({ dogum_tarihi: '', dogum_yeri: '', egitim_durumu: '', yabanci_diller: [] as string[], servis_tasimacilik_deneyimi: 'var' });
-  const [soforumIs, setSoforumIs] = useState({ surucubelgesi: '', ehliyet_alinma_tarihi: '', sinav_belgeleri: '', dogum_tarihi: '', dogum_yeri: '', arac_turu: [] as string[], belgeler: [] as string[], yabanci_diller: [] as string[], emekli: 'hayir', mesleki_yeterlilik: 'var', sabika_kaydi: 'var', tam_zamanlimi: 'hayir', servis_tasimacilik_deneyimi: 'var', baska_ise_gider_misiniz: 'hayir' });
+  const [hostesimIs, setHostesimIs] = useState({ dogum_tarihi: '', dogum_yeri: '', egitim_durumu: '', yabanci_diller: [] as string[], servis_tasimacilik_deneyimi: 'var', maas_beklentisi: '' });
+  const [soforumIs, setSoforumIs] = useState({ surucubelgesi: '', ehliyet_alinma_tarihi: '', sinav_belgeleri: '', dogum_tarihi: '', dogum_yeri: '', arac_turu: [] as string[], belgeler: [] as string[], yabanci_diller: [] as string[], emekli: 'hayir', mesleki_yeterlilik: 'var', sabika_kaydi: 'var', tam_zamanlimi: 'hayir', servis_tasimacilik_deneyimi: 'var', baska_ise_gider_misiniz: 'hayir', maas_beklentisi: '' });
   const [plakaSatiyorum, setPlakaSatiyorum] = useState({ plaka_il: '', plaka_harf: '', plaka_no: '', ucret: '', aracla_birlikte: false, yol_belgesi_var: false, noter_satisi: false, hisseli: false });
   const [aracimiSatiyorum, setAracimiSatiyorum] = useState({ marka: '', model: '', yil: '', plaka: '', koltuk_sayisi: '', arac_tipi: '', km: '', ucret: '', hasar_kaydi: 'yok', noter_satisi: false, aracla_birlikte_plaka: false });
 
