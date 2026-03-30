@@ -499,12 +499,14 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
 
             {/* HOSTESİM İŞ ARIYORUM */}
             {ilan.kategori === 'hostesim_is' && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
-  <BilgiKutusu icon={<Calendar size={14} />} label="Doğum Tarihi" value={ek.dogum_tarihi} />
-  <BilgiKutusu icon={<MapPin size={14} />} label="Doğum Yeri" value={ek.dogum_yeri} />
-  <BilgiKutusu icon={<Award size={14} />} label="Eğitim Durumu" value={ek.egitim_durumu} />
-  <BilgiKutusu icon={<Tag size={14} />} label="Maaş Beklentisi" value={ek.maas_beklentisi ? `${Number(ek.maas_beklentisi).toLocaleString('tr-TR')} ₺` : ''} />
-</div>
+              <div className="bg-white rounded-xl border border-slate-200 p-4">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Hostes Bilgileri</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                  <BilgiKutusu icon={<Calendar size={14} />} label="Doğum Tarihi" value={ek.dogum_tarihi} />
+                  <BilgiKutusu icon={<MapPin size={14} />} label="Doğum Yeri" value={ek.dogum_yeri} />
+                  <BilgiKutusu icon={<Award size={14} />} label="Eğitim Durumu" value={ek.egitim_durumu} />
+                  <BilgiKutusu icon={<Tag size={14} />} label="Maaş Beklentisi" value={ek.maas_beklentisi ? `${Number(ek.maas_beklentisi).toLocaleString('tr-TR')} ₺` : ''} />
+                </div>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {ek.servis_tasimacilik_deneyimi && <EvetHayirBadge label="Servis Deneyimi" deger={ek.servis_tasimacilik_deneyimi} />}
                 </div>
@@ -518,17 +520,6 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
                     </div>
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* ARACIM VAR İŞ ARIYORUM */}
-            {ilan.kategori === 'aracim_var_is' && ek.secilen_arac && (
-              <div className="bg-white rounded-xl border border-slate-200 p-4">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Araç Bilgileri</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  <BilgiKutusu icon={<Car size={14} />} label="Plaka" value={ek.secilen_arac} />
-                  {ek.calisma_yerleri && <BilgiKutusu icon={<MapPin size={14} />} label="Çalışma Yerleri" value={ek.calisma_yerleri} />}
-                </div>
               </div>
             )}
 
