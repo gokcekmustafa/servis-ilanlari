@@ -43,7 +43,7 @@ type AdminPageProps = {
   defaultSekme?: Sekme;
 };
 
-type Sekme = 'istatistik' | 'ilanlar' | 'kullanicilar' | 'reklamlar' | 'duyurular' | 'destek' | 'personel';
+type Sekme = 'istatistik' | 'ilanlar' | 'kullanicilar' | 'reklamlar' | 'duyurular' | 'destek' | 'personel' | 'logo';
 
 const SEKME_YETKI: Partial<Record<Sekme, keyof PersonelYetkiler>> = {
   ilanlar:      'ilan_onay',
@@ -88,6 +88,8 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
   const [destekler, setDestekler]         = useState<any[]>([]);
   const [yukleniyor, setYukleniyor]       = useState(true);
   const [mobilMenuAcik, setMobilMenuAcik] = useState(false);
+  onst [platformLogo, setPlatformLogo] = useState<string>('');
+const [logoYukleniyor, setLogoYukleniyor] = useState(false);
 
   const [yeniReklam, setYeniReklam]             = useState({ baslik: '', resim_url: '', link_url: '', konum: 'liste' });
   const [reklamYukleniyor, setReklamYukleniyor] = useState(false);
@@ -134,13 +136,14 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
 
   const hepsiniYukle = async () => {
     setYukleniyor(true);
-    const [u, i, r, d, ds, ayar] = await Promise.all([
+    const [u, i, r, d, ds, ayar, logoAyar] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('ilanlar').select('*').order('created_at', { ascending: false }),
       supabase.from('reklamlar').select('*').order('id', { ascending: false }),
       supabase.from('duyurular').select('*').order('id', { ascending: false }),
       supabase.from('destek').select('*').order('created_at', { ascending: false }),
       supabase.from('ayarlar').select('*').eq('anahtar', 'reklam_siklik').single(),
+      supabase.from('ayarlar').select('*').eq('anahtar', 'platform_logo').single(),
     ]);
     setKullanicilar(u.data || []);
     setIlanlar(i.data || []);
@@ -148,6 +151,7 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
     setDuyurular(d.data || []);
     setDestekler(ds.data || []);
     if (ayar.data?.deger) setReklamSiklik(Number(ayar.data.deger));
+    if (logoAyar.data?.deger) setPlatformLogo(logoAyar.data.deger);
     setYukleniyor(false);
   };
 
@@ -282,6 +286,67 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
     setSeciliPersonel(p);
     setPersonelForm({ full_name: p.full_name, phone_number: p.phone_number, password: '', aktif: p.aktif ?? true, yetkiler: { ...Object.fromEntries(Object.keys(PERSONEL_YETKI_TANIM).map(k => [k, false])), ...(p.yetkiler || {}) } as PersonelYetkiler });
     setPersonelFormAcik(true);
+{/* ─── LOGO YÖNETİMİ ─── */}
+          {!yukleniyor && aktifSekme === 'logo' && (
+            !isSuperAdmin ? <YetkisizUyari sekme="Logo Yönetimi" /> : (
+            <div className="max-w-lg">
+              <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <p className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                  <Image size={15} className="text-orange-500" /> Platform Logosu
+                </p>
+                <p className="text-xs text-slate-400 mb-4">
+                  Yüklediğiniz logo, sitenin header bölümünde araç ikonu yerine görünecektir.
+                </p>
+
+                {/* Mevcut logo önizleme */}
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-slate-500 mb-2">Mevcut Logo</p>
+                  {platformLogo ? (
+                    <div className="relative inline-block">
+                      <img src={platformLogo} alt="Platform Logo" className="h-16 w-auto object-contain border border-slate-200 rounded-lg p-2 bg-white" />
+                      <button
+                        onClick={async () => {
+                          await supabase.from('ayarlar').delete().eq('anahtar', 'platform_logo');
+                          setPlatformLogo('');
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                      >×</button>
+                    </div>
+                  ) : (
+                    <div className="h-16 w-32 bg-slate-50 border border-dashed border-slate-200 rounded-lg flex items-center justify-center">
+                      <span className="text-xs text-slate-300">Logo yok</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Yeni logo yükleme */}
+                <div
+                  onClick={() => document.getElementById('logo-input')?.click()}
+                  className="border-2 border-dashed border-slate-200 hover:border-orange-300 hover:bg-orange-50 rounded-xl p-8 text-center cursor-pointer transition"
+                >
+                  {logoYukleniyor ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                      <p className="text-xs text-slate-400">Yükleniyor...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <Image size={24} className="text-slate-300" />
+                      <p className="text-sm text-slate-500 font-medium">Logo yüklemek için tıkla</p>
+                      <p className="text-xs text-slate-400">PNG, JPG, SVG · Şeffaf arka plan önerilir</p>
+                    </div>
+                  )}
+                  <input id="logo-input" type="file" accept="image/*" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) logoYukle(f); e.target.value = ''; }} />
+                </div>
+
+                {platformLogo && (
+                  <p className="text-xs text-green-600 mt-3 font-medium text-center">✓ Logo aktif — header'da görünüyor</p>
+                )}
+              </div>
+            </div>
+            )
+          )}
   };
 
   // ─── STILLER ────────────────────────────────────────────────────────────────
@@ -299,6 +364,19 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
     </div>
   );
 
+  const logoYukle = async (dosya: File) => {
+  if (!dosya.type.startsWith('image/')) { alert('Sadece resim dosyası yükleyebilirsiniz'); return; }
+  setLogoYukleniyor(true);
+  const ad = 'platform-logo-' + Date.now() + '-' + dosya.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const { error } = await supabase.storage.from('reklamlar').upload(ad, dosya, { contentType: dosya.type });
+  if (error) { alert('Yüklerken hata: ' + error.message); setLogoYukleniyor(false); return; }
+  const { data: u } = supabase.storage.from('reklamlar').getPublicUrl(ad);
+  const yeniUrl = u.publicUrl;
+  await supabase.from('ayarlar').upsert({ anahtar: 'platform_logo', deger: yeniUrl }, { onConflict: 'anahtar' });
+  setPlatformLogo(yeniUrl);
+  setLogoYukleniyor(false);
+};
+  
   const menuItems = [
     { id: 'istatistik',   label: 'İstatistikler', icon: LayoutDashboard },
     { id: 'ilanlar',      label: 'İlanlar',        icon: FileText,       sayi: ilanlar.length },
@@ -306,7 +384,10 @@ export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkile
     { id: 'reklamlar',    label: 'Reklamlar',      icon: Image,          sayi: reklamlar.length },
     { id: 'duyurular',    label: 'Duyurular',      icon: Megaphone,      sayi: duyurular.length },
     { id: 'destek',       label: 'Destek',         icon: HeadphonesIcon, sayi: destekler.filter(d => d.durum === 'bekliyor').length },
-    ...(isSuperAdmin ? [{ id: 'personel', label: 'Personel', icon: Shield, sayi: kullanicilar.filter(u => u.type === 'admin').length }] : []),
+    ...(isSuperAdmin ? [
+  { id: 'personel', label: 'Personel', icon: Shield, sayi: kullanicilar.filter(u => u.type === 'admin').length },
+  { id: 'logo', label: 'Platform Logo', icon: Image, sayi: 0 },
+] : []),
   ].map(item => ({ ...item, kilitli: !sekmeYetkiVarMi(item.id as Sekme) }));
 
   const SidebarIcerik = ({ kapatFn }: { kapatFn?: () => void }) => (
