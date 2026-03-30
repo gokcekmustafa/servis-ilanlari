@@ -1,5 +1,11 @@
 import { supabase } from './supabase';
 
+function conversationIdOlustur(kullanici1: string, kullanici2: string) {
+  return kullanici1 < kullanici2
+    ? `${kullanici1}_${kullanici2}`
+    : `${kullanici2}_${kullanici1}`;
+}
+
 export async function ilanlariGetir(kategori?: string) {
   let query = supabase
     .from('ilanlar')
@@ -149,10 +155,13 @@ export async function mesajGonder(mesaj: {
   ilan_id: string;
   mesaj: string;
 }) {
+  const conversation_id = conversationIdOlustur(mesaj.gonderen_id, mesaj.alan_id);
+
   const { data, error } = await supabase
     .from('mesajlar')
-    .insert([mesaj])
+    .insert([{ ...mesaj, conversation_id }])
     .select();
+
   return { data, error };
 }
 
