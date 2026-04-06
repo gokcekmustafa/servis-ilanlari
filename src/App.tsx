@@ -1198,11 +1198,11 @@ export default function App() {
   onGoRegister: () => setCurrentPage('register'),
   onGoNotifications: () => {
     if (isAdmin) {
-      sessionStorage.setItem('admin_aktif_sekme', 'bildirimler');
+      sessionStorage.setItem('admin_aktif_sekme', 'destek');
       setCurrentPage('admin');
       return;
     }
-    sessionStorage.setItem('panel_aktif_sekme', 'bildirimler');
+    sessionStorage.setItem('panel_aktif_sekme', 'mesajlar');
     setCurrentPage('panel');
   },
   onLogout: handleLogout,

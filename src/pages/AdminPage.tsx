@@ -40,10 +40,10 @@ type AdminPageProps = {
   onIlanDetay: (ilan: Ilan) => void;
   isSuperAdmin: boolean;
   yetkiler: PersonelYetkiler;
-  defaultSekme?: Sekme;
+  defaultSekme?: Sekme | 'bildirimler';
 };
 
-type Sekme = 'istatistik' | 'ilanlar' | 'kullanicilar' | 'reklamlar' | 'duyurular' | 'destek' | 'bildirimler' | 'personel' | 'logo';
+type Sekme = 'istatistik' | 'ilanlar' | 'kullanicilar' | 'reklamlar' | 'duyurular' | 'destek' | 'personel' | 'logo';
 
 const SEKME_YETKI: Partial<Record<Sekme, keyof PersonelYetkiler>> = {
   ilanlar:      'ilan_onay',
@@ -51,7 +51,6 @@ const SEKME_YETKI: Partial<Record<Sekme, keyof PersonelYetkiler>> = {
   reklamlar:    'reklam_yonetimi',
   duyurular:    'duyuru_yonetimi',
   destek:       'destek_yonetimi',
-  bildirimler:  'destek_yonetimi',
 };
 
 const PERSONEL_YETKI_TANIM: Record<string, { label: string; aciklama: string }> = {
@@ -81,7 +80,7 @@ const KISITLAMA_TANIM: Record<string, { label: string; aciklama: string; ikon: R
 // ─── ANA COMPONENT ────────────────────────────────────────────────────────────
 
 export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkiler, defaultSekme }: AdminPageProps) {
-  const ilkSekme: Sekme = defaultSekme === 'destek' ? 'bildirimler' : (defaultSekme || 'istatistik');
+  const ilkSekme: Sekme = defaultSekme === 'bildirimler' ? 'destek' : (defaultSekme || 'istatistik');
   const [aktifSekme, setAktifSekme] = useState<Sekme>(ilkSekme);
   const [ilanlar, setIlanlar]             = useState<any[]>([]);
   const [kullanicilar, setKullanicilar]   = useState<any[]>([]);
@@ -139,6 +138,25 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   }, [aktifSekme]);
 
   useEffect(() => { hepsiniYukle(); }, []);
+
+  useEffect(() => {
+    if (aktifSekme !== 'destek') return;
+    const hedefDestekId = sessionStorage.getItem('admin_secili_destek');
+    if (!hedefDestekId) return;
+    const hedef = destekler.find((d: any) => d.id === hedefDestekId);
+    if (!hedef) return;
+
+    setSeciliDestek(hedef);
+    setDestekCevap(hedef.cevap || '');
+    sessionStorage.removeItem('admin_secili_destek');
+
+    if (hedef.durum === 'bekliyor') {
+      supabase.from('destek').update({ durum: 'islemde' }).eq('id', hedef.id).then(() => {
+        setDestekler(prev => prev.map(x => x.id === hedef.id ? { ...x, durum: 'islemde' } : x));
+        window.dispatchEvent(new Event('bildirimler:degisti'));
+      });
+    }
+  }, [aktifSekme, destekler]);
 
   const hepsiniYukle = async () => {
     setYukleniyor(true);
@@ -329,7 +347,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
     { id: 'kullanicilar', label: 'Kullanıcılar',   icon: Users,          sayi: kullanicilar.filter(u => u.type !== 'admin').length },
     { id: 'reklamlar',    label: 'Reklamlar',      icon: Image,          sayi: reklamlar.length },
     { id: 'duyurular',    label: 'Duyurular',      icon: Megaphone,      sayi: duyurular.length },
-    { id: 'bildirimler',  label: 'Bildirimler',    icon: Bell,           sayi: destekler.filter(d => d.durum === 'bekliyor').length },
+    { id: 'destek',       label: 'Destek Talepleri', icon: Bell,         sayi: destekler.filter(d => d.durum === 'bekliyor').length },
     ...(isSuperAdmin ? [
   { id: 'personel', label: 'Personel', icon: Shield, sayi: kullanicilar.filter(u => u.type === 'admin').length },
   { id: 'logo', label: 'Platform Logo', icon: Image, sayi: 0 },
@@ -813,9 +831,9 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
             )
           )}
 
-          {/* ─── BILDIRIMLER ─── */}
-          {!yukleniyor && (aktifSekme === 'destek' || aktifSekme === 'bildirimler') && (
-            !sekmeYetkiVarMi('bildirimler') ? <YetkisizUyari sekme="Bildirim Yönetimi" /> : (
+          {/* ─── DESTEK TALEPLERI ─── */}
+          {!yukleniyor && aktifSekme === 'destek' && (
+            !sekmeYetkiVarMi('destek') ? <YetkisizUyari sekme="Destek Talepleri" /> : (
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2 flex flex-col gap-3">
                 {destekler.map(d => (
@@ -846,7 +864,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                     </div>
                   </div>
                 ))}
-                {destekler.length === 0 && <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">Hiç bildirim yok</div>}
+                {destekler.length === 0 && <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">Hiç destek talebi yok</div>}
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-4">
                 {seciliDestek ? (
@@ -856,7 +874,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                     <textarea className={ic + ' mb-3 resize-none'} placeholder="Cevabın..." rows={5} value={destekCevap} onChange={e => setDestekCevap(e.target.value)} />
                     <button onClick={async () => { if (!seciliDestek || !destekCevap) return; await supabase.from('destek').update({ cevap: destekCevap, durum: 'cevaplandi', cevap_tarihi: new Date().toISOString() }).eq('id', seciliDestek.id); setDestekCevap(''); setSeciliDestek(null); hepsiniYukle(); window.dispatchEvent(new Event('bildirimler:degisti')); }} className={btnO + ' w-full'}>Cevapla</button>
                   </>
-                ) : <p className="text-sm text-slate-400 text-center py-8">Detay için bir bildirim seç</p>}
+                ) : <p className="text-sm text-slate-400 text-center py-8">Detay için bir destek talebi seç</p>}
               </div>
             </div>
             )

@@ -15,7 +15,7 @@ import {
   Upload
 } from 'lucide-react';
 
-type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'bildirimler' | 'favoriler' | 'destek';
+type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'favoriler' | 'destek';
 
 type PanelPageProps = {
   onLogout: () => void;
@@ -810,7 +810,7 @@ function AracDuzenleModal({ arac, onKaydet, onKapat }: {
 
 // ─── Ana Bileşen ──────────────────────────────────────────────────────────────
 export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId, baslangicSekme = 'profil' }: PanelPageProps) {
-  const ilkSekme = (baslangicSekme === 'mesajlar' ? 'bildirimler' : baslangicSekme) as Sekme;
+  const ilkSekme = (baslangicSekme === 'bildirimler' ? 'mesajlar' : baslangicSekme) as Sekme;
   const [aktifSekme, setAktifSekme] = useState<Sekme>(ilkSekme || 'profil');
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [ilanFavoriSayilari, setIlanFavoriSayilari] = useState<Record<string, number>>({});
@@ -860,8 +860,33 @@ const [notMetin, setNotMetin] = useState('');
     if (aktifSekme === 'ilanlar') ilanlariYukle();
     if (aktifSekme === 'araclar') araclarimYukle();
     if (aktifSekme === 'favoriler') favorileriYukle();
-    if (aktifSekme === 'mesajlar' || aktifSekme === 'bildirimler') mesajlariYukle();
+    if (aktifSekme === 'mesajlar') mesajlariYukle();
   }, [aktifSekme]);
+
+  useEffect(() => {
+    if (aktifSekme !== 'mesajlar') return;
+    const hedefKonusma = sessionStorage.getItem('panel_secili_konusma');
+    if (!hedefKonusma || mesajlar.length === 0) return;
+
+    const konusmadakiMesajlar = mesajlar.filter((m: any) => {
+      const key = m.conversation_id || [m.gonderen_id, m.alan_id].sort().join('_');
+      return key === hedefKonusma;
+    });
+    if (konusmadakiMesajlar.length === 0) return;
+
+    setAktifKonusmaId(hedefKonusma);
+    sessionStorage.removeItem('panel_secili_konusma');
+
+    const okunmamisMesajlar = konusmadakiMesajlar.filter((m: any) => m.alan_id === userId && !m.okundu);
+    if (okunmamisMesajlar.length === 0) return;
+
+    Promise.all(okunmamisMesajlar.map((m: any) => mesajOkunduIsaretle(m.id))).then(() => {
+      const okunmamisIdSet = new Set(okunmamisMesajlar.map((m: any) => m.id));
+      setMesajlar(prev => prev.map((m: any) => okunmamisIdSet.has(m.id) ? { ...m, okundu: true } : m));
+      setOkunmamisSayi(prev => Math.max(0, prev - okunmamisMesajlar.length));
+      window.dispatchEvent(new Event('bildirimler:degisti'));
+    });
+  }, [aktifSekme, mesajlar, userId]);
 
   useEffect(() => {
     sessionStorage.setItem('panel_aktif_sekme', aktifSekme);
@@ -1123,7 +1148,7 @@ const handleKonusmaSil = async (conversationId: string) => {
     { id: 'profil', label: 'Profilim', icon: User },
     { id: 'ilanlar', label: 'İlanlarım', icon: Eye },
     { id: 'araclar', label: 'Araçlarım', icon: Car },
-    { id: 'bildirimler', label: 'Bildirimler', icon: Bell, badge: okunmamisSayi },
+    { id: 'mesajlar', label: 'Mesajlar', icon: MessageSquare, badge: okunmamisSayi },
     { id: 'favoriler', label: 'Favorilerim', icon: Heart },
     { id: 'destek', label: 'Destek', icon: HelpCircle },
   ];
@@ -1212,7 +1237,7 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
         </div>
         <div className="flex items-center gap-2">
           {okunmamisSayi > 0 && (
-            <button onClick={() => sekmeSecildi('bildirimler')} className="relative p-1.5 text-slate-400">
+            <button onClick={() => sekmeSecildi('mesajlar')} className="relative p-1.5 text-slate-400">
               <Bell size={18} />
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">{okunmamisSayi}</span>
             </button>
@@ -1448,10 +1473,10 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
             )}
 
             {/* MESAJLAR */}
-{(aktifSekme === 'mesajlar' || aktifSekme === 'bildirimler') && (
+{aktifSekme === 'mesajlar' && (
   <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
     <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-slate-100">
-      <h2 className="font-bold text-slate-800 text-base">Bildirimler</h2>
+      <h2 className="font-bold text-slate-800 text-base">Mesajlar</h2>
       {okunmamisSayi > 0 && (
         <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
           {okunmamisSayi} okunmamış
@@ -1480,7 +1505,7 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
       ) : mesajlar.length === 0 ? (
         <div className="text-center py-12 text-slate-400">
           <MessageSquare size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="text-sm font-medium">Henüz bildiriminiz yok</p>
+          <p className="text-sm font-medium">Henüz mesajınız yok</p>
         </div>
       ) : (
         <div className="grid lg:grid-cols-[320px_1fr] gap-4">
