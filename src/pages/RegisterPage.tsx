@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Truck, Eye, EyeOff } from 'lucide-react';
 import { kayitOl } from '../lib/auth';
 import { ISTANBUL_OKUL_PERSONEL_FIRMALARI } from '../data/kurumsalFirmalar';
+import { kurumsalFirmaListesiGetir } from '../lib/platformAyarlar';
 
 type RegisterPageProps = {
   onRegister: () => void;
@@ -37,6 +38,16 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
   const [goster, setGoster] = useState(false);
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
+  const [firmaListesi, setFirmaListesi] = useState(ISTANBUL_OKUL_PERSONEL_FIRMALARI);
+
+  useEffect(() => {
+    let aktif = true;
+    kurumsalFirmaListesiGetir().then((liste) => {
+      if (!aktif || !liste?.length) return;
+      setFirmaListesi(liste);
+    });
+    return () => { aktif = false; };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target as HTMLInputElement;
@@ -53,7 +64,7 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
       setHata('Ad Soyad zorunludur.');
       return;
     }
-    const seciliKurumsal = ISTANBUL_OKUL_PERSONEL_FIRMALARI.find(f => f.ad === form.firmaSecimi);
+    const seciliKurumsal = firmaListesi.find(f => f.ad === form.firmaSecimi);
     const kurumsalFirmaAdi =
       form.firmaSecimi === '__ozel__'
         ? form.firmaOzel.trim()
@@ -99,7 +110,7 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
   };
 
   const ic = 'w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
-  const seciliKurumsalFirma = ISTANBUL_OKUL_PERSONEL_FIRMALARI.find(f => f.ad === form.firmaSecimi);
+  const seciliKurumsalFirma = firmaListesi.find(f => f.ad === form.firmaSecimi);
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-10">
@@ -182,7 +193,7 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
                     className={ic}
                   >
                     <option value="">Firmayi seciniz</option>
-                    {ISTANBUL_OKUL_PERSONEL_FIRMALARI.map((firma) => (
+                    {firmaListesi.map((firma) => (
                       <option key={firma.ad} value={firma.ad}>{firma.ad}</option>
                     ))}
                     <option value="__ozel__">Listede yok, firmami kendim yazacagim</option>

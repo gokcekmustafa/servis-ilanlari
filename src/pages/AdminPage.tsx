@@ -9,13 +9,19 @@ import {
   suresiDolanIlanlariPasiflestir,
   VARSAYILAN_ILAN_AKTIF_SURE_GUN,
 } from '../lib/ilanlar';
+import {
+  cevrimiciKullanicilariGetir,
+  kurumsalFirmaListesiGetir,
+  kurumsalFirmaListesiKaydet,
+} from '../lib/platformAyarlar';
+import type { KurumsalFirma } from '../data/kurumsalFirmalar';
 import { Ilan } from '../types';
 import {
   LayoutDashboard, Users, FileText, Megaphone,
   Image, LogOut, Trash2, PlusCircle, RefreshCw,
   Shield, UserPlus, CheckCircle2, XCircle, Edit2, Save, X, Lock,
   Eye, EyeOff, ChevronRight, AlertTriangle, Phone, Calendar,
-  MessageCircle, Camera, Star, Bell, Ban, Download, Menu, User,
+  MessageCircle, Camera, Star, Bell, Ban, Download, Menu, User, Building2,
 } from 'lucide-react';
 
 // ─── TİPLER ───────────────────────────────────────────────────────────────────
@@ -52,7 +58,7 @@ type AdminPageProps = {
   defaultSekme?: Sekme | 'bildirimler';
 };
 
-type Sekme = 'istatistik' | 'ilanlar' | 'kullanicilar' | 'reklamlar' | 'duyurular' | 'destek' | 'tavsiyeler' | 'personel' | 'logo';
+type Sekme = 'istatistik' | 'ilanlar' | 'kullanicilar' | 'reklamlar' | 'duyurular' | 'destek' | 'tavsiyeler' | 'firmalar' | 'personel' | 'logo';
 
 const SEKME_YETKI: Partial<Record<Sekme, keyof PersonelYetkiler>> = {
   ilanlar:      'ilan_onay',
@@ -61,6 +67,7 @@ const SEKME_YETKI: Partial<Record<Sekme, keyof PersonelYetkiler>> = {
   duyurular:    'duyuru_yonetimi',
   destek:       'destek_yonetimi',
   tavsiyeler:   'destek_yonetimi',
+  firmalar:     'kullanici_yonetimi',
 };
 
 const PERSONEL_YETKI_TANIM: Record<string, { label: string; aciklama: string }> = {
@@ -128,6 +135,10 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   const [seciliTavsiye, setSeciliTavsiye] = useState<any>(null);
   const [tavsiyeCevap, setTavsiyeCevap]   = useState('');
   const [favoriEtkilesimSayisi, setFavoriEtkilesimSayisi] = useState(0);
+  const [cevrimiciKullanicilar, setCevrimiciKullanicilar] = useState<any[]>([]);
+  const [kurumsalFirmalar, setKurumsalFirmalar] = useState<KurumsalFirma[]>([]);
+  const [firmaKaydediliyor, setFirmaKaydediliyor] = useState(false);
+  const [firmaMesaj, setFirmaMesaj] = useState('');
 
   const [detayModal, setDetayModal]               = useState<any>(null);
   const [detaySifre, setDetaySifre]               = useState('');
@@ -156,6 +167,13 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   useEffect(() => { hepsiniYukle(); }, []);
 
   useEffect(() => {
+    const timer = window.setInterval(() => {
+      cevrimiciKullanicilariGetir().then(({ data }) => setCevrimiciKullanicilar(data || []));
+    }, 20000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     if (aktifSekme !== 'destek') return;
     const hedefDestekId = sessionStorage.getItem('admin_secili_destek');
     if (!hedefDestekId) return;
@@ -179,7 +197,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
     const aktifSureGun = await ilanAktifSureGunGetir();
     setIlanAktifSureGun(aktifSureGun);
     await suresiDolanIlanlariPasiflestir(aktifSureGun);
-    const [u, i, r, d, ds, ayar, logoAyar, favoriSayim] = await Promise.all([
+    const [u, i, r, d, ds, ayar, logoAyar, favoriSayim, onlineListe, firmaListe] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('ilanlar').select('*').order('created_at', { ascending: false }),
       supabase.from('reklamlar').select('*').order('id', { ascending: false }),
@@ -188,6 +206,8 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
       supabase.from('ayarlar').select('*').eq('anahtar', 'reklam_siklik').maybeSingle(),
       supabase.from('ayarlar').select('*').eq('anahtar', 'platform_logo').maybeSingle(),
       supabase.from('favoriler').select('*', { count: 'exact', head: true }),
+      cevrimiciKullanicilariGetir(),
+      kurumsalFirmaListesiGetir(),
     ]);
     setKullanicilar(u.data || []);
     setIlanlar(i.data || []);
@@ -195,6 +215,8 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
     setDuyurular(d.data || []);
     setDestekler(ds.data || []);
     setFavoriEtkilesimSayisi(favoriSayim.count || 0);
+    setCevrimiciKullanicilar(onlineListe.data || []);
+    setKurumsalFirmalar(firmaListe || []);
     if (ayar.data?.deger) setReklamSiklik(Number(ayar.data.deger));
     if (logoAyar.data?.deger) setPlatformLogo(logoAyar.data.deger);
     setYukleniyor(false);
@@ -384,6 +406,33 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
 
   };
 
+  const firmaAlanGuncelle = (index: number, alan: keyof KurumsalFirma, deger: string) => {
+    setKurumsalFirmalar((prev) => prev.map((f, i) => i === index ? { ...f, [alan]: deger } : f));
+  };
+
+  const firmaEkle = () => {
+    setKurumsalFirmalar((prev) => [...prev, { ad: '', web: '', logoUrl: '' }]);
+  };
+
+  const firmaSil = (index: number) => {
+    setKurumsalFirmalar((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const firmaListesiniKaydet = async () => {
+    setFirmaKaydediliyor(true);
+    setFirmaMesaj('');
+    const { error } = await kurumsalFirmaListesiKaydet(kurumsalFirmalar);
+    setFirmaKaydediliyor(false);
+    if (error) {
+      setFirmaMesaj('Firma listesi kaydedilemedi: ' + error.message);
+      return;
+    }
+    setFirmaMesaj('Firma listesi kaydedildi.');
+    const liste = await kurumsalFirmaListesiGetir();
+    setKurumsalFirmalar(liste || []);
+    setTimeout(() => setFirmaMesaj(''), 2500);
+  };
+
   // ─── STILLER ────────────────────────────────────────────────────────────────
 
   const ic   = 'w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
@@ -416,7 +465,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   const tavsiyeKayitlari = destekler.filter((d: any) => destekKaydiTavsiyeMi(d?.konu));
   const bekleyenDestekSayisi = destekTalepleri.filter((d: any) => d.durum === 'bekliyor').length;
   const bekleyenTavsiyeSayisi = tavsiyeKayitlari.filter((d: any) => d.durum === 'bekliyor').length;
-  const aktifUyeler = kullanicilar.filter((u: any) => u.type !== 'admin' && u.aktif !== false);
+  const cevrimiciSayi = cevrimiciKullanicilar.length;
   const toplamGoruntulenme = ilanlar.reduce((toplam: number, ilan: any) => toplam + Number(ilan?.view_count || 0), 0);
   const tahminiMisafirGoruntulenme = Math.max(0, toplamGoruntulenme - favoriEtkilesimSayisi);
 
@@ -428,6 +477,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
     { id: 'duyurular',    label: 'Duyurular',      icon: Megaphone,      sayi: duyurular.length },
     { id: 'destek',       label: 'Destek Talepleri', icon: Bell,         sayi: bekleyenDestekSayisi },
     { id: 'tavsiyeler',   label: 'Tavsiyeler',      icon: Star,          sayi: bekleyenTavsiyeSayisi },
+    { id: 'firmalar',     label: 'Kurumsal Firmalar', icon: Building2,   sayi: kurumsalFirmalar.length },
     ...(isSuperAdmin ? [
   { id: 'personel', label: 'Personel', icon: Shield, sayi: kullanicilar.filter(u => u.type === 'admin').length },
   { id: 'logo', label: 'Platform Logo', icon: Image, sayi: 0 },
@@ -565,14 +615,19 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                   ))}
                 </div>
                 <div className="bg-white rounded-xl border border-slate-200 p-4">
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Aktif Kullanıcılar</p>
-                  {aktifUyeler.slice(0, 6).map((u: any) => (
-                    <div key={u.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-                      <span className="text-sm text-slate-600 truncate mr-2">{u.full_name || 'İsimsiz'}</span>
-                      <span className="text-xs text-emerald-600 font-medium">Aktif</span>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Çevrimiçi Kullanıcılar</p>
+                  {cevrimiciKullanicilar.slice(0, 8).map((u: any) => (
+                    <div key={u.user_id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                      <div className="min-w-0">
+                        <p className="text-sm text-slate-600 truncate mr-2">{u.full_name || 'Kullanici'}</p>
+                        <p className="text-[11px] text-slate-400">{u.type === 'admin' || u.type === 'superadmin' ? 'Yonetici' : 'Kullanici'}</p>
+                      </div>
+                      <span className="text-[11px] text-emerald-600 font-medium whitespace-nowrap">
+                        {new Date(u.last_seen).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
                   ))}
-                  {aktifUyeler.length === 0 && <p className="text-xs text-slate-400 py-2">Aktif kullanıcı bulunmuyor.</p>}
+                  {cevrimiciKullanicilar.length === 0 && <p className="text-xs text-slate-400 py-2">Şu an çevrimiçi kullanıcı yok.</p>}
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
@@ -589,8 +644,8 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                   <p className="text-xl font-bold text-slate-700">{tahminiMisafirGoruntulenme.toLocaleString('tr-TR')}</p>
                 </div>
                 <div className="bg-white rounded-xl border border-slate-200 p-4">
-                  <p className="text-xs text-slate-400 mb-1">Bekleyen Tavsiye</p>
-                  <p className="text-xl font-bold text-slate-700">{bekleyenTavsiyeSayisi.toLocaleString('tr-TR')}</p>
+                  <p className="text-xs text-slate-400 mb-1">Çevrimiçi Kullanıcı</p>
+                  <p className="text-xl font-bold text-slate-700">{cevrimiciSayi.toLocaleString('tr-TR')}</p>
                 </div>
               </div>
             </div>
@@ -1069,6 +1124,63 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
             </div>
             )
           )}
+
+          {/* --- KURUMSAL FIRMALAR --- */}
+          {!yukleniyor && aktifSekme === 'firmalar' && (
+            !sekmeYetkiVarMi('firmalar') ? <YetkisizUyari sekme="Kurumsal Firmalar" /> : (
+              <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="font-bold text-slate-800 text-base">Kurumsal Firma Listesi</h2>
+                    <p className="text-xs text-slate-500 mt-1">Kurumsal kayit ekraninda secilecek firmalari buradan yonetin.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={firmaEkle} className={btnS + ' flex items-center gap-1'}><PlusCircle size={14} />Firma Ekle</button>
+                    <button onClick={firmaListesiniKaydet} disabled={firmaKaydediliyor} className={btnO + ' disabled:opacity-50'}>
+                      {firmaKaydediliyor ? 'Kaydediliyor...' : 'Listeyi Kaydet'}
+                    </button>
+                  </div>
+                </div>
+
+                {firmaMesaj && (
+                  <div className={'mb-4 px-3 py-2 rounded-lg text-xs border ' + (firmaMesaj.includes('kaydedilemedi') ? 'bg-red-50 border-red-200 text-red-600' : 'bg-green-50 border-green-200 text-green-700')}>
+                    {firmaMesaj}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2">
+                  {kurumsalFirmalar.map((firma, index) => (
+                    <div key={`${firma.ad}-${index}`} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-center border border-slate-100 rounded-lg p-2">
+                      <input
+                        className={ic}
+                        placeholder="Firma adi"
+                        value={firma.ad}
+                        onChange={(e) => firmaAlanGuncelle(index, 'ad', e.target.value)}
+                      />
+                      <input
+                        className={ic}
+                        placeholder="Web adresi (https://...)"
+                        value={firma.web || ''}
+                        onChange={(e) => firmaAlanGuncelle(index, 'web', e.target.value)}
+                      />
+                      <button
+                        onClick={() => firmaSil(index)}
+                        className={btnR + ' w-full sm:w-auto flex items-center justify-center gap-1'}
+                      >
+                        <Trash2 size={13} />Sil
+                      </button>
+                    </div>
+                  ))}
+                  {kurumsalFirmalar.length === 0 && (
+                    <div className="text-sm text-slate-400 py-8 text-center border border-dashed border-slate-200 rounded-lg">
+                      Henuz firma eklenmemis.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          )}
+
           {/* ─── PERSONEL ─── */}
           {!yukleniyor && aktifSekme === 'personel' && (
             !isSuperAdmin ? <YetkisizUyari sekme="Personel Yönetimi" /> : (

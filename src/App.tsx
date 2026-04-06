@@ -19,6 +19,7 @@ import { Ilan, KategoriType } from './types';
 import { mevcutKullanici, cikisYap, girisYap } from './lib/auth';
 import { ilanlariGetir } from './lib/ilanlar';
 import { supabase } from './lib/supabase';
+import { kullaniciOnlineIziGuncelle, kullaniciOnlineIziTemizle } from './lib/platformAyarlar';
 import { SlidersHorizontal, X } from 'lucide-react';
 
 function ReklamBanner({ konum }: { konum: 'kenar_sol' | 'kenar_sag' }) {
@@ -1044,6 +1045,7 @@ export default function App() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [yetkiler, setYetkiler] = useState<Yetkiler>({});
   const [userId, setUserId] = useState<string | null>(null);
+  const [aktifKullanici, setAktifKullanici] = useState<any>(null);
   const [selectedIlan, setSelectedIlan] = useState<Ilan | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -1068,6 +1070,7 @@ export default function App() {
     if (!user) return;
     setIsLoggedIn(true);
     setUserId(user.id);
+    setAktifKullanici(user);
 
     const temiz = user.phone_number?.replace(/\s/g, '').replace(/[^0-9]/g, '');
     const superTemiz = SUPERADMIN_TELEFON.replace(/\s/g, '').replace(/[^0-9]/g, '');
@@ -1118,6 +1121,34 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  useEffect(() => {
+    if (!isLoggedIn || !aktifKullanici?.id) return;
+
+    let durdu = false;
+    const guncelle = async () => {
+      if (durdu) return;
+      await kullaniciOnlineIziGuncelle({
+        user_id: aktifKullanici.id,
+        full_name: aktifKullanici.full_name || 'Kullanici',
+        type: aktifKullanici.type || 'bireysel',
+      });
+    };
+
+    guncelle();
+    const timer = window.setInterval(guncelle, 30000);
+
+    const gorunurlukDinle = () => {
+      if (document.visibilityState === 'visible') guncelle();
+    };
+    document.addEventListener('visibilitychange', gorunurlukDinle);
+
+    return () => {
+      durdu = true;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', gorunurlukDinle);
+    };
+  }, [isLoggedIn, aktifKullanici?.id, aktifKullanici?.full_name, aktifKullanici?.type]);
+
   const handleLogin = () => {
     const user = mevcutKullanici();
     if (user) {
@@ -1135,11 +1166,15 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    if (userId) {
+      await kullaniciOnlineIziTemizle(userId);
+    }
     await cikisYap();
     sessionStorage.clear();
     setIsLoggedIn(false);
     setIsAdmin(false);
     setUserId(null);
+    setAktifKullanici(null);
     setCurrentPage('home');
   };
 
