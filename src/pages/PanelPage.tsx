@@ -15,7 +15,7 @@ import {
   Upload
 } from 'lucide-react';
 
-type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'favoriler' | 'destek';
+type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'bildirimler' | 'favoriler' | 'destek';
 
 type PanelPageProps = {
   onLogout: () => void;
@@ -810,8 +810,10 @@ function AracDuzenleModal({ arac, onKaydet, onKapat }: {
 
 // ─── Ana Bileşen ──────────────────────────────────────────────────────────────
 export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId, baslangicSekme = 'profil' }: PanelPageProps) {
-  const [aktifSekme, setAktifSekme] = useState<Sekme>((baslangicSekme as Sekme) || 'profil');
+  const ilkSekme = (baslangicSekme === 'mesajlar' ? 'bildirimler' : baslangicSekme) as Sekme;
+  const [aktifSekme, setAktifSekme] = useState<Sekme>(ilkSekme || 'profil');
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
+  const [ilanFavoriSayilari, setIlanFavoriSayilari] = useState<Record<string, number>>({});
   const [araclar, setAraclar] = useState<any[]>([]);
   const [favoriler, setFavoriler] = useState<any[]>([]);
   const [mesajlar, setMesajlar] = useState<any[]>([]);
@@ -858,7 +860,11 @@ const [notMetin, setNotMetin] = useState('');
     if (aktifSekme === 'ilanlar') ilanlariYukle();
     if (aktifSekme === 'araclar') araclarimYukle();
     if (aktifSekme === 'favoriler') favorileriYukle();
-    if (aktifSekme === 'mesajlar') mesajlariYukle();
+    if (aktifSekme === 'mesajlar' || aktifSekme === 'bildirimler') mesajlariYukle();
+  }, [aktifSekme]);
+
+  useEffect(() => {
+    sessionStorage.setItem('panel_aktif_sekme', aktifSekme);
   }, [aktifSekme]);
 
   useEffect(() => {
@@ -866,7 +872,40 @@ const [notMetin, setNotMetin] = useState('');
     return () => { document.body.style.overflow = ''; };
   }, [menuAcik]);
 
-  const ilanlariYukle = async () => { setYukleniyor(true); const { data } = await kullaniciIlanlari(userId); if (data) setIlanlar(data as Ilan[]); setYukleniyor(false); };
+  const ilanFavoriSayilariniYukle = async (ilanListesi: Ilan[]) => {
+    const ilanIdler = ilanListesi.map(ilan => ilan.id).filter(Boolean);
+    if (ilanIdler.length === 0) {
+      setIlanFavoriSayilari({});
+      return;
+    }
+
+    const sayilar: Record<string, number> = {};
+    ilanIdler.forEach(id => { sayilar[id] = 0; });
+
+    const { data, error } = await supabase
+      .from('favoriler')
+      .select('ilan_id')
+      .in('ilan_id', ilanIdler);
+
+    if (!error && data) {
+      data.forEach((favori: any) => {
+        if (favori?.ilan_id) {
+          sayilar[favori.ilan_id] = (sayilar[favori.ilan_id] || 0) + 1;
+        }
+      });
+    }
+
+    setIlanFavoriSayilari(sayilar);
+  };
+
+  const ilanlariYukle = async () => {
+    setYukleniyor(true);
+    const { data } = await kullaniciIlanlari(userId);
+    const ilanListesi = (data || []) as Ilan[];
+    setIlanlar(ilanListesi);
+    await ilanFavoriSayilariniYukle(ilanListesi);
+    setYukleniyor(false);
+  };
   const araclarimYukle = async () => { setYukleniyor(true); const { data } = await araclarGetir(userId); if (data) setAraclar(data); setYukleniyor(false); };
   const favorileriYukle = async () => {
   setYukleniyor(true);
@@ -889,7 +928,14 @@ const [notMetin, setNotMetin] = useState('');
   const handleIlanSil = async (id: string) => {
     if (!confirm('Bu ilanı silmek istediğinizden emin misiniz?')) return;
     const { error } = await ilanSil(id);
-    if (!error) setIlanlar(ilanlar.filter(i => i.id !== id));
+    if (!error) {
+      setIlanlar(ilanlar.filter(i => i.id !== id));
+      setIlanFavoriSayilari(prev => {
+        const yeni = { ...prev };
+        delete yeni[id];
+        return yeni;
+      });
+    }
   };
 
   const handleAracEkle = async () => {
@@ -943,8 +989,9 @@ const handleNotSil = (ilanId: string) => {
 
   const handleMesajOku = async (mesajId: string) => {
   await mesajOkunduIsaretle(mesajId);
-  setMesajlar(mesajlar.map(m => m.id === mesajId ? { ...m, okundu: true } : m));
-  setOkunmamisSayi(Math.max(0, okunmamisSayi - 1));
+  setMesajlar(prev => prev.map(m => m.id === mesajId ? { ...m, okundu: true } : m));
+  setOkunmamisSayi(prev => Math.max(0, prev - 1));
+  window.dispatchEvent(new Event('bildirimler:degisti'));
 };
 
 const handleMesajCevapla = async () => {
@@ -1065,14 +1112,18 @@ const handleKonusmaSil = async (conversationId: string) => {
     }
   };
 
-  const sekmeSecildi = (id: Sekme) => { setAktifSekme(id); setMenuAcik(false); };
+  const sekmeSecildi = (id: Sekme) => {
+    setAktifSekme(id);
+    sessionStorage.setItem('panel_aktif_sekme', id);
+    setMenuAcik(false);
+  };
   const ilceleri = profil.il ? (ilceler[profil.il] || []) : [];
 
   const menuItems = [
     { id: 'profil', label: 'Profilim', icon: User },
     { id: 'ilanlar', label: 'İlanlarım', icon: Eye },
     { id: 'araclar', label: 'Araçlarım', icon: Car },
-    { id: 'mesajlar', label: 'Mesajlar', icon: MessageSquare, badge: okunmamisSayi },
+    { id: 'bildirimler', label: 'Bildirimler', icon: Bell, badge: okunmamisSayi },
     { id: 'favoriler', label: 'Favorilerim', icon: Heart },
     { id: 'destek', label: 'Destek', icon: HelpCircle },
   ];
@@ -1161,7 +1212,7 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
         </div>
         <div className="flex items-center gap-2">
           {okunmamisSayi > 0 && (
-            <button onClick={() => sekmeSecildi('mesajlar')} className="relative p-1.5 text-slate-400">
+            <button onClick={() => sekmeSecildi('bildirimler')} className="relative p-1.5 text-slate-400">
               <Bell size={18} />
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">{okunmamisSayi}</span>
             </button>
@@ -1241,7 +1292,7 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <p className="text-slate-700 font-medium text-sm line-clamp-2 flex-1">{ilan.aciklama}</p>
                             <div className="flex gap-1 flex-shrink-0">
-                              <button onClick={() => onIlanDetay(ilan)} className="p-2 text-slate-400 hover:text-blue-500 bg-slate-50 rounded-lg"><Eye size={14} /></button>
+                              <button onClick={() => onIlanDetay(ilan, 'ilanlar')} className="p-2 text-slate-400 hover:text-blue-500 bg-slate-50 rounded-lg"><Eye size={14} /></button>
                               <button onClick={() => setDuzenleIlan(ilan)} className="p-2 text-slate-400 hover:text-orange-500 bg-slate-50 rounded-lg"><Pencil size={14} /></button>
                               <button onClick={() => handleIlanSil(ilan.id)} className="p-2 text-slate-400 hover:text-red-500 bg-slate-50 rounded-lg"><Trash2 size={14} /></button>
                             </div>
@@ -1249,6 +1300,9 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">{ilan.kategori.replace(/_/g, ' ')}</span>
                             <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500')}>{ilan.durum === 'aktif' ? 'Aktif' : 'Pasif'}</span>
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">
+                              <Heart size={11} /> {ilanFavoriSayilari[ilan.id] || 0}
+                            </span>
                             <span className="text-xs text-slate-400">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</span>
                           </div>
                         </div>
@@ -1256,7 +1310,16 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                     </div>
                     <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full text-sm">
-                        <thead><tr className="bg-slate-50 border-b border-slate-200">{['İlan', 'Kategori', 'Tarih', 'Durum', 'İşlem'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500">{h}</th>)}</tr></thead>
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-200">
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">İlan</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Kategori</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Tarih</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Durum</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Favori</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">İşlem</th>
+                          </tr>
+                        </thead>
                         <tbody>
                           {ilanlar.map(ilan => (
                             <tr key={ilan.id} className="border-b border-slate-50 hover:bg-slate-50 transition">
@@ -1265,8 +1328,13 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                               <td className="px-4 py-3 text-slate-400 text-xs">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</td>
                               <td className="px-4 py-3"><span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500')}>{ilan.durum === 'aktif' ? 'Aktif' : 'Pasif'}</span></td>
                               <td className="px-4 py-3">
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">
+                                  <Heart size={12} /> {ilanFavoriSayilari[ilan.id] || 0}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
                                 <div className="flex items-center gap-1">
-                                  <button onClick={() => onIlanDetay(ilan)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition"><Eye size={14} /></button>
+                                  <button onClick={() => onIlanDetay(ilan, 'ilanlar')} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition"><Eye size={14} /></button>
                                   <button onClick={() => setDuzenleIlan(ilan)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition"><Pencil size={14} /></button>
                                   <button onClick={() => handleIlanSil(ilan.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"><Trash2 size={14} /></button>
                                 </div>
@@ -1380,10 +1448,10 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
             )}
 
             {/* MESAJLAR */}
-{aktifSekme === 'mesajlar' && (
+{(aktifSekme === 'mesajlar' || aktifSekme === 'bildirimler') && (
   <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
     <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-slate-100">
-      <h2 className="font-bold text-slate-800 text-base">İlan Mesajları</h2>
+      <h2 className="font-bold text-slate-800 text-base">Bildirimler</h2>
       {okunmamisSayi > 0 && (
         <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
           {okunmamisSayi} okunmamış
@@ -1412,7 +1480,7 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
       ) : mesajlar.length === 0 ? (
         <div className="text-center py-12 text-slate-400">
           <MessageSquare size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="text-sm font-medium">Henüz mesajınız yok</p>
+          <p className="text-sm font-medium">Henüz bildiriminiz yok</p>
         </div>
       ) : (
         <div className="grid lg:grid-cols-[320px_1fr] gap-4">

@@ -354,7 +354,7 @@ export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, t
       <div className="max-w-5xl mx-auto px-3 sm:px-4">
 
         <button onClick={onGoBack} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 mb-4 transition">
-          <ArrowLeft size={15} /> İlanlara Geri Dön
+          <ArrowLeft size={15} /> Geri Dön
         </button>
 
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-5">

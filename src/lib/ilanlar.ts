@@ -279,6 +279,6 @@ export async function okunmamisDestekSayisi() {
   const { count, error } = await supabase
     .from('destek')
     .select('*', { count: 'exact', head: true })
-    .eq('durum', 'beklemede');
+    .eq('durum', 'bekliyor');
   return { count, error };
 }

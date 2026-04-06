@@ -9,15 +9,16 @@ type HeaderProps = {
   isLoggedIn: boolean;
   isAdmin: boolean;
   onGoLogin: () => void;
+  onGoRegister: () => void;
+  onGoNotifications: () => void;
   onLogout: () => void;
   onIlanEkle: () => void;
   onGoPanel: () => void;
   onNavigate: (page: any) => void;
-  onGoDestek: () => void;
 };
 
 export default function Header({
-  isLoggedIn, isAdmin, onGoLogin, onLogout, onIlanEkle, onGoPanel, onNavigate, onGoDestek,
+  isLoggedIn, isAdmin, onGoLogin, onGoRegister, onGoNotifications, onLogout, onIlanEkle, onGoPanel, onNavigate,
 }: HeaderProps) {
   const [sayi, setSayi] = useState<number | null>(null);
   const [okunmamis, setOkunmamis] = useState(0);
@@ -49,6 +50,14 @@ export default function Header({
   }, [isLoggedIn, isAdmin]);
 
   useEffect(() => {
+    const handleBildirimDegisti = () => {
+      bildirimleriYukle();
+    };
+    window.addEventListener('bildirimler:degisti', handleBildirimDegisti);
+    return () => window.removeEventListener('bildirimler:degisti', handleBildirimDegisti);
+  }, [isLoggedIn, isAdmin]);
+
+  useEffect(() => {
     document.body.style.overflow = menuAcik ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [menuAcik]);
@@ -64,11 +73,7 @@ export default function Header({
 };
 
   const handleZilTikla = () => {
-  if (isAdmin) {
-    onGoDestek();
-  } else {
-    onGoPanel();
-  }
+    onGoNotifications();
 };
 
   const toplamBildirim = okunmamis + bekleyenDestek;
@@ -142,7 +147,7 @@ export default function Header({
                   Giriş Yap
                 </button>
                 <button
-                  onClick={onIlanEkle}
+                  onClick={onGoRegister}
                   className="text-slate-200 hover:text-white border border-slate-400 hover:border-slate-200 text-xs font-medium px-2.5 py-1 rounded transition"
                 >
                   Kayıt Ol
@@ -292,7 +297,7 @@ export default function Header({
                       className="w-full border border-slate-200 text-slate-600 py-3.5 rounded-xl font-medium text-sm active:bg-slate-50 transition">
                       Giriş Yap
                     </button>
-                    <button onClick={() => { onIlanEkle(); setMenuAcik(false); }}
+                    <button onClick={() => { onGoRegister(); setMenuAcik(false); }}
                       className="w-full bg-orange-500 text-white py-3.5 rounded-xl font-semibold text-sm active:bg-orange-600 transition">
                       Ücretsiz İlan Ver / Kayıt Ol
                     </button>

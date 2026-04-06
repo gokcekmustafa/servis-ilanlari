@@ -216,9 +216,15 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
                 <input type="checkbox" name="sozlesme" checked={form.sozlesme}
                   onChange={handleChange} className="accent-orange-500 w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span>
-                  <span className="text-orange-500 font-medium hover:underline cursor-pointer">
+                  <a
+                    href="/kullanim-kosullari"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-orange-500 font-semibold hover:underline"
+                  >
                     Kullanim kosullarini
-                  </span>
+                  </a>
                   {' '}okudum ve kabul ediyorum
                 </span>
               </label>

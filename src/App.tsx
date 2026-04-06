@@ -393,7 +393,12 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
         </button>
         <div className="flex flex-col text-right flex-shrink-0">
           <button onClick={() => setSifrePopup(true)} className="text-[11px] text-gray-500 hover:text-gray-700 transition">Şifremi Unuttum</button>
-          <button onClick={onGoRegister} className="text-[11px] text-[#f7971e] hover:underline font-medium">Kayıt Ol</button>
+          <button
+            onClick={onGoRegister}
+            className="text-[12px] text-[#d46a00] hover:text-[#f7971e] underline underline-offset-2 font-semibold"
+          >
+            Kayıt Ol
+          </button>
         </div>
       </div>
 
@@ -433,7 +438,10 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
   >
     {yukleniyor ? '...' : 'Giriş'}
   </button>
-  <button onClick={onGoRegister} className="text-[11px] text-[#f7971e] hover:underline font-medium flex-shrink-0">
+  <button
+    onClick={onGoRegister}
+    className="text-[11px] font-semibold text-[#d46a00] border border-[#f3c089] bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded-md flex-shrink-0"
+  >
     Kayıt Ol
   </button>
   <button onClick={() => setSifrePopup(true)} className="text-[11px] text-gray-500 hover:text-gray-700 flex-shrink-0">
@@ -444,7 +452,7 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
     </div>
   );
 }
-function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGoLogin: () => void; onIlanDetay: (ilan: Ilan) => void; onLoginSuccess: () => void; isLoggedIn: boolean }) {
+function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGoLogin: () => void; onGoRegister: () => void; onIlanDetay: (ilan: Ilan) => void; onLoginSuccess: () => void; isLoggedIn: boolean }) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
@@ -618,7 +626,7 @@ function HomePage({ onGoLogin, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGo
         {/* GİRİŞ ÇUBUĞU */}
         {!isLoggedIn && (
           <div className="mb-3 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            <InlineGiris onLogin={onLoginSuccess} onGoRegister={onGoLogin} />
+            <InlineGiris onLogin={onLoginSuccess} onGoRegister={onGoRegister} />
           </div>
         )}
         {/* KATEGORİ KARTLARI */}
@@ -1136,10 +1144,18 @@ export default function App() {
   };
 
   const handleIlanDetay = (ilan: Ilan, sekme?: string) => {
-  scrollPozisyon.current = window.scrollY;
-  setSelectedIlan(ilan);
-  setCurrentPage('detay');
-};
+    scrollPozisyon.current = window.scrollY;
+
+    if (currentPage === 'panel') {
+      const aktifPanelSekmesi =
+        sekme || sessionStorage.getItem('panel_aktif_sekme') || prevPanelSekme || 'profil';
+      setPrevPanelSekme(aktifPanelSekmesi);
+      sessionStorage.setItem('panel_aktif_sekme', aktifPanelSekmesi);
+    }
+
+    setSelectedIlan(ilan);
+    setCurrentPage('detay');
+  };
 
   const handleIlanEkle = () => {
     if (!isLoggedIn) {
@@ -1157,6 +1173,10 @@ export default function App() {
 
   const goBack = () => {
   const hedef = prevPage || 'home';
+  if (hedef === 'panel') {
+    const panelSekmesi = sessionStorage.getItem('panel_aktif_sekme') || prevPanelSekme || 'profil';
+    sessionStorage.setItem('panel_aktif_sekme', panelSekmesi);
+  }
   setPrevPage(currentPage);
   setCurrentPageState(hedef);
   window.history.pushState({ page: hedef }, '', hedef === 'home' ? '/' : `/${hedef}`);
@@ -1175,11 +1195,20 @@ export default function App() {
   isLoggedIn,
   isAdmin,
   onGoLogin: () => setCurrentPage('login'),
+  onGoRegister: () => setCurrentPage('register'),
+  onGoNotifications: () => {
+    if (isAdmin) {
+      sessionStorage.setItem('admin_aktif_sekme', 'bildirimler');
+      setCurrentPage('admin');
+      return;
+    }
+    sessionStorage.setItem('panel_aktif_sekme', 'bildirimler');
+    setCurrentPage('panel');
+  },
   onLogout: handleLogout,
   onIlanEkle: handleIlanEkle,
   onGoPanel: () => isAdmin ? setCurrentPage('admin') : setCurrentPage('panel'),
   onNavigate: (page: any) => setCurrentPage(page),
-  onGoDestek: () => setCurrentPage('admin'),
 };
 
   const footerProps = {
@@ -1225,7 +1254,16 @@ export default function App() {
 />);
   if (currentPage === 'admin') {
     if (!isAdmin) { setCurrentPage('home'); return null; }
-    return withLayout(<AdminPage onLogout={handleLogout} onIlanDetay={handleIlanDetay} isSuperAdmin={isSuperAdmin} yetkiler={yetkiler} />, false);
+    return withLayout(
+      <AdminPage
+        onLogout={handleLogout}
+        onIlanDetay={handleIlanDetay}
+        isSuperAdmin={isSuperAdmin}
+        yetkiler={yetkiler}
+        defaultSekme={(sessionStorage.getItem('admin_aktif_sekme') as any) || 'istatistik'}
+      />,
+      false
+    );
   }
 
   if (currentPage === 'hakkimizda') return withLayout(<HakkimizdaPage onGoBack={goBack} />);
@@ -1245,6 +1283,7 @@ export default function App() {
       )}
       <HomePage
   onGoLogin={() => setCurrentPage('login')}
+  onGoRegister={() => setCurrentPage('register')}
   onIlanDetay={handleIlanDetay}
   onLoginSuccess={handleLogin}
   isLoggedIn={isLoggedIn}
