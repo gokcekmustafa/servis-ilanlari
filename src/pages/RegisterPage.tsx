@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Truck, Eye, EyeOff } from 'lucide-react';
 import { kayitOl } from '../lib/auth';
-import { ISTANBUL_OKUL_PERSONEL_FIRMALARI } from '../data/kurumsalFirmalar';
+import type { KurumsalFirma } from '../data/kurumsalFirmalar';
 import { kurumsalFirmaListesiGetir } from '../lib/platformAyarlar';
 
 type RegisterPageProps = {
@@ -38,16 +38,50 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
   const [goster, setGoster] = useState(false);
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
-  const [firmaListesi, setFirmaListesi] = useState(ISTANBUL_OKUL_PERSONEL_FIRMALARI);
+  const [firmaListesi, setFirmaListesi] = useState<KurumsalFirma[]>([]);
 
   useEffect(() => {
     let aktif = true;
-    kurumsalFirmaListesiGetir().then((liste) => {
-      if (!aktif || !liste?.length) return;
-      setFirmaListesi(liste);
-    });
-    return () => { aktif = false; };
+    const listeyiYukle = async () => {
+      const liste = await kurumsalFirmaListesiGetir();
+      if (!aktif) return;
+      setFirmaListesi(Array.isArray(liste) ? liste : []);
+    };
+    listeyiYukle();
+
+    const handleFirmaGuncelle = () => {
+      listeyiYukle();
+    };
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'kurumsal_firma_listesi_guncelleme') {
+        listeyiYukle();
+      }
+    };
+
+    window.addEventListener('kurumsal-firmalar:degisti', handleFirmaGuncelle);
+    window.addEventListener('focus', handleFirmaGuncelle);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      aktif = false;
+      window.removeEventListener('kurumsal-firmalar:degisti', handleFirmaGuncelle);
+      window.removeEventListener('focus', handleFirmaGuncelle);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
+
+  useEffect(() => {
+    if (tab !== 'kurumsal') return;
+    if (firmaListesi.length === 0) {
+      if (form.firmaSecimi !== '__ozel__') {
+        setForm((prev) => ({ ...prev, firmaSecimi: '__ozel__' }));
+      }
+      return;
+    }
+    if (form.firmaSecimi && form.firmaSecimi !== '__ozel__' && !firmaListesi.some(f => f.ad === form.firmaSecimi)) {
+      setForm((prev) => ({ ...prev, firmaSecimi: '' }));
+    }
+  }, [firmaListesi, tab, form.firmaSecimi]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target as HTMLInputElement;
@@ -64,13 +98,21 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
       setHata('Ad Soyad zorunludur.');
       return;
     }
-    const seciliKurumsal = firmaListesi.find(f => f.ad === form.firmaSecimi);
+    const kurumsalListeBos = firmaListesi.length === 0;
+    const seciliKurumsal =
+      !kurumsalListeBos && form.firmaSecimi && form.firmaSecimi !== '__ozel__'
+        ? firmaListesi.find(f => f.ad === form.firmaSecimi)
+        : undefined;
     const kurumsalFirmaAdi =
-      form.firmaSecimi === '__ozel__'
+      kurumsalListeBos
         ? form.firmaOzel.trim()
-        : form.firmaSecimi.trim();
+        : (form.firmaSecimi === '__ozel__'
+            ? form.firmaOzel.trim()
+            : form.firmaSecimi.trim());
     if (tab === 'kurumsal' && !kurumsalFirmaAdi) {
-      setHata('Kurumsal kayit icin lutfen firma secin veya firmanizi yazin.');
+      setHata(kurumsalListeBos
+        ? 'Kurumsal kayit icin firma adini yazin.'
+        : 'Kurumsal kayit icin lutfen firma secin veya firmanizi yazin.');
       return;
     }
     if (form.telefon.length < 10) {
@@ -110,7 +152,11 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
   };
 
   const ic = 'w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
-  const seciliKurumsalFirma = firmaListesi.find(f => f.ad === form.firmaSecimi);
+  const kurumsalListeBos = firmaListesi.length === 0;
+  const seciliKurumsalFirma =
+    !kurumsalListeBos && form.firmaSecimi && form.firmaSecimi !== '__ozel__'
+      ? firmaListesi.find(f => f.ad === form.firmaSecimi)
+      : undefined;
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-10">
@@ -184,30 +230,47 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
               ) : (
                 <div>
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">
-                    Istanbul okul/personel servis firmasi
+                    Kurumsal firma
                   </label>
-                  <select
-                    name="firmaSecimi"
-                    value={form.firmaSecimi}
-                    onChange={handleChange}
-                    className={ic}
-                  >
-                    <option value="">Firmayi seciniz</option>
-                    {firmaListesi.map((firma) => (
-                      <option key={firma.ad} value={firma.ad}>{firma.ad}</option>
-                    ))}
-                    <option value="__ozel__">Listede yok, firmami kendim yazacagim</option>
-                  </select>
-                  {form.firmaSecimi === '__ozel__' && (
+                  {kurumsalListeBos ? (
                     <input
                       name="firmaOzel"
                       value={form.firmaOzel}
                       onChange={handleChange}
                       placeholder="Firmanizin adini yaziniz"
-                      className={ic + ' mt-2'}
+                      className={ic}
                     />
+                  ) : (
+                    <>
+                      <select
+                        name="firmaSecimi"
+                        value={form.firmaSecimi}
+                        onChange={handleChange}
+                        className={ic}
+                      >
+                        <option value="">Firmayi seciniz</option>
+                        {firmaListesi.map((firma) => (
+                          <option key={firma.ad} value={firma.ad}>{firma.ad}</option>
+                        ))}
+                        <option value="__ozel__">Listede yok, firmami kendim yazacagim</option>
+                      </select>
+                      {form.firmaSecimi === '__ozel__' && (
+                        <input
+                          name="firmaOzel"
+                          value={form.firmaOzel}
+                          onChange={handleChange}
+                          placeholder="Firmanizin adini yaziniz"
+                          className={ic + ' mt-2'}
+                        />
+                      )}
+                    </>
                   )}
-                  {seciliKurumsalFirma && form.firmaSecimi !== '__ozel__' && (
+                  {kurumsalListeBos && (
+                    <p className="text-[11px] text-slate-500 mt-1.5">
+                      Admin listesinde firma bulunamadigi icin firmanizi manuel yazabilirsiniz.
+                    </p>
+                  )}
+                  {seciliKurumsalFirma && !kurumsalListeBos && form.firmaSecimi !== '__ozel__' && (
                     <p className="text-[11px] text-slate-500 mt-1.5">
                       Firma web: <a href={seciliKurumsalFirma.web} target="_blank" rel="noreferrer" className="text-orange-600 hover:underline">{seciliKurumsalFirma.web}</a>
                     </p>
