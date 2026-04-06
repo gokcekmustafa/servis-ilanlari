@@ -55,7 +55,7 @@ function firmaListesiNormalize(list: any[]): KurumsalFirma[] {
   (list || []).forEach((f) => {
     const n = firmaNormalize(f);
     if (!n) return;
-    benzersiz.set(n.ad.toLowerCase('tr-TR'), n);
+    benzersiz.set(n.ad.toLocaleLowerCase('tr-TR'), n);
   });
   return Array.from(benzersiz.values());
 }
