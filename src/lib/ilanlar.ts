@@ -145,7 +145,7 @@ export async function favoriKontrol(userId: string, ilanId: string) {
     .select('id')
     .eq('user_id', userId)
     .eq('ilan_id', ilanId)
-    .single();
+    .maybeSingle();
   return { isFavori: !!data, error };
 }
 
@@ -212,6 +212,31 @@ export async function mesajSil(mesajId: string, userId: string) {
     .delete()
     .eq('id', mesajId)
     .eq('gonderen_id', userId);
+}
+
+export async function konusmaSil(conversationId: string, userId: string) {
+  const { data: kullaniciMesajlari, error: listeHatasi } = await supabase
+    .from('mesajlar')
+    .select('id, conversation_id, gonderen_id, alan_id')
+    .or(`gonderen_id.eq.${userId},alan_id.eq.${userId}`);
+
+  if (listeHatasi) return { error: listeHatasi };
+
+  const silinecekIdler = (kullaniciMesajlari || [])
+    .filter((mesaj: any) => {
+      const key = mesaj.conversation_id || conversationIdOlustur(mesaj.gonderen_id, mesaj.alan_id);
+      return key === conversationId;
+    })
+    .map((mesaj: any) => mesaj.id);
+
+  if (silinecekIdler.length === 0) return { error: null };
+
+  const { error } = await supabase
+    .from('mesajlar')
+    .delete()
+    .in('id', silinecekIdler);
+
+  return { error };
 }
 
 export async function destekGonder(talep: {

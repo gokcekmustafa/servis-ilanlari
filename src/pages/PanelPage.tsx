@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   kullaniciIlanlari, ilanSil, ilanGuncelle, araclarGetir, aracEkle, aracSil,
   favorileriGetir, favoriKaldir, konusmaMesajlariniGetir, okunmamisMesajSayisi,
-mesajOkunduIsaretle, destekGonder, mesajGonder, mesajSil
+mesajOkunduIsaretle, destekGonder, mesajGonder, mesajSil, konusmaSil
 } from '../lib/ilanlar';
 import { Ilan } from '../types';
 import { ilceler } from '../data/ilceler';
@@ -822,6 +822,8 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId, b
   const [yukleniyor, setYukleniyor] = useState(false);
   const [basari, setBasari] = useState('');
   const [hata, setHata] = useState('');
+  const [mesajBasari, setMesajBasari] = useState('');
+  const [mesajHata, setMesajHata] = useState('');
   const [aracFormAcik, setAracFormAcik] = useState(false);
   const [duzenleArac, setDuzenleArac] = useState<any>(null);
   const [destekGonderildi, setDestekGonderildi] = useState(false);
@@ -978,6 +980,39 @@ const handleMesajSil = async (mesajId: string) => {
   }
 };
   
+const mesajConversationKey = (mesaj: any) =>
+  mesaj.conversation_id || [mesaj.gonderen_id, mesaj.alan_id].sort().join('_');
+
+const handleKonusmaSil = async (conversationId: string) => {
+  setMesajBasari('');
+  setMesajHata('');
+
+  const { error } = await konusmaSil(conversationId, userId);
+  if (error) {
+    setMesajHata('Konusma silinemedi: ' + error.message);
+    return;
+  }
+
+  const silinenOkunmamis = mesajlar.filter(
+    (m: any) =>
+      mesajConversationKey(m) === conversationId &&
+      m.alan_id === userId &&
+      !m.okundu
+  ).length;
+
+  if (aktifKonusmaId === conversationId) {
+    setAktifKonusmaId(null);
+    setCevapMetni('');
+  }
+
+  setMesajlar(prev => prev.filter((m: any) => mesajConversationKey(m) !== conversationId));
+  if (silinenOkunmamis > 0) {
+    setOkunmamisSayi(prev => Math.max(0, prev - silinenOkunmamis));
+  }
+  setMesajBasari('Konusma basariyla silindi.');
+  setTimeout(() => setMesajBasari(''), 3000);
+};
+  
   const handleProfilGuncelle = async () => {
     setHata(''); setBasari('');
     const updates: any = { full_name: profil.ad, email: profil.email, adres: profil.adres, il: profil.il, ilce: profil.ilce };
@@ -1043,7 +1078,7 @@ const handleMesajSil = async (mesajId: string) => {
   ];
 
 const konusmalarMap = mesajlar.reduce((acc: Record<string, any[]>, mesaj: any) => {
-  const key = mesaj.conversation_id || [mesaj.gonderen_id, mesaj.alan_id].sort().join('_');
+  const key = mesajConversationKey(mesaj);
   if (!acc[key]) acc[key] = [];
   acc[key].push(mesaj);
   return acc;
@@ -1356,6 +1391,17 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
       )}
     </div>
 
+    {mesajBasari && (
+      <div className="mx-4 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
+        {mesajBasari}
+      </div>
+    )}
+    {mesajHata && (
+      <div className="mx-4 mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
+        {mesajHata}
+      </div>
+    )}
+
     <div className="p-4 sm:p-5">
       {yukleniyor ? (
         <div className="flex flex-col gap-3">
@@ -1420,7 +1466,7 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
           setCevapMetni('');
         }
         // Listeyi güncelle (frontend)
-        setKonusmalar(prev => prev.filter(k => k.conversationId !== konusma.conversationId));
+        handleKonusmaSil(konusma.conversationId);
       }
     }}
     className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition"
@@ -1434,7 +1480,6 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                       {new Date(konusma.sonMesaj.created_at).toLocaleDateString('tr-TR')}
                     </span>
                   </div>
-                </div>
                 <p className="text-sm text-slate-600 line-clamp-2">{konusma.sonMesaj.mesaj}</p>
               </div>
             ))}
