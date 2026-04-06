@@ -16,7 +16,7 @@ const sorular = [
   },
   {
     soru: 'İlanlarim kac gun yayinda kalir?',
-    cevap: '7 gun yayinda kalir, ucretsiz olarak yayin suresini ilanlarim sayfasindan uzatabilirsiniz.',
+    cevap: '10 gun yayinda kalir. Süre bitince ilaniniz pasif olur. Ilanlarim sayfasindan tekrar aktif ederek sureyi sifirdan baslatabilirsiniz.',
   },
   {
     soru: 'Nasil banner verilir?',

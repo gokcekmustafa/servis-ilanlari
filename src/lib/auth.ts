@@ -1,5 +1,9 @@
 import { supabase } from './supabase';
 
+type KayitOpsiyonlari = {
+  avatarUrl?: string;
+};
+
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + 'servis-ilanlari-salt');
@@ -15,7 +19,8 @@ export async function kayitOl(
   fullName: string,
   type: string,
   il: string,
-  email?: string
+  email?: string,
+  opsiyonlar?: KayitOpsiyonlari
 ) {
   const temiz = telefon.replace(/\s/g, '').replace(/[^0-9]/g, '');
 
@@ -40,6 +45,7 @@ export async function kayitOl(
     type,
     il,
     email: email || null,
+    avatar_url: opsiyonlar?.avatarUrl || null,
     password_hash: hash,
     aktif: true,
     yetkiler: {

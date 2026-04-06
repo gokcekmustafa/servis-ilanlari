@@ -6,10 +6,95 @@ function conversationIdOlustur(kullanici1: string, kullanici2: string) {
     : `${kullanici2}_${kullanici1}`;
 }
 
+export const VARSAYILAN_ILAN_AKTIF_SURE_GUN = 10;
+const ILAN_AKTIF_SURE_ANAHTAR = 'ilan_aktif_sure_gun';
+const GUN_MS = 24 * 60 * 60 * 1000;
+
+function sayiOlarakPozitifTamSayi(v: any, fallback: number) {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.floor(n);
+}
+
+function aktifBaslangicTarihiGetir(ilan: any) {
+  const ekbilgiler = ilan?.ekbilgiler && typeof ilan.ekbilgiler === 'object' ? ilan.ekbilgiler : {};
+  const kaynak = ekbilgiler.aktif_baslangic_tarihi || ilan?.created_at;
+  const tarih = new Date(kaynak);
+  if (Number.isNaN(tarih.getTime())) {
+    return new Date(ilan?.created_at || Date.now());
+  }
+  return tarih;
+}
+
+export function ilanKalanGunHesapla(ilan: any, aktifSureGun: number, simdi = new Date()) {
+  const sure = sayiOlarakPozitifTamSayi(aktifSureGun, VARSAYILAN_ILAN_AKTIF_SURE_GUN);
+  const baslangic = aktifBaslangicTarihiGetir(ilan).getTime();
+  const bitis = baslangic + sure * GUN_MS;
+  const fark = bitis - simdi.getTime();
+  if (fark <= 0) return 0;
+  return Math.ceil(fark / GUN_MS);
+}
+
+export async function ilanAktifSureGunGetir() {
+  const { data, error } = await supabase
+    .from('ayarlar')
+    .select('deger')
+    .eq('anahtar', ILAN_AKTIF_SURE_ANAHTAR)
+    .maybeSingle();
+
+  if (error) return VARSAYILAN_ILAN_AKTIF_SURE_GUN;
+  return sayiOlarakPozitifTamSayi(data?.deger, VARSAYILAN_ILAN_AKTIF_SURE_GUN);
+}
+
+export function aktiflestirmeEkBilgisiHazirla(ekbilgiler: any) {
+  const mevcut = ekbilgiler && typeof ekbilgiler === 'object' ? ekbilgiler : {};
+  return {
+    ...mevcut,
+    aktif_baslangic_tarihi: new Date().toISOString(),
+  };
+}
+
+export async function ilanDurumGuncelle(id: string, durum: 'aktif' | 'pasif', ekbilgiler?: any) {
+  const updates: any = { durum };
+  if (durum === 'aktif') {
+    updates.ekbilgiler = aktiflestirmeEkBilgisiHazirla(ekbilgiler);
+  }
+  const { error } = await supabase
+    .from('ilanlar')
+    .update(updates)
+    .eq('id', id);
+  return { error };
+}
+
+export async function suresiDolanIlanlariPasiflestir(aktifSureGunParam?: number) {
+  const aktifSureGun = aktifSureGunParam || await ilanAktifSureGunGetir();
+  const { data, error } = await supabase
+    .from('ilanlar')
+    .select('id, created_at, ekbilgiler')
+    .eq('durum', 'aktif');
+
+  if (error || !data) return { updatedCount: 0, error };
+
+  const suresiDolanIlanIdleri = data
+    .filter((ilan: any) => ilanKalanGunHesapla(ilan, aktifSureGun) <= 0)
+    .map((ilan: any) => ilan.id);
+
+  if (suresiDolanIlanIdleri.length === 0) return { updatedCount: 0, error: null };
+
+  const { error: updateError } = await supabase
+    .from('ilanlar')
+    .update({ durum: 'pasif' })
+    .in('id', suresiDolanIlanIdleri);
+
+  return { updatedCount: suresiDolanIlanIdleri.length, error: updateError };
+}
+
 export async function ilanlariGetir(kategori?: string) {
+  await suresiDolanIlanlariPasiflestir();
+
   let query = supabase
     .from('ilanlar')
-    .select('*, profiles(full_name, phone_number)')
+    .select('*, profiles(full_name, phone_number, avatar_url, type)')
     .eq('durum', 'aktif')
     .order('created_at', { ascending: false });
 
@@ -22,6 +107,7 @@ export async function ilanlariGetir(kategori?: string) {
 }
 
 export async function ilanEkle(ilan: {
+  baslik?: string;
   kategori: string;
   servis_turu: string[];
   aciklama: string;
@@ -30,9 +116,10 @@ export async function ilanEkle(ilan: {
   user_id: string;
   ekbilgiler?: any;
 }) {
+  const ekbilgiler = aktiflestirmeEkBilgisiHazirla(ilan.ekbilgiler);
   const { data, error } = await supabase
     .from('ilanlar')
-    .insert([ilan])
+    .insert([{ ...ilan, durum: 'aktif', ekbilgiler }])
     .select();
   return { data, error };
 }
@@ -60,9 +147,11 @@ export async function ilanGuncelle(id: string, updates: {
 }
 
 export async function kullaniciIlanlari(userId: string) {
+  await suresiDolanIlanlariPasiflestir();
+
   const { data, error } = await supabase
     .from('ilanlar')
-    .select('*, profiles(full_name, phone_number)')
+    .select('*, profiles(full_name, phone_number, avatar_url, type)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   return { data, error };

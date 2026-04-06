@@ -229,7 +229,7 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
   };
 
   return (
-    <div className="px-3 py-2">
+    <div className="px-3 py-4">
       {hata && <p className="text-red-500 text-[11px] mb-1.5">{hata}</p>}
 
       {/* Masaüstü: tek satır */}

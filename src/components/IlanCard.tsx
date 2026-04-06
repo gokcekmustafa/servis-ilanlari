@@ -158,6 +158,7 @@ export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn, kompakt
   const config = kategoriConfig[ilan.kategori] ?? { label: 'DİĞER', label1: '', label2: '', bg: 'bg-gray-500', text: 'text-white', serit: 'bg-gray-300' };
   const ilanVeren = ilan.profiles?.full_name || ilan.ilan_veren || 'Kullanıcı';
   const telefon = ilan.profiles?.phone_number || '';
+  const firmaLogo = ilan.profiles?.avatar_url || '';
   const tarih = new Date(ilan.created_at).toLocaleDateString('tr-TR');
   const ekBilgi = ilan.ekbilgiler || {};
   const [isFavori, setIsFavori] = useState(false);
@@ -214,14 +215,25 @@ if (kompakt) {
   const girisSaati = g0?.giris_saati || '';
   const cikisSaati = g0?.cikis_saati || '';
   const saatStr = girisSaati && cikisSaati ? `${girisSaati}-${cikisSaati}` : girisSaati || cikisSaati || '';
-  const profilResim = ekBilgi.profil_resmi || '';
+  const profilResim = ekBilgi.profil_resmi || firmaLogo || '';
   const aracResim = (ekBilgi.resimler || [])[0] || '';
 
   // Platform logosu — küçük turuncu kutu
   const PlatformLogo = () => (
-    <div className="w-8 h-8 flex-shrink-0 bg-orange-500 rounded-lg flex items-center justify-center">
-      <span className="text-white text-[9px] font-bold leading-tight text-center">S</span>
-    </div>
+    firmaLogo ? (
+      <div className="w-8 h-8 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 bg-white">
+        <img
+          src={firmaLogo}
+          alt={ilanVeren + ' logo'}
+          className="w-full h-full object-cover"
+          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        />
+      </div>
+    ) : (
+      <div className="w-8 h-8 flex-shrink-0 bg-orange-500 rounded-lg flex items-center justify-center">
+        <span className="text-white text-[9px] font-bold leading-tight text-center">S</span>
+      </div>
+    )
   );
 
   // Kişi resmi veya platform logosu
@@ -562,7 +574,13 @@ if (kompakt) {
         <div className="flex flex-wrap items-center justify-between gap-y-1 text-[11px] text-gray-400">
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             <span>İlan Tarihi: <span className="text-gray-600">{tarih}</span></span>
-            <span>İlan Veren: <span className="text-gray-600">{ilanVeren}</span></span>
+            <span className="inline-flex items-center gap-1">
+              İlan Veren:
+              <span className="inline-flex items-center gap-1 text-gray-600">
+                {firmaLogo && <img src={firmaLogo} alt={ilanVeren + ' logo'} className="w-4 h-4 rounded-full object-cover border border-gray-200" />}
+                {ilanVeren}
+              </span>
+            </span>
             {ilan.servis_turu && ilan.servis_turu.length > 0 && (
               <span>Servis Türü: <span className="text-gray-600">{ilan.servis_turu.join(', ')}</span></span>
             )}

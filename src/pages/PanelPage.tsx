@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   kullaniciIlanlari, ilanSil, ilanGuncelle, araclarGetir, aracEkle, aracSil,
   favorileriGetir, favoriKaldir, konusmaMesajlariniGetir, okunmamisMesajSayisi,
-mesajOkunduIsaretle, destekGonder, mesajGonder, mesajSil, konusmaSil
+  mesajOkunduIsaretle, destekGonder, mesajGonder, mesajSil, konusmaSil,
+  ilanAktifSureGunGetir, ilanKalanGunHesapla, ilanDurumGuncelle, VARSAYILAN_ILAN_AKTIF_SURE_GUN
 } from '../lib/ilanlar';
 import { Ilan } from '../types';
 import { ilceler } from '../data/ilceler';
@@ -813,6 +814,7 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId, b
   const ilkSekme = (baslangicSekme === 'bildirimler' ? 'mesajlar' : baslangicSekme) as Sekme;
   const [aktifSekme, setAktifSekme] = useState<Sekme>(ilkSekme || 'profil');
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
+  const [ilanAktifSureGun, setIlanAktifSureGun] = useState<number>(VARSAYILAN_ILAN_AKTIF_SURE_GUN);
   const [ilanFavoriSayilari, setIlanFavoriSayilari] = useState<Record<string, number>>({});
   const [araclar, setAraclar] = useState<any[]>([]);
   const [favoriler, setFavoriler] = useState<any[]>([]);
@@ -855,6 +857,10 @@ const [notMetin, setNotMetin] = useState('');
     setOkunmamisSayi(count || 0);
   });
 }, [userId]);
+
+  useEffect(() => {
+    ilanAktifSureGunGetir().then(setIlanAktifSureGun);
+  }, []);
   
   useEffect(() => {
     if (aktifSekme === 'ilanlar') ilanlariYukle();
@@ -925,7 +931,12 @@ const [notMetin, setNotMetin] = useState('');
 
   const ilanlariYukle = async () => {
     setYukleniyor(true);
-    const { data } = await kullaniciIlanlari(userId);
+    const [sureGun, ilanRes] = await Promise.all([
+      ilanAktifSureGunGetir(),
+      kullaniciIlanlari(userId),
+    ]);
+    setIlanAktifSureGun(sureGun);
+    const { data } = ilanRes;
     const ilanListesi = (data || []) as Ilan[];
     setIlanlar(ilanListesi);
     await ilanFavoriSayilariniYukle(ilanListesi);
@@ -961,6 +972,44 @@ const [notMetin, setNotMetin] = useState('');
         return yeni;
       });
     }
+  };
+
+  const handleIlanDurumDegistir = async (ilan: Ilan) => {
+    const hedefDurum = ilan.durum === 'aktif' ? 'pasif' : 'aktif';
+    const onayMesaji =
+      hedefDurum === 'pasif'
+        ? 'Bu ilanı pasif yapmak istiyor musunuz?'
+        : `Bu ilanı tekrar aktif yapmak istiyor musunuz? Sayaç ${ilanAktifSureGun} güne sıfırlanacak.`;
+
+    if (!confirm(onayMesaji)) return;
+
+    const { error } = await ilanDurumGuncelle(ilan.id, hedefDurum as 'aktif' | 'pasif', ilan.ekbilgiler);
+    if (error) {
+      setHata('İlan durumu güncellenemedi: ' + error.message);
+      return;
+    }
+
+    setIlanlar(prev => prev.map(item => {
+      if (item.id !== ilan.id) return item;
+      if (hedefDurum === 'aktif') {
+        return {
+          ...item,
+          durum: 'aktif',
+          ekbilgiler: {
+            ...(item.ekbilgiler || {}),
+            aktif_baslangic_tarihi: new Date().toISOString(),
+          },
+        };
+      }
+      return { ...item, durum: 'pasif' };
+    }));
+
+    setBasari(
+      hedefDurum === 'aktif'
+        ? `İlan tekrar aktif edildi. Sayaç ${ilanAktifSureGun} güne sıfırlandı.`
+        : 'İlan pasif yapıldı.'
+    );
+    setTimeout(() => setBasari(''), 3000);
   };
 
   const handleAracEkle = async () => {
@@ -1185,6 +1234,9 @@ const konusmalar = Object.entries(konusmalarMap)
   );
 
 const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) || null;
+  const aktifIlanlar = ilanlar.filter(ilan => ilan.durum === 'aktif');
+  const pasifIlanlar = ilanlar.filter(ilan => ilan.durum !== 'aktif');
+  const ilanKalanGun = (ilan: Ilan) => ilanKalanGunHesapla(ilan, ilanAktifSureGun);
   
   const sekmeBulunan = menuItems.find(m => m.id === aktifSekme);
 
@@ -1304,6 +1356,9 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                   <h2 className="font-bold text-slate-800 text-base">İlanlarım</h2>
                   <button onClick={onIlanEkle} className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5"><Plus size={13} /> Yeni İlan</button>
                 </div>
+                <div className="px-4 sm:px-5 pt-3 text-xs text-slate-500">
+                  Aktif ilan: {aktifIlanlar.length} · Aktif olmayan: {pasifIlanlar.length}
+                </div>
                 {basari && <div className="mx-4 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">{basari}</div>}
                 {yukleniyor ? (
                   <div className="p-4 flex flex-col gap-3">{[1, 2, 3].map(i => <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />)}</div>
@@ -1312,8 +1367,14 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                 ) : (
                   <>
                     <div className="sm:hidden divide-y divide-slate-100">
-                      {ilanlar.map(ilan => (
-                        <div key={ilan.id} className="p-4">
+                      {[...aktifIlanlar, ...pasifIlanlar].map((ilan, index) => (
+                        <React.Fragment key={ilan.id}>
+                        {index === aktifIlanlar.length && pasifIlanlar.length > 0 && (
+                          <div className="px-4 py-2 bg-slate-50 border-y border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                            Aktif Olmayan İlanlar
+                          </div>
+                        )}
+                        <div className="p-4">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <p className="text-slate-700 font-medium text-sm line-clamp-2 flex-1">{ilan.aciklama}</p>
                             <div className="flex gap-1 flex-shrink-0">
@@ -1325,12 +1386,30 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">{ilan.kategori.replace(/_/g, ' ')}</span>
                             <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500')}>{ilan.durum === 'aktif' ? 'Aktif' : 'Pasif'}</span>
+                            {ilan.durum === 'aktif' && (
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                                {ilanKalanGun(ilan)} gün kaldı
+                              </span>
+                            )}
                             <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">
                               <Heart size={11} /> {ilanFavoriSayilari[ilan.id] || 0}
                             </span>
                             <span className="text-xs text-slate-400">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</span>
                           </div>
+                          <div className="mt-3">
+                            <button
+                              onClick={() => handleIlanDurumDegistir(ilan)}
+                              className={'text-xs font-semibold px-3 py-1.5 rounded-lg border transition ' + (
+                                ilan.durum === 'aktif'
+                                  ? 'text-orange-600 border-orange-200 hover:bg-orange-50'
+                                  : 'text-green-700 border-green-200 hover:bg-green-50'
+                              )}
+                            >
+                              {ilan.durum === 'aktif' ? 'Pasif Yap' : 'Tekrar Aktif Et'}
+                            </button>
+                          </div>
                         </div>
+                        </React.Fragment>
                       ))}
                     </div>
                     <div className="hidden sm:block overflow-x-auto">
@@ -1346,12 +1425,29 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                           </tr>
                         </thead>
                         <tbody>
-                          {ilanlar.map(ilan => (
+                          {[...aktifIlanlar, ...pasifIlanlar].map((ilan, index) => (
+                            <React.Fragment key={ilan.id}>
+                            {index === aktifIlanlar.length && pasifIlanlar.length > 0 && (
+                              <tr>
+                                <td colSpan={6} className="px-4 py-2 bg-slate-50 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                                  Aktif Olmayan İlanlar
+                                </td>
+                              </tr>
+                            )}
                             <tr key={ilan.id} className="border-b border-slate-50 hover:bg-slate-50 transition">
                               <td className="px-4 py-3"><p className="text-slate-700 font-medium text-sm line-clamp-1 max-w-xs">{ilan.aciklama}</p></td>
                               <td className="px-4 py-3"><span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full">{ilan.kategori.replace(/_/g, ' ')}</span></td>
                               <td className="px-4 py-3 text-slate-400 text-xs">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</td>
-                              <td className="px-4 py-3"><span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500')}>{ilan.durum === 'aktif' ? 'Aktif' : 'Pasif'}</span></td>
+                              <td className="px-4 py-3">
+                                <div className="flex flex-col gap-1">
+                                  <span className={'inline-flex w-fit text-xs font-semibold px-2 py-0.5 rounded-full ' + (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500')}>
+                                    {ilan.durum === 'aktif' ? 'Aktif' : 'Pasif'}
+                                  </span>
+                                  {ilan.durum === 'aktif' && (
+                                    <span className="text-[11px] text-amber-700">{ilanKalanGun(ilan)} gün kaldı</span>
+                                  )}
+                                </div>
+                              </td>
                               <td className="px-4 py-3">
                                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">
                                   <Heart size={12} /> {ilanFavoriSayilari[ilan.id] || 0}
@@ -1361,10 +1457,21 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                                 <div className="flex items-center gap-1">
                                   <button onClick={() => onIlanDetay(ilan, 'ilanlar')} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition"><Eye size={14} /></button>
                                   <button onClick={() => setDuzenleIlan(ilan)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition"><Pencil size={14} /></button>
+                                  <button
+                                    onClick={() => handleIlanDurumDegistir(ilan)}
+                                    className={'text-[11px] font-semibold px-2 py-1 rounded border transition ' + (
+                                      ilan.durum === 'aktif'
+                                        ? 'text-orange-600 border-orange-200 hover:bg-orange-50'
+                                        : 'text-green-700 border-green-200 hover:bg-green-50'
+                                    )}
+                                  >
+                                    {ilan.durum === 'aktif' ? 'Pasif Yap' : 'Tekrar Aktif Et'}
+                                  </button>
                                   <button onClick={() => handleIlanSil(ilan.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"><Trash2 size={14} /></button>
                                 </div>
                               </td>
                             </tr>
+                            </React.Fragment>
                           ))}
                         </tbody>
                       </table>

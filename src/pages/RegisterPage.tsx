@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Truck, Eye, EyeOff } from 'lucide-react';
 import { kayitOl } from '../lib/auth';
+import { ISTANBUL_OKUL_PERSONEL_FIRMALARI } from '../data/kurumsalFirmalar';
 
 type RegisterPageProps = {
   onRegister: () => void;
@@ -30,7 +31,7 @@ const iller = [
 export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: RegisterPageProps) {
   const [tab, setTab] = useState<'bireysel' | 'kurumsal'>('bireysel');
   const [form, setForm] = useState({
-  ad: '', firma: '', vergiNo: '', telefon: '',
+  ad: '', firmaSecimi: '', firmaOzel: '', telefon: '',
   email: '', sifre: '', sifre2: '', il: '', sozlesme: false,
 });
   const [goster, setGoster] = useState(false);
@@ -46,6 +47,19 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
   const handleRegister = async () => {
     if (!form.telefon || !form.sifre || !form.sifre2) {
       setHata('Lutfen tum zorunlu alanlari doldurun.');
+      return;
+    }
+    if (tab === 'bireysel' && !form.ad.trim()) {
+      setHata('Ad Soyad zorunludur.');
+      return;
+    }
+    const seciliKurumsal = ISTANBUL_OKUL_PERSONEL_FIRMALARI.find(f => f.ad === form.firmaSecimi);
+    const kurumsalFirmaAdi =
+      form.firmaSecimi === '__ozel__'
+        ? form.firmaOzel.trim()
+        : form.firmaSecimi.trim();
+    if (tab === 'kurumsal' && !kurumsalFirmaAdi) {
+      setHata('Kurumsal kayit icin lutfen firma secin veya firmanizi yazin.');
       return;
     }
     if (form.telefon.length < 10) {
@@ -66,8 +80,16 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
     }
     setYukleniyor(true);
     setHata('');
-    const fullName = tab === 'bireysel' ? form.ad : form.firma;
-    const { error } = await kayitOl(form.telefon, form.sifre, fullName, tab, form.il, form.email);
+    const fullName = tab === 'bireysel' ? form.ad.trim() : kurumsalFirmaAdi;
+    const { error } = await kayitOl(
+      form.telefon,
+      form.sifre,
+      fullName,
+      tab,
+      form.il,
+      form.email,
+      { avatarUrl: tab === 'kurumsal' ? (seciliKurumsal?.logoUrl || '') : '' }
+    );
     setYukleniyor(false);
     if (error) {
       setHata(error.message || 'Kayit sirasinda hata olustu.');
@@ -77,6 +99,7 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
   };
 
   const ic = 'w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
+  const seciliKurumsalFirma = ISTANBUL_OKUL_PERSONEL_FIRMALARI.find(f => f.ad === form.firmaSecimi);
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-10">
@@ -148,17 +171,36 @@ export default function RegisterPage({ onRegister, onGoLogin, onGoHome }: Regist
                     placeholder="Ad Soyadiniz" className={ic} />
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Firma Adi</label>
-                    <input name="firma" value={form.firma} onChange={handleChange}
-                      placeholder="Firma Adiniz" className={ic} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Vergi No</label>
-                    <input name="vergiNo" value={form.vergiNo} onChange={handleChange}
-                      placeholder="Vergi Numarasi" className={ic} />
-                  </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">
+                    Istanbul okul/personel servis firmasi
+                  </label>
+                  <select
+                    name="firmaSecimi"
+                    value={form.firmaSecimi}
+                    onChange={handleChange}
+                    className={ic}
+                  >
+                    <option value="">Firmayi seciniz</option>
+                    {ISTANBUL_OKUL_PERSONEL_FIRMALARI.map((firma) => (
+                      <option key={firma.ad} value={firma.ad}>{firma.ad}</option>
+                    ))}
+                    <option value="__ozel__">Listede yok, firmami kendim yazacagim</option>
+                  </select>
+                  {form.firmaSecimi === '__ozel__' && (
+                    <input
+                      name="firmaOzel"
+                      value={form.firmaOzel}
+                      onChange={handleChange}
+                      placeholder="Firmanizin adini yaziniz"
+                      className={ic + ' mt-2'}
+                    />
+                  )}
+                  {seciliKurumsalFirma && form.firmaSecimi !== '__ozel__' && (
+                    <p className="text-[11px] text-slate-500 mt-1.5">
+                      Firma web: <a href={seciliKurumsalFirma.web} target="_blank" rel="noreferrer" className="text-orange-600 hover:underline">{seciliKurumsalFirma.web}</a>
+                    </p>
+                  )}
                 </div>
               )}
 

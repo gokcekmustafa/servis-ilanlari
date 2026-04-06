@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import {
+  ilanAktifSureGunGetir,
+  ilanDurumGuncelle,
+  ilanKalanGunHesapla,
+  suresiDolanIlanlariPasiflestir,
+  VARSAYILAN_ILAN_AKTIF_SURE_GUN,
+} from '../lib/ilanlar';
 import { Ilan } from '../types';
 import {
   LayoutDashboard, Users, FileText, Megaphone,
@@ -106,6 +113,9 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   const [reklamSiklik, setReklamSiklik]         = useState(8);
   const [siklikKaydediyor, setSiklikKaydediyor] = useState(false);
   const [siklikMesaj, setSiklikMesaj]           = useState('');
+  const [ilanAktifSureGun, setIlanAktifSureGun] = useState<number>(VARSAYILAN_ILAN_AKTIF_SURE_GUN);
+  const [ilanSureKaydediyor, setIlanSureKaydediyor] = useState(false);
+  const [ilanSureMesaj, setIlanSureMesaj] = useState('');
 
   const [yeniDuyuru, setYeniDuyuru]       = useState({ baslik: '', mesaj: '', resim_url: '', saniye: 2, goster_sure: 8 });
   const [duyuruYukleniyor, setDuyuruYukleniyor] = useState(false);
@@ -160,14 +170,17 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
 
   const hepsiniYukle = async () => {
     setYukleniyor(true);
+    const aktifSureGun = await ilanAktifSureGunGetir();
+    setIlanAktifSureGun(aktifSureGun);
+    await suresiDolanIlanlariPasiflestir(aktifSureGun);
     const [u, i, r, d, ds, ayar, logoAyar] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('ilanlar').select('*').order('created_at', { ascending: false }),
       supabase.from('reklamlar').select('*').order('id', { ascending: false }),
       supabase.from('duyurular').select('*').order('id', { ascending: false }),
       supabase.from('destek').select('*').order('created_at', { ascending: false }),
-      supabase.from('ayarlar').select('*').eq('anahtar', 'reklam_siklik').single(),
-      supabase.from('ayarlar').select('*').eq('anahtar', 'platform_logo').single(),
+      supabase.from('ayarlar').select('*').eq('anahtar', 'reklam_siklik').maybeSingle(),
+      supabase.from('ayarlar').select('*').eq('anahtar', 'platform_logo').maybeSingle(),
     ]);
     setKullanicilar(u.data || []);
     setIlanlar(i.data || []);
@@ -237,6 +250,56 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   };
 
   // ─── REKLAM ─────────────────────────────────────────────────────────────────
+
+  const ilanKalanGun = (ilan: any) => ilanKalanGunHesapla(ilan, ilanAktifSureGun);
+
+  const ilanAktifSureKaydet = async () => {
+    const yeniSure = Math.max(1, Math.floor(Number(ilanAktifSureGun) || VARSAYILAN_ILAN_AKTIF_SURE_GUN));
+    setIlanAktifSureGun(yeniSure);
+    setIlanSureKaydediyor(true);
+    setIlanSureMesaj('');
+
+    const { error } = await supabase
+      .from('ayarlar')
+      .upsert({ anahtar: 'ilan_aktif_sure_gun', deger: String(yeniSure) }, { onConflict: 'anahtar' });
+
+    if (error) {
+      setIlanSureKaydediyor(false);
+      setIlanSureMesaj('Kaydedilemedi: ' + error.message);
+      setTimeout(() => setIlanSureMesaj(''), 3500);
+      return;
+    }
+
+    const { error: pasifError } = await suresiDolanIlanlariPasiflestir(yeniSure);
+    setIlanSureKaydediyor(false);
+
+    if (pasifError) {
+      setIlanSureMesaj('Süre kaydedildi, süre dolan ilanlar güncellenemedi.');
+      setTimeout(() => setIlanSureMesaj(''), 3500);
+      return;
+    }
+
+    setIlanSureMesaj(`Kaydedildi ✓ (${yeniSure} gün)`);
+    setTimeout(() => setIlanSureMesaj(''), 3000);
+    hepsiniYukle();
+  };
+
+  const adminIlanDurumDegistir = async (ilan: any) => {
+    const hedefDurum = ilan.durum === 'aktif' ? 'pasif' : 'aktif';
+    const onayMesaji = hedefDurum === 'aktif'
+      ? `Bu ilanı tekrar aktif yapmak istiyor musunuz? Sayaç ${ilanAktifSureGun} güne sıfırlanacak.`
+      : 'Bu ilanı pasif yapmak istiyor musunuz?';
+
+    if (!window.confirm(onayMesaji)) return;
+
+    const { error } = await ilanDurumGuncelle(ilan.id, hedefDurum, ilan.ekbilgiler);
+    if (error) {
+      alert('İlan durumu güncellenemedi: ' + error.message);
+      return;
+    }
+
+    hepsiniYukle();
+  };
 
   const dosyaYukle = async (dosya: File, hedef: 'yeni' | 'duzenle' = 'yeni') => {
     if (!dosya.type.startsWith('image/')) { alert('Sadece resim dosyası yükleyebilirsiniz'); return; }
@@ -554,6 +617,29 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
           {!yukleniyor && aktifSekme === 'ilanlar' && (
             !sekmeYetkiVarMi('ilanlar') ? <YetkisizUyari sekme="İlan Onay" /> : (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/70">
+                <p className="text-xs font-semibold text-slate-600 mb-2">İlanların aktif kalma süresi (gün)</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    value={ilanAktifSureGun}
+                    onChange={e => setIlanAktifSureGun(Math.max(1, Number(e.target.value) || 1))}
+                    className={ic + ' max-w-[110px]'}
+                  />
+                  <button
+                    onClick={ilanAktifSureKaydet}
+                    disabled={ilanSureKaydediyor}
+                    className={btnO + ' disabled:opacity-60 flex items-center gap-1.5'}
+                  >
+                    {ilanSureKaydediyor
+                      ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      : <Save size={14} />}
+                    Kaydet
+                  </button>
+                  {ilanSureMesaj && <span className="text-xs text-slate-600">{ilanSureMesaj}</span>}
+                </div>
+              </div>
               <div className="sm:hidden divide-y divide-slate-100">
                 {ilanlar.map(ilan => (
                   <div key={ilan.id} className="p-4">
@@ -567,11 +653,14 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                         {ilan.durum || 'aktif'}
                       </span>
                     </div>
+                    {ilan.durum === 'aktif' && (
+                      <p className="text-[11px] text-amber-700 mb-2">{ilanKalanGun(ilan)} gün kaldı</p>
+                    )}
                     <div className="flex items-center gap-2">
                       <button onClick={() => onIlanDetay(ilan)} className="text-xs text-blue-500 font-medium">Detay</button>
                       <span className="text-slate-200">|</span>
-                      <button onClick={async () => { await supabase.from('ilanlar').update({ durum: ilan.durum === 'aktif' ? 'pasif' : 'aktif' }).eq('id', ilan.id); hepsiniYukle(); }}
-                        className="text-xs text-orange-500 font-medium">{ilan.durum === 'aktif' ? 'Pasif Yap' : 'Aktif Yap'}</button>
+                      <button onClick={() => adminIlanDurumDegistir(ilan)}
+                        className="text-xs text-orange-500 font-medium">{ilan.durum === 'aktif' ? 'Pasif Yap' : 'Tekrar Aktif Et'}</button>
                       {(isSuperAdmin || (yetkiler as any).ilan_sil) && (
                         <><span className="text-slate-200">|</span><button onClick={() => ilanSil(ilan.id)} className="text-xs text-red-400 font-medium">Sil</button></>
                       )}
@@ -596,15 +685,20 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                         <td className="px-4 py-3 text-slate-500 text-xs">{ilan.kategori}</td>
                         <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(ilan.created_at).toLocaleDateString('tr-TR')}</td>
                         <td className="px-4 py-3">
-                          <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : ilan.durum === 'pasif' ? 'bg-slate-100 text-slate-500' : 'bg-yellow-100 text-yellow-700')}>
-                            {ilan.durum || 'aktif'}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className={'inline-flex w-fit text-xs font-semibold px-2 py-0.5 rounded-full ' + (ilan.durum === 'aktif' ? 'bg-green-100 text-green-700' : ilan.durum === 'pasif' ? 'bg-slate-100 text-slate-500' : 'bg-yellow-100 text-yellow-700')}>
+                              {ilan.durum || 'aktif'}
+                            </span>
+                            {ilan.durum === 'aktif' && (
+                              <span className="text-[11px] text-amber-700">{ilanKalanGun(ilan)} gün kaldı</span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <button onClick={() => onIlanDetay(ilan)} className="text-xs text-blue-500 hover:text-blue-700 font-medium">Detay</button>
-                            <button onClick={async () => { await supabase.from('ilanlar').update({ durum: ilan.durum === 'aktif' ? 'pasif' : 'aktif' }).eq('id', ilan.id); hepsiniYukle(); }} className="text-xs text-orange-500 hover:text-orange-700 font-medium whitespace-nowrap">
-                              {ilan.durum === 'aktif' ? 'Pasif Yap' : 'Aktif Yap'}
+                            <button onClick={() => adminIlanDurumDegistir(ilan)} className="text-xs text-orange-500 hover:text-orange-700 font-medium whitespace-nowrap">
+                              {ilan.durum === 'aktif' ? 'Pasif Yap' : 'Tekrar Aktif Et'}
                             </button>
                             {(isSuperAdmin || (yetkiler as any).ilan_sil) && (
                               <button onClick={() => ilanSil(ilan.id)} className="text-red-400 hover:text-red-600"><Trash2 size={13} /></button>
