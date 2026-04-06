@@ -521,9 +521,9 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   const tahminiMisafirGoruntulenme = Math.max(0, toplamGoruntulenme - favoriEtkilesimSayisi);
 
   const menuItems = [
-    { id: 'istatistik',   label: 'Ä°statistikler', icon: LayoutDashboard },
-    { id: 'ilanlar',      label: 'Ä°lanlar',        icon: FileText,       sayi: ilanlar.length },
-    { id: 'kullanicilar', label: 'KullanÄ±cÄ±lar',   icon: Users,          sayi: kullanicilar.filter(u => u.type !== 'admin').length },
+    { id: 'istatistik',   label: 'İstatistikler', icon: LayoutDashboard },
+    { id: 'ilanlar',      label: 'İlanlar',        icon: FileText,       sayi: ilanlar.length },
+    { id: 'kullanicilar', label: 'Kullanıcılar',   icon: Users,          sayi: kullanicilar.filter(u => u.type !== 'admin').length },
     { id: 'reklamlar',    label: 'Reklamlar',      icon: Image,          sayi: reklamlar.length },
     { id: 'popup',        label: 'Popup Mesajlari', icon: Bell,          sayi: duyurular.length },
     { id: 'duyurular',    label: 'Duyurular',      icon: Megaphone,      sayi: kullaniciDuyurulari.length },
@@ -539,8 +539,8 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   const SidebarIcerik = ({ kapatFn }: { kapatFn?: () => void }) => (
     <>
       <div className="px-4 py-5 border-b border-slate-700">
-        <p className="text-white font-bold text-base">YÃ¶netim Paneli</p>
-        <p className="text-slate-400 text-xs mt-0.5">{isSuperAdmin ? 'â­ SÃ¼per YÃ¶netici' : 'ğŸ”‘ YÃ¶netici'}</p>
+        <p className="text-white font-bold text-base">Yönetim Paneli</p>
+        <p className="text-slate-400 text-xs mt-0.5">{isSuperAdmin ? '⭐ Süper Yönetici' : '🔑 Yönetici'}</p>
       </div>
       <nav className="flex-1 py-3 overflow-y-auto">
         {menuItems.map(item => {
@@ -549,7 +549,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
           return (
             <button key={item.id}
               onClick={() => { if (!item.kilitli) { setAktifSekme(item.id as Sekme); kapatFn?.(); } }}
-              title={item.kilitli ? 'Bu bÃ¶lÃ¼m iÃ§in yetkiniz yok' : ''}
+              title={item.kilitli ? 'Bu bölüm için yetkiniz yok' : ''}
               className={'w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition ' +
                 (item.kilitli ? 'text-slate-600 cursor-not-allowed opacity-40' :
                  aktif ? 'bg-orange-500 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white')}>

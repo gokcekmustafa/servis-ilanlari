@@ -184,6 +184,38 @@ const KATEGORILER = [
   },
 ] as const;
 
+function metinNorm(v: any) {
+  return String(v ?? '').trim().toLocaleLowerCase('tr-TR');
+}
+
+function metinAyni(a: any, b: any) {
+  return !!metinNorm(a) && metinNorm(a) === metinNorm(b);
+}
+
+function metinIcerir(kaynak: any, aranan: string) {
+  const q = metinNorm(aranan);
+  if (!q) return true;
+  return metinNorm(kaynak).includes(q);
+}
+
+function sayiyaDonustur(v: any): number | null {
+  if (v === null || v === undefined) return null;
+  const temiz = String(v).replace(/\./g, '').replace(/,/g, '.').replace(/\s+/g, '').trim();
+  if (!temiz) return null;
+  const n = Number(temiz);
+  return Number.isFinite(n) ? n : null;
+}
+
+function koltukSayisiDonustur(v: any): number | null {
+  if (v === null || v === undefined) return null;
+  const metin = String(v).trim();
+  if (!metin) return null;
+  const ilkSayi = metin.match(/\d+/)?.[0];
+  if (!ilkSayi) return null;
+  const n = Number(ilkSayi);
+  return Number.isFinite(n) ? n : null;
+}
+
 function ListeReklamKarti({ reklam }: { reklam: any }) {
   return (
     <div
@@ -463,7 +495,20 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
   const [selectedVarisIl, setSelectedVarisIl] = useState('');
   const [selectedVarisIlce, setSelectedVarisIlce] = useState('');
   const [selectedVarisMah, setSelectedVarisMah] = useState('');
+  const [selectedAracimVarIsTamamenBos, setSelectedAracimVarIsTamamenBos] = useState(false);
+  const [selectedAracimVarIsModel, setSelectedAracimVarIsModel] = useState('');
+  const [selectedAracimVarIsMinYil, setSelectedAracimVarIsMinYil] = useState('');
+  const [selectedAracimVarIsMinKoltuk, setSelectedAracimVarIsMinKoltuk] = useState('');
+  const [selectedSoforumIsEmekli, setSelectedSoforumIsEmekli] = useState('');
+  const [selectedAracSatisModel, setSelectedAracSatisModel] = useState('');
+  const [selectedAracSatisMinYil, setSelectedAracSatisMinYil] = useState('');
+  const [selectedAracSatisMinKoltuk, setSelectedAracSatisMinKoltuk] = useState('');
+  const [selectedAracSatisMinFiyat, setSelectedAracSatisMinFiyat] = useState('');
+  const [selectedAracSatisMaxFiyat, setSelectedAracSatisMaxFiyat] = useState('');
+  const [selectedAracSatisMinKm, setSelectedAracSatisMinKm] = useState('');
+  const [selectedAracSatisMaxKm, setSelectedAracSatisMaxKm] = useState('');
   const [siralama, setSiralama] = useState('yeni');
+  const [aracBilgiMap, setAracBilgiMap] = useState<Record<string, any>>({});
   const [duyuru, setDuyuru] = useState<any>(null);
   const [popupAcik, setPopupAcik] = useState(false);
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
@@ -496,10 +541,52 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
     return () => { document.body.style.overflow = ''; };
   }, [filtreAcik]);
 
+  const aracBilgileriYukle = async (ilanListesi: Ilan[]) => {
+    const userIdler = Array.from(
+      new Set(
+        ilanListesi
+          .filter(ilan => ilan.kategori === 'aracim_var_is' && !!ilan.user_id)
+          .map(ilan => ilan.user_id)
+      )
+    );
+
+    if (userIdler.length === 0) {
+      setAracBilgiMap({});
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('araclar')
+      .select('user_id, plaka, marka, model, yil, koltuk_sayisi')
+      .in('user_id', userIdler);
+
+    if (error || !data) {
+      setAracBilgiMap({});
+      return;
+    }
+
+    const map: Record<string, any> = {};
+    (data as any[]).forEach((arac) => {
+      const plakaKey = metinNorm(arac.plaka);
+      if (!plakaKey) return;
+      map[`${arac.user_id}::${plakaKey}`] = arac;
+      if (!map[`*::${plakaKey}`]) {
+        map[`*::${plakaKey}`] = arac;
+      }
+    });
+    setAracBilgiMap(map);
+  };
+
   const ilanlarYukle = async () => {
     setYukleniyor(true);
     const { data, error } = await ilanlariGetir();
-    if (!error && data) setIlanlar(data as Ilan[]);
+    if (!error && data) {
+      const ilanData = data as Ilan[];
+      setIlanlar(ilanData);
+      await aracBilgileriYukle(ilanData);
+    } else {
+      setAracBilgiMap({});
+    }
     setYukleniyor(false);
   };
 
@@ -577,6 +664,39 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
     return () => clearTimeout(timer);
   }, [popupAcik, duyuru]);
 
+  const kategoriDisiFiltreleriTemizle = () => {
+    setSelectedSehir('');
+    setSelectedKalkisIlce('');
+    setSelectedKalkisMah('');
+    setSelectedVarisIl('');
+    setSelectedVarisIlce('');
+    setSelectedVarisMah('');
+    setSelectedAracimVarIsTamamenBos(false);
+    setSelectedAracimVarIsModel('');
+    setSelectedAracimVarIsMinYil('');
+    setSelectedAracimVarIsMinKoltuk('');
+    setSelectedSoforumIsEmekli('');
+    setSelectedAracSatisModel('');
+    setSelectedAracSatisMinYil('');
+    setSelectedAracSatisMinKoltuk('');
+    setSelectedAracSatisMinFiyat('');
+    setSelectedAracSatisMaxFiyat('');
+    setSelectedAracSatisMinKm('');
+    setSelectedAracSatisMaxKm('');
+  };
+
+  const handleKategoriDegistir = (kategori: KategoriType | null) => {
+    const yeniKategori = kategori === null ? null : (aktifKategori === kategori ? null : kategori);
+    setAktifKategori(yeniKategori);
+    kategoriDisiFiltreleriTemizle();
+  };
+
+  const handleClear = () => {
+    setAktifKategori(null);
+    kategoriDisiFiltreleriTemizle();
+    setSiralama('yeni');
+  };
+
   const sehirler = Array.from(new Set(
     ilanlar.flatMap(i => i.guzergahlar.map(g => g.kalkis_il).filter(Boolean))
   )).sort();
@@ -584,7 +704,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
   const kalkisIlceler = selectedSehir
     ? Array.from(new Set(
         ilanlar.flatMap(i => i.guzergahlar
-          .filter(g => g.kalkis_il === selectedSehir)
+          .filter(g => metinAyni(g.kalkis_il, selectedSehir))
           .map(g => g.kalkis_ilce).filter(Boolean))
       )).sort()
     : [];
@@ -592,7 +712,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
   const kalkisMahalleler = selectedKalkisIlce
     ? Array.from(new Set(
         ilanlar.flatMap(i => i.guzergahlar
-          .filter(g => g.kalkis_ilce === selectedKalkisIlce)
+          .filter(g => metinAyni(g.kalkis_ilce, selectedKalkisIlce))
           .map(g => g.kalkis_mah).filter(Boolean))
       )).sort()
     : [];
@@ -604,7 +724,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
   const varisIlceler = selectedVarisIl
     ? Array.from(new Set(
         ilanlar.flatMap(i => i.guzergahlar
-          .filter(g => g.varis_il === selectedVarisIl)
+          .filter(g => metinAyni(g.varis_il, selectedVarisIl))
           .map(g => g.varis_ilce).filter(Boolean))
       )).sort()
     : [];
@@ -612,33 +732,118 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
   const varisMahalleler = selectedVarisIlce
     ? Array.from(new Set(
         ilanlar.flatMap(i => i.guzergahlar
-          .filter(g => g.varis_ilce === selectedVarisIlce)
+          .filter(g => metinAyni(g.varis_ilce, selectedVarisIlce))
           .map(g => g.varis_mah).filter(Boolean))
       )).sort()
     : [];
 
-  const handleClear = () => {
-    setAktifKategori(null);
-    setSelectedSehir('');
-    setSelectedKalkisIlce('');
-    setSelectedKalkisMah('');
-    setSelectedVarisIl('');
-    setSelectedVarisIlce('');
-    setSelectedVarisMah('');
-    setSiralama('yeni');
+  const aracimVarIsAracBilgisiGetir = (ilan: Ilan) => {
+    const ekBilgi = ilan.ekbilgiler || {};
+    const secilenPlaka = metinNorm(ekBilgi.secilen_arac);
+    const key = secilenPlaka ? `${ilan.user_id || '*'}::${secilenPlaka}` : '';
+    const mapBilgi = key ? (aracBilgiMap[key] || aracBilgiMap[`*::${secilenPlaka}`]) : null;
+    return {
+      marka: ekBilgi.marka || mapBilgi?.marka || '',
+      model: ekBilgi.model || mapBilgi?.model || '',
+      yil: ekBilgi.yil || mapBilgi?.yil || '',
+      koltuk_sayisi: ekBilgi.koltuk_sayisi || mapBilgi?.koltuk_sayisi || '',
+    };
   };
+
+  const aracimVarIsIlanlari = ilanlar.filter(i => i.kategori === 'aracim_var_is');
+  const aracimVarIsModelSecenekleri = Array.from(new Set(
+    aracimVarIsIlanlari
+      .map((ilan) => {
+        const arac = aracimVarIsAracBilgisiGetir(ilan);
+        return [arac.marka, arac.model].filter(Boolean).join(' ').trim();
+      })
+      .filter((v): v is string => !!v)
+  )).sort((a, b) => a.localeCompare(b, 'tr'));
+  const aracimVarIsYilSecenekleri = Array.from(new Set(
+    aracimVarIsIlanlari
+      .map((ilan) => String(aracimVarIsAracBilgisiGetir(ilan).yil || ''))
+      .filter((v) => sayiyaDonustur(v) !== null)
+  )).sort((a, b) => (sayiyaDonustur(a) || 0) - (sayiyaDonustur(b) || 0));
+  const aracimVarIsKoltukSecenekleri = Array.from(new Set(
+    aracimVarIsIlanlari
+      .map((ilan) => String(aracimVarIsAracBilgisiGetir(ilan).koltuk_sayisi || ''))
+      .filter((v) => koltukSayisiDonustur(v) !== null)
+  )).sort((a, b) => (koltukSayisiDonustur(a) || 0) - (koltukSayisiDonustur(b) || 0));
+
+  const aracSatisIlanlari = ilanlar.filter(i => i.kategori === 'aracimi_satiyorum');
+  const aracSatisModelSecenekleri = Array.from(new Set(
+    aracSatisIlanlari
+      .map((ilan) => {
+        const ek = ilan.ekbilgiler || {};
+        return [ek.marka, ek.model].filter(Boolean).join(' ').trim();
+      })
+      .filter((v): v is string => !!v)
+  )).sort((a, b) => a.localeCompare(b, 'tr'));
+  const aracSatisYilSecenekleri = Array.from(new Set(
+    aracSatisIlanlari
+      .map((ilan) => String((ilan.ekbilgiler || {}).yil || ''))
+      .filter((v) => sayiyaDonustur(v) !== null)
+  )).sort((a, b) => (sayiyaDonustur(a) || 0) - (sayiyaDonustur(b) || 0));
+  const aracSatisKoltukSecenekleri = Array.from(new Set(
+    aracSatisIlanlari
+      .map((ilan) => String((ilan.ekbilgiler || {}).koltuk_sayisi || ''))
+      .filter((v) => koltukSayisiDonustur(v) !== null)
+  )).sort((a, b) => (koltukSayisiDonustur(a) || 0) - (koltukSayisiDonustur(b) || 0));
 
   const kategoriSayisi = (id: KategoriType) => ilanlar.filter(i => i.kategori === id).length;
 
   const filtrelenmisIlanlar = ilanlar
     .filter(ilan => {
       if (aktifKategori && ilan.kategori !== aktifKategori) return false;
-      if (selectedSehir && !ilan.guzergahlar.some(g => g.kalkis_il === selectedSehir)) return false;
-      if (selectedKalkisIlce && !ilan.guzergahlar.some(g => g.kalkis_ilce === selectedKalkisIlce)) return false;
-      if (selectedKalkisMah && !ilan.guzergahlar.some(g => g.kalkis_mah === selectedKalkisMah)) return false;
-      if (selectedVarisIl && !ilan.guzergahlar.some(g => g.varis_il === selectedVarisIl)) return false;
-      if (selectedVarisIlce && !ilan.guzergahlar.some(g => g.varis_ilce === selectedVarisIlce)) return false;
-      if (selectedVarisMah && !ilan.guzergahlar.some(g => g.varis_mah === selectedVarisMah)) return false;
+
+      const ekBilgi = ilan.ekbilgiler || {};
+
+      if (selectedSehir && !ilan.guzergahlar.some(g => metinAyni(g.kalkis_il, selectedSehir))) return false;
+      if (selectedKalkisIlce && !ilan.guzergahlar.some(g => metinAyni(g.kalkis_ilce, selectedKalkisIlce))) return false;
+
+      if (aktifKategori !== 'aracim_var_is' && aktifKategori !== 'soforum_is' && aktifKategori !== 'aracimi_satiyorum') {
+        if (selectedKalkisMah && !ilan.guzergahlar.some(g => metinAyni(g.kalkis_mah, selectedKalkisMah))) return false;
+        if (selectedVarisIl && !ilan.guzergahlar.some(g => metinAyni(g.varis_il, selectedVarisIl))) return false;
+        if (selectedVarisIlce && !ilan.guzergahlar.some(g => metinAyni(g.varis_ilce, selectedVarisIlce))) return false;
+        if (selectedVarisMah && !ilan.guzergahlar.some(g => metinAyni(g.varis_mah, selectedVarisMah))) return false;
+      }
+
+      if (aktifKategori === 'aracim_var_is') {
+        const aracBilgi = aracimVarIsAracBilgisiGetir(ilan);
+        if (selectedAracimVarIsTamamenBos && !ekBilgi.tamamen_bos) return false;
+        if (selectedAracimVarIsModel && !metinIcerir([aracBilgi.marka, aracBilgi.model].filter(Boolean).join(' '), selectedAracimVarIsModel)) return false;
+        const minYil = sayiyaDonustur(selectedAracimVarIsMinYil);
+        const ilanYil = sayiyaDonustur(aracBilgi.yil);
+        if (minYil !== null && (ilanYil === null || ilanYil < minYil)) return false;
+        const minKoltuk = koltukSayisiDonustur(selectedAracimVarIsMinKoltuk);
+        const ilanKoltuk = koltukSayisiDonustur(aracBilgi.koltuk_sayisi);
+        if (minKoltuk !== null && (ilanKoltuk === null || ilanKoltuk < minKoltuk)) return false;
+      }
+
+      if (aktifKategori === 'soforum_is') {
+        if (selectedSoforumIsEmekli && !metinAyni(ekBilgi.emekli, selectedSoforumIsEmekli)) return false;
+      }
+
+      if (aktifKategori === 'aracimi_satiyorum') {
+        if (selectedAracSatisModel && !metinIcerir([ekBilgi.marka, ekBilgi.model].filter(Boolean).join(' '), selectedAracSatisModel)) return false;
+        const minYil = sayiyaDonustur(selectedAracSatisMinYil);
+        const ilanYil = sayiyaDonustur(ekBilgi.yil);
+        if (minYil !== null && (ilanYil === null || ilanYil < minYil)) return false;
+        const minKoltuk = koltukSayisiDonustur(selectedAracSatisMinKoltuk);
+        const ilanKoltuk = koltukSayisiDonustur(ekBilgi.koltuk_sayisi);
+        if (minKoltuk !== null && (ilanKoltuk === null || ilanKoltuk < minKoltuk)) return false;
+        const minFiyat = sayiyaDonustur(selectedAracSatisMinFiyat);
+        const maxFiyat = sayiyaDonustur(selectedAracSatisMaxFiyat);
+        const ilanFiyat = sayiyaDonustur(ekBilgi.ucret);
+        if (minFiyat !== null && (ilanFiyat === null || ilanFiyat < minFiyat)) return false;
+        if (maxFiyat !== null && (ilanFiyat === null || ilanFiyat > maxFiyat)) return false;
+        const minKm = sayiyaDonustur(selectedAracSatisMinKm);
+        const maxKm = sayiyaDonustur(selectedAracSatisMaxKm);
+        const ilanKm = sayiyaDonustur(ekBilgi.km);
+        if (minKm !== null && (ilanKm === null || ilanKm < minKm)) return false;
+        if (maxKm !== null && (ilanKm === null || ilanKm > maxKm)) return false;
+      }
+
       return true;
     })
     .sort((a, b) =>
@@ -647,9 +852,28 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
         : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
-  const aktivFiltreVar = !!aktifKategori || !!selectedSehir
-    || !!selectedKalkisIlce || !!selectedKalkisMah
-    || !!selectedVarisIl || !!selectedVarisIlce || !!selectedVarisMah;
+  const aktivFiltreVar = !!aktifKategori
+    || !!selectedSehir
+    || !!selectedKalkisIlce
+    || !!selectedKalkisMah
+    || !!selectedVarisIl
+    || !!selectedVarisIlce
+    || !!selectedVarisMah
+    || selectedAracimVarIsTamamenBos
+    || !!selectedAracimVarIsModel
+    || !!selectedAracimVarIsMinYil
+    || !!selectedAracimVarIsMinKoltuk
+    || !!selectedSoforumIsEmekli
+    || !!selectedAracSatisModel
+    || !!selectedAracSatisMinYil
+    || !!selectedAracSatisMinKoltuk
+    || !!selectedAracSatisMinFiyat
+    || !!selectedAracSatisMaxFiyat
+    || !!selectedAracSatisMinKm
+    || !!selectedAracSatisMaxKm;
+
+  const sadeceIlIlceKonumFiltresi = aktifKategori === 'aracim_var_is' || aktifKategori === 'soforum_is';
+  const konumFiltresiGoster = aktifKategori !== 'aracimi_satiyorum';
 
   const ilanListesiWithAds = () => {
     const result: React.ReactNode[] = [];
@@ -690,7 +914,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                 return (
                   <button
                     key={kat.id}
-                    onClick={() => setAktifKategori(isSelected ? null : kat.id)}
+                    onClick={() => handleKategoriDegistir(kat.id)}
                     className={
                       "flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg text-center transition-all flex-shrink-0 w-[calc(12.5%-6px)] min-w-[80px] " +
                       (isSelected
@@ -744,7 +968,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Kategori</span>
                 </div>
                 <button
-                  onClick={() => setAktifKategori(null)}
+                  onClick={() => handleKategoriDegistir(null)}
                   className={"w-full flex items-center justify-between px-3 py-1.5 text-xs transition hover:bg-orange-50 " + (!aktifKategori ? "text-[#f7971e] font-semibold bg-orange-50 border-l-4 border-[#f7971e]" : "text-gray-600")}
                 >
                   <span className="truncate">Tüm Kategoriler</span>
@@ -756,7 +980,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                   return (
                     <button
                       key={kat.id}
-                      onClick={() => setAktifKategori(isActive ? null : kat.id)}
+                      onClick={() => handleKategoriDegistir(kat.id)}
                       className={"w-full flex items-center justify-between px-3 py-1.5 text-xs transition hover:bg-orange-50 border-t border-gray-50 " + (isActive ? "text-[#f7971e] font-semibold bg-orange-50 border-l-4 border-[#f7971e]" : "text-gray-600")}
                     >
                       <span className="flex items-center gap-1 min-w-0">
@@ -770,6 +994,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
               </div>
 
               {/* KONUMA GÖRE */}
+              {konumFiltresiGoster && (
               <div className="border-b border-gray-100">
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Konuma Göre</span>
@@ -796,7 +1021,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                       {kalkisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
                     </select>
                   )}
-                  {selectedKalkisIlce && kalkisMahalleler.length > 0 && (
+                  {!sadeceIlIlceKonumFiltresi && selectedKalkisIlce && kalkisMahalleler.length > 0 && (
                     <select
                       value={selectedKalkisMah}
                       onChange={(e) => setSelectedKalkisMah(e.target.value)}
@@ -807,40 +1032,189 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                     </select>
                   )}
                 </div>
-                <div className="px-3 pt-1 pb-1 border-t border-gray-50">
-                  <span className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide">🏁 Varış</span>
-                </div>
-                <div className="px-3 pb-3 space-y-1.5">
-                  <select
-                    value={selectedVarisIl}
-                    onChange={(e) => { setSelectedVarisIl(e.target.value); setSelectedVarisIlce(''); setSelectedVarisMah(''); }}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
-                  >
-                    <option value="">Şehir</option>
-                    {varisSehirleri.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                  {selectedVarisIl && varisIlceler.length > 0 && (
-                    <select
-                      value={selectedVarisIlce}
-                      onChange={(e) => { setSelectedVarisIlce(e.target.value); setSelectedVarisMah(''); }}
-                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
-                    >
-                      <option value="">İlçe</option>
-                      {varisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
-                    </select>
-                  )}
-                  {selectedVarisIlce && varisMahalleler.length > 0 && (
-                    <select
-                      value={selectedVarisMah}
-                      onChange={(e) => setSelectedVarisMah(e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
-                    >
-                      <option value="">Mahalle</option>
-                      {varisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                  )}
-                </div>
+                {!sadeceIlIlceKonumFiltresi && (
+                  <>
+                    <div className="px-3 pt-1 pb-1 border-t border-gray-50">
+                      <span className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide">🏁 Varış</span>
+                    </div>
+                    <div className="px-3 pb-3 space-y-1.5">
+                      <select
+                        value={selectedVarisIl}
+                        onChange={(e) => { setSelectedVarisIl(e.target.value); setSelectedVarisIlce(''); setSelectedVarisMah(''); }}
+                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                      >
+                        <option value="">Şehir</option>
+                        {varisSehirleri.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      {selectedVarisIl && varisIlceler.length > 0 && (
+                        <select
+                          value={selectedVarisIlce}
+                          onChange={(e) => { setSelectedVarisIlce(e.target.value); setSelectedVarisMah(''); }}
+                          className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                        >
+                          <option value="">İlçe</option>
+                          {varisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
+                        </select>
+                      )}
+                      {selectedVarisIlce && varisMahalleler.length > 0 && (
+                        <select
+                          value={selectedVarisMah}
+                          onChange={(e) => setSelectedVarisMah(e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                        >
+                          <option value="">Mahalle</option>
+                          {varisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
+              )}
+
+              {aktifKategori === 'aracim_var_is' && (
+                <div className="border-b border-gray-100">
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Araç Filtresi</span>
+                  </div>
+                  <div className="px-3 py-2 space-y-2">
+                    <label className="flex items-center gap-2 text-xs text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={selectedAracimVarIsTamamenBos}
+                        onChange={(e) => setSelectedAracimVarIsTamamenBos(e.target.checked)}
+                        className="accent-[#f7971e]"
+                      />
+                      Tamamen boşta olan araçlar
+                    </label>
+                    <select
+                      value={selectedAracimVarIsModel}
+                      onChange={(e) => setSelectedAracimVarIsModel(e.target.value)}
+                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                    >
+                      <option value="">Model (Tümü)</option>
+                      {aracimVarIsModelSecenekleri.map((model) => (
+                        <option key={model} value={model}>{model}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedAracimVarIsMinYil}
+                      onChange={(e) => setSelectedAracimVarIsMinYil(e.target.value)}
+                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                    >
+                      <option value="">Yıl (ve üzeri)</option>
+                      {aracimVarIsYilSecenekleri.map((yil) => (
+                        <option key={yil} value={yil}>{yil}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedAracimVarIsMinKoltuk}
+                      onChange={(e) => setSelectedAracimVarIsMinKoltuk(e.target.value)}
+                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                    >
+                      <option value="">Koltuk (ve üzeri)</option>
+                      {aracimVarIsKoltukSecenekleri.map((koltuk) => (
+                        <option key={koltuk} value={koltuk}>{koltuk}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {aktifKategori === 'soforum_is' && (
+                <div className="border-b border-gray-100">
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Şoför Filtresi</span>
+                  </div>
+                  <div className="px-3 py-2">
+                    <select
+                      value={selectedSoforumIsEmekli}
+                      onChange={(e) => setSelectedSoforumIsEmekli(e.target.value)}
+                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                    >
+                      <option value="">Emeklilik (Tümü)</option>
+                      <option value="evet">Emekli</option>
+                      <option value="hayir">Emekli Değil</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {aktifKategori === 'aracimi_satiyorum' && (
+                <div className="border-b border-gray-100">
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Araç Filtresi</span>
+                  </div>
+                  <div className="px-3 py-2 space-y-2">
+                    <select
+                      value={selectedAracSatisModel}
+                      onChange={(e) => setSelectedAracSatisModel(e.target.value)}
+                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                    >
+                      <option value="">Model (Tümü)</option>
+                      {aracSatisModelSecenekleri.map((model) => (
+                        <option key={model} value={model}>{model}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedAracSatisMinYil}
+                      onChange={(e) => setSelectedAracSatisMinYil(e.target.value)}
+                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                    >
+                      <option value="">Yıl (ve üzeri)</option>
+                      {aracSatisYilSecenekleri.map((yil) => (
+                        <option key={yil} value={yil}>{yil}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedAracSatisMinKoltuk}
+                      onChange={(e) => setSelectedAracSatisMinKoltuk(e.target.value)}
+                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                    >
+                      <option value="">Koltuk (ve üzeri)</option>
+                      {aracSatisKoltukSecenekleri.map((koltuk) => (
+                        <option key={koltuk} value={koltuk}>{koltuk}</option>
+                      ))}
+                    </select>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={selectedAracSatisMinFiyat}
+                        onChange={(e) => setSelectedAracSatisMinFiyat(e.target.value)}
+                        placeholder="Fiyat min"
+                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                      />
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={selectedAracSatisMaxFiyat}
+                        onChange={(e) => setSelectedAracSatisMaxFiyat(e.target.value)}
+                        placeholder="Fiyat max"
+                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={selectedAracSatisMinKm}
+                        onChange={(e) => setSelectedAracSatisMinKm(e.target.value)}
+                        placeholder="KM min"
+                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                      />
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={selectedAracSatisMaxKm}
+                        onChange={(e) => setSelectedAracSatisMaxKm(e.target.value)}
+                        placeholder="KM max"
+                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {aktivFiltreVar && (
                 <div className="p-3 border-t border-gray-100">
@@ -895,7 +1269,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                 {aktifKategori && (
                   <span className="flex items-center gap-1 text-xs bg-orange-50 border border-orange-200 text-orange-700 px-2 py-0.5 rounded font-medium">
                     {KATEGORILER.find(k => k.id === aktifKategori)?.label}
-                    <button onClick={() => setAktifKategori(null)} className="ml-1 hover:text-orange-900"><X size={11} /></button>
+                    <button onClick={() => handleKategoriDegistir(null)} className="ml-1 hover:text-orange-900"><X size={11} /></button>
                   </span>
                 )}
                 <span className="text-xs text-gray-500">
@@ -974,7 +1348,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Kategori</p>
                 <div className="space-y-1">
                   <button
-                    onClick={() => setAktifKategori(null)}
+                    onClick={() => handleKategoriDegistir(null)}
                     className={"w-full text-left flex justify-between items-center px-3 py-2 rounded text-xs font-medium transition border " + (!aktifKategori ? "bg-orange-50 text-[#f7971e] border-orange-200" : "text-gray-600 hover:bg-gray-50 border-transparent")}
                   >
                     <span>Tüm Kategoriler</span>
@@ -983,7 +1357,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                   {KATEGORILER.map(kat => (
                     <button
                       key={kat.id}
-                      onClick={() => setAktifKategori(aktifKategori === kat.id ? null : kat.id)}
+                      onClick={() => handleKategoriDegistir(kat.id)}
                       className={"w-full text-left flex justify-between items-center px-3 py-2 rounded text-xs font-medium transition border " + (aktifKategori === kat.id ? "bg-orange-50 text-[#f7971e] border-orange-200" : "text-gray-600 hover:bg-gray-50 border-transparent")}
                     >
                       <span className="flex items-center gap-1.5"><span>{kat.icon}</span>{kat.label}</span>
@@ -994,6 +1368,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
               </div>
 
               {/* Konuma Göre */}
+              {konumFiltresiGoster && (
               <div className="border border-gray-100 rounded-lg overflow-hidden">
                 <div className="bg-gray-50 px-3 py-2 border-b border-gray-100">
                   <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Konuma Göre</p>
@@ -1014,7 +1389,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                         {kalkisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
                       </select>
                     )}
-                    {selectedKalkisIlce && kalkisMahalleler.length > 0 && (
+                    {!sadeceIlIlceKonumFiltresi && selectedKalkisIlce && kalkisMahalleler.length > 0 && (
                       <select value={selectedKalkisMah} onChange={(e) => setSelectedKalkisMah(e.target.value)}
                         className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
                         <option value="">Mahalle</option>
@@ -1023,32 +1398,133 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                     )}
                   </div>
                 </div>
-                {/* Varış */}
-                <div className="px-3 pt-2 pb-3 border-t border-gray-100">
-                  <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide mb-1.5">🏁 Varış</p>
-                  <div className="space-y-1.5">
-                    <select value={selectedVarisIl} onChange={(e) => { setSelectedVarisIl(e.target.value); setSelectedVarisIlce(''); setSelectedVarisMah(''); }}
+                {!sadeceIlIlceKonumFiltresi && (
+                  <div className="px-3 pt-2 pb-3 border-t border-gray-100">
+                    <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide mb-1.5">🏁 Varış</p>
+                    <div className="space-y-1.5">
+                      <select value={selectedVarisIl} onChange={(e) => { setSelectedVarisIl(e.target.value); setSelectedVarisIlce(''); setSelectedVarisMah(''); }}
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                        <option value="">Şehir</option>
+                        {varisSehirleri.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      {selectedVarisIl && varisIlceler.length > 0 && (
+                        <select value={selectedVarisIlce} onChange={(e) => { setSelectedVarisIlce(e.target.value); setSelectedVarisMah(''); }}
+                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                          <option value="">İlçe</option>
+                          {varisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
+                        </select>
+                      )}
+                      {selectedVarisIlce && varisMahalleler.length > 0 && (
+                        <select value={selectedVarisMah} onChange={(e) => setSelectedVarisMah(e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                          <option value="">Mahalle</option>
+                          {varisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              )}
+
+              {aktifKategori === 'aracim_var_is' && (
+                <div className="border border-gray-100 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-3 py-2 border-b border-gray-100">
+                    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Araç Filtresi</p>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    <label className="flex items-center gap-2 text-xs text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={selectedAracimVarIsTamamenBos}
+                        onChange={(e) => setSelectedAracimVarIsTamamenBos(e.target.checked)}
+                        className="accent-[#f7971e]"
+                      />
+                      Tamamen boşta olan araçlar
+                    </label>
+                    <select value={selectedAracimVarIsModel} onChange={(e) => setSelectedAracimVarIsModel(e.target.value)}
                       className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
-                      <option value="">Şehir</option>
-                      {varisSehirleri.map(s => <option key={s} value={s}>{s}</option>)}
+                      <option value="">Model (Tümü)</option>
+                      {aracimVarIsModelSecenekleri.map((model) => (
+                        <option key={model} value={model}>{model}</option>
+                      ))}
                     </select>
-                    {selectedVarisIl && varisIlceler.length > 0 && (
-                      <select value={selectedVarisIlce} onChange={(e) => { setSelectedVarisIlce(e.target.value); setSelectedVarisMah(''); }}
-                        className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
-                        <option value="">İlçe</option>
-                        {varisIlceler.map(i => <option key={i} value={i}>{i}</option>)}
-                      </select>
-                    )}
-                    {selectedVarisIlce && varisMahalleler.length > 0 && (
-                      <select value={selectedVarisMah} onChange={(e) => setSelectedVarisMah(e.target.value)}
-                        className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
-                        <option value="">Mahalle</option>
-                        {varisMahalleler.map(m => <option key={m} value={m}>{m}</option>)}
-                      </select>
-                    )}
+                    <select value={selectedAracimVarIsMinYil} onChange={(e) => setSelectedAracimVarIsMinYil(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                      <option value="">Yıl (ve üzeri)</option>
+                      {aracimVarIsYilSecenekleri.map((yil) => (
+                        <option key={yil} value={yil}>{yil}</option>
+                      ))}
+                    </select>
+                    <select value={selectedAracimVarIsMinKoltuk} onChange={(e) => setSelectedAracimVarIsMinKoltuk(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                      <option value="">Koltuk (ve üzeri)</option>
+                      {aracimVarIsKoltukSecenekleri.map((koltuk) => (
+                        <option key={koltuk} value={koltuk}>{koltuk}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {aktifKategori === 'soforum_is' && (
+                <div className="border border-gray-100 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-3 py-2 border-b border-gray-100">
+                    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Şoför Filtresi</p>
+                  </div>
+                  <div className="p-3">
+                    <select value={selectedSoforumIsEmekli} onChange={(e) => setSelectedSoforumIsEmekli(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                      <option value="">Emeklilik (Tümü)</option>
+                      <option value="evet">Emekli</option>
+                      <option value="hayir">Emekli Değil</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {aktifKategori === 'aracimi_satiyorum' && (
+                <div className="border border-gray-100 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-3 py-2 border-b border-gray-100">
+                    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Araç Filtresi</p>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    <select value={selectedAracSatisModel} onChange={(e) => setSelectedAracSatisModel(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                      <option value="">Model (Tümü)</option>
+                      {aracSatisModelSecenekleri.map((model) => (
+                        <option key={model} value={model}>{model}</option>
+                      ))}
+                    </select>
+                    <select value={selectedAracSatisMinYil} onChange={(e) => setSelectedAracSatisMinYil(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                      <option value="">Yıl (ve üzeri)</option>
+                      {aracSatisYilSecenekleri.map((yil) => (
+                        <option key={yil} value={yil}>{yil}</option>
+                      ))}
+                    </select>
+                    <select value={selectedAracSatisMinKoltuk} onChange={(e) => setSelectedAracSatisMinKoltuk(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white">
+                      <option value="">Koltuk (ve üzeri)</option>
+                      {aracSatisKoltukSecenekleri.map((koltuk) => (
+                        <option key={koltuk} value={koltuk}>{koltuk}</option>
+                      ))}
+                    </select>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <input type="number" inputMode="numeric" value={selectedAracSatisMinFiyat} onChange={(e) => setSelectedAracSatisMinFiyat(e.target.value)} placeholder="Fiyat min"
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white" />
+                      <input type="number" inputMode="numeric" value={selectedAracSatisMaxFiyat} onChange={(e) => setSelectedAracSatisMaxFiyat(e.target.value)} placeholder="Fiyat max"
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <input type="number" inputMode="numeric" value={selectedAracSatisMinKm} onChange={(e) => setSelectedAracSatisMinKm(e.target.value)} placeholder="KM min"
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white" />
+                      <input type="number" inputMode="numeric" value={selectedAracSatisMaxKm} onChange={(e) => setSelectedAracSatisMaxKm(e.target.value)} placeholder="KM max"
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-[#f7971e] bg-white" />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="pt-2 space-y-2">
                 <button onClick={() => setFiltreAcik(false)} className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white font-bold py-2.5 rounded transition text-sm">Uygula</button>
