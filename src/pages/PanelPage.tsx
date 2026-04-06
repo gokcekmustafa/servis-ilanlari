@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   kullaniciIlanlari, ilanSil, ilanGuncelle, araclarGetir, aracEkle, aracSil,
   favorileriGetir, favoriKaldir, konusmaMesajlariniGetir, okunmamisMesajSayisi,
-  mesajOkunduIsaretle, destekGonder, mesajGonder, mesajSil, konusmaSil,
+  mesajOkunduIsaretle, destekGonder, tavsiyeGonder, mesajGonder, mesajSil, konusmaSil,
   ilanAktifSureGunGetir, ilanKalanGunHesapla, ilanDurumGuncelle, VARSAYILAN_ILAN_AKTIF_SURE_GUN
 } from '../lib/ilanlar';
 import { Ilan } from '../types';
@@ -16,7 +16,7 @@ import {
   Upload
 } from 'lucide-react';
 
-type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'favoriler' | 'destek';
+type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'favoriler' | 'destek' | 'tavsiye';
 
 type PanelPageProps = {
   onLogout: () => void;
@@ -832,6 +832,8 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId, b
   const [duzenleArac, setDuzenleArac] = useState<any>(null);
   const [destekGonderildi, setDestekGonderildi] = useState(false);
   const [destekForm, setDestekForm] = useState({ konu: '', mesaj: '' });
+  const [tavsiyeGonderildi, setTavsiyeGonderildi] = useState(false);
+  const [tavsiyeForm, setTavsiyeForm] = useState({ konu: '', mesaj: '' });
   const [aracForm, setAracForm] = useState({ marka: '', model: '', yil: '', plaka: '', koltuk_sayisi: '', arac_tipi: '' });
   const [menuAcik, setMenuAcik] = useState(false);
   const [notlar, setNotlar] = useState<Record<string, string>>({});
@@ -1171,6 +1173,12 @@ const handleKonusmaSil = async (conversationId: string) => {
     if (!error) { setDestekGonderildi(true); setDestekForm({ konu: '', mesaj: '' }); }
   };
 
+  const handleTavsiyeGonder = async () => {
+    if (!tavsiyeForm.konu || !tavsiyeForm.mesaj) { setHata('Konu ve mesaj alanları zorunludur.'); return; }
+    const { error } = await tavsiyeGonder({ user_id: userId, ...tavsiyeForm });
+    if (!error) { setTavsiyeGonderildi(true); setTavsiyeForm({ konu: '', mesaj: '' }); }
+  };
+
   const handleDuzenleKaydet = async (updates: any) => {
     if (!duzenleIlan) return;
     setDuzenleYukleniyor(true);
@@ -1200,6 +1208,7 @@ const handleKonusmaSil = async (conversationId: string) => {
     { id: 'mesajlar', label: 'Mesajlar', icon: MessageSquare, badge: okunmamisSayi },
     { id: 'favoriler', label: 'Favorilerim', icon: Heart },
     { id: 'destek', label: 'Destek', icon: HelpCircle },
+    { id: 'tavsiye', label: 'Admine Tavsiye Gönder', icon: HelpCircle },
   ];
 
 const konusmalarMap = mesajlar.reduce((acc: Record<string, any[]>, mesaj: any) => {
@@ -1849,6 +1858,28 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
                     <div><label className="text-xs font-semibold text-slate-500 mb-1 block">Konu</label><input className={ic} value={destekForm.konu} placeholder="Destek konusu" onChange={e => setDestekForm({ ...destekForm, konu: e.target.value })} /></div>
                     <div><label className="text-xs font-semibold text-slate-500 mb-1 block">Mesaj</label><textarea className={ic + ' resize-none'} value={destekForm.mesaj} placeholder="Mesajınızı yazın..." rows={5} onChange={e => setDestekForm({ ...destekForm, mesaj: e.target.value })} /></div>
                     <button onClick={handleDestekGonder} className={btnO}>Gönder</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAVSIYE */}
+            {aktifSekme === 'tavsiye' && (
+              <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                <h2 className="font-bold text-slate-800 text-base mb-4">Admine Tavsiye Gönder</h2>
+                {tavsiyeGonderildi ? (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3"><span className="text-green-600 text-xl font-bold">✓</span></div>
+                    <p className="font-semibold text-green-700 mb-1">Tavsiyeniz İçin Teşekkürler</p>
+                    <p className="text-green-600 text-sm mb-4">Tavsiyenizi dikkate alacağız. Katkınız bizim için çok değerli.</p>
+                    <button onClick={() => setTavsiyeGonderildi(false)} className={btnO}>Yeni Tavsiye Gönder</button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {hata && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">{hata}</div>}
+                    <div><label className="text-xs font-semibold text-slate-500 mb-1 block">Konu</label><input className={ic} value={tavsiyeForm.konu} placeholder="Tavsiye konusu" onChange={e => setTavsiyeForm({ ...tavsiyeForm, konu: e.target.value })} /></div>
+                    <div><label className="text-xs font-semibold text-slate-500 mb-1 block">Mesaj</label><textarea className={ic + ' resize-none'} value={tavsiyeForm.mesaj} placeholder="Tavsiyenizi yazın..." rows={5} onChange={e => setTavsiyeForm({ ...tavsiyeForm, mesaj: e.target.value })} /></div>
+                    <button onClick={handleTavsiyeGonder} className={btnO}>Tavsiye Gönder</button>
                   </div>
                 )}
               </div>

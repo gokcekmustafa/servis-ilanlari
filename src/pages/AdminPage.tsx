@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import {
   ilanAktifSureGunGetir,
+  destekKaydiTavsiyeMi,
   ilanDurumGuncelle,
   ilanKalanGunHesapla,
+  tavsiyeKonuTemizle,
   suresiDolanIlanlariPasiflestir,
   VARSAYILAN_ILAN_AKTIF_SURE_GUN,
 } from '../lib/ilanlar';
@@ -50,7 +52,7 @@ type AdminPageProps = {
   defaultSekme?: Sekme | 'bildirimler';
 };
 
-type Sekme = 'istatistik' | 'ilanlar' | 'kullanicilar' | 'reklamlar' | 'duyurular' | 'destek' | 'personel' | 'logo';
+type Sekme = 'istatistik' | 'ilanlar' | 'kullanicilar' | 'reklamlar' | 'duyurular' | 'destek' | 'tavsiyeler' | 'personel' | 'logo';
 
 const SEKME_YETKI: Partial<Record<Sekme, keyof PersonelYetkiler>> = {
   ilanlar:      'ilan_onay',
@@ -58,6 +60,7 @@ const SEKME_YETKI: Partial<Record<Sekme, keyof PersonelYetkiler>> = {
   reklamlar:    'reklam_yonetimi',
   duyurular:    'duyuru_yonetimi',
   destek:       'destek_yonetimi',
+  tavsiyeler:   'destek_yonetimi',
 };
 
 const PERSONEL_YETKI_TANIM: Record<string, { label: string; aciklama: string }> = {
@@ -122,6 +125,9 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   const [duyuruSurukle, setDuyuruSurukle]       = useState(false);
   const [seciliDestek, setSeciliDestek]   = useState<any>(null);
   const [destekCevap, setDestekCevap]     = useState('');
+  const [seciliTavsiye, setSeciliTavsiye] = useState<any>(null);
+  const [tavsiyeCevap, setTavsiyeCevap]   = useState('');
+  const [favoriEtkilesimSayisi, setFavoriEtkilesimSayisi] = useState(0);
 
   const [detayModal, setDetayModal]               = useState<any>(null);
   const [detaySifre, setDetaySifre]               = useState('');
@@ -173,7 +179,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
     const aktifSureGun = await ilanAktifSureGunGetir();
     setIlanAktifSureGun(aktifSureGun);
     await suresiDolanIlanlariPasiflestir(aktifSureGun);
-    const [u, i, r, d, ds, ayar, logoAyar] = await Promise.all([
+    const [u, i, r, d, ds, ayar, logoAyar, favoriSayim] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('ilanlar').select('*').order('created_at', { ascending: false }),
       supabase.from('reklamlar').select('*').order('id', { ascending: false }),
@@ -181,12 +187,14 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
       supabase.from('destek').select('*').order('created_at', { ascending: false }),
       supabase.from('ayarlar').select('*').eq('anahtar', 'reklam_siklik').maybeSingle(),
       supabase.from('ayarlar').select('*').eq('anahtar', 'platform_logo').maybeSingle(),
+      supabase.from('favoriler').select('*', { count: 'exact', head: true }),
     ]);
     setKullanicilar(u.data || []);
     setIlanlar(i.data || []);
     setReklamlar(r.data || []);
     setDuyurular(d.data || []);
     setDestekler(ds.data || []);
+    setFavoriEtkilesimSayisi(favoriSayim.count || 0);
     if (ayar.data?.deger) setReklamSiklik(Number(ayar.data.deger));
     if (logoAyar.data?.deger) setPlatformLogo(logoAyar.data.deger);
     setYukleniyor(false);
@@ -404,13 +412,22 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   setLogoYukleniyor(false);
 };
   
+  const destekTalepleri = destekler.filter((d: any) => !destekKaydiTavsiyeMi(d?.konu));
+  const tavsiyeKayitlari = destekler.filter((d: any) => destekKaydiTavsiyeMi(d?.konu));
+  const bekleyenDestekSayisi = destekTalepleri.filter((d: any) => d.durum === 'bekliyor').length;
+  const bekleyenTavsiyeSayisi = tavsiyeKayitlari.filter((d: any) => d.durum === 'bekliyor').length;
+  const aktifUyeler = kullanicilar.filter((u: any) => u.type !== 'admin' && u.aktif !== false);
+  const toplamGoruntulenme = ilanlar.reduce((toplam: number, ilan: any) => toplam + Number(ilan?.view_count || 0), 0);
+  const tahminiMisafirGoruntulenme = Math.max(0, toplamGoruntulenme - favoriEtkilesimSayisi);
+
   const menuItems = [
     { id: 'istatistik',   label: 'İstatistikler', icon: LayoutDashboard },
     { id: 'ilanlar',      label: 'İlanlar',        icon: FileText,       sayi: ilanlar.length },
     { id: 'kullanicilar', label: 'Kullanıcılar',   icon: Users,          sayi: kullanicilar.filter(u => u.type !== 'admin').length },
     { id: 'reklamlar',    label: 'Reklamlar',      icon: Image,          sayi: reklamlar.length },
     { id: 'duyurular',    label: 'Duyurular',      icon: Megaphone,      sayi: duyurular.length },
-    { id: 'destek',       label: 'Destek Talepleri', icon: Bell,         sayi: destekler.filter(d => d.durum === 'bekliyor').length },
+    { id: 'destek',       label: 'Destek Talepleri', icon: Bell,         sayi: bekleyenDestekSayisi },
+    { id: 'tavsiyeler',   label: 'Tavsiyeler',      icon: Star,          sayi: bekleyenTavsiyeSayisi },
     ...(isSuperAdmin ? [
   { id: 'personel', label: 'Personel', icon: Shield, sayi: kullanicilar.filter(u => u.type === 'admin').length },
   { id: 'logo', label: 'Platform Logo', icon: Image, sayi: 0 },
@@ -520,7 +537,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                   { label: 'Toplam İlan',     value: ilanlar.length,                                       renk: 'bg-blue-50 text-blue-700 border-blue-200' },
                   { label: 'Toplam Üye',      value: kullanicilar.filter(u => u.type !== 'admin').length,  renk: 'bg-green-50 text-green-700 border-green-200' },
                   { label: 'Aktif Reklam',    value: reklamlar.filter(r => r.aktif).length,                renk: 'bg-orange-50 text-orange-700 border-orange-200' },
-                  { label: 'Bekleyen Destek', value: destekler.filter(d => d.durum === 'bekliyor').length, renk: 'bg-red-50 text-red-700 border-red-200' },
+                  { label: 'Bekleyen Destek', value: bekleyenDestekSayisi, renk: 'bg-red-50 text-red-700 border-red-200' },
                 ].map(s => (
                   <div key={s.label} className={'rounded-xl border p-3 sm:p-4 ' + s.renk}>
                     <p className="text-xs font-medium opacity-70 mb-1">{s.label}</p>
@@ -528,7 +545,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-white rounded-xl border border-slate-200 p-4">
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Son İlanlar</p>
                   {ilanlar.slice(0, 5).map(i => (
@@ -546,6 +563,34 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                       <span className="text-xs text-slate-400 flex-shrink-0">{u.phone_number}</span>
                     </div>
                   ))}
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 p-4">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Aktif Kullanıcılar</p>
+                  {aktifUyeler.slice(0, 6).map((u: any) => (
+                    <div key={u.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                      <span className="text-sm text-slate-600 truncate mr-2">{u.full_name || 'İsimsiz'}</span>
+                      <span className="text-xs text-emerald-600 font-medium">Aktif</span>
+                    </div>
+                  ))}
+                  {aktifUyeler.length === 0 && <p className="text-xs text-slate-400 py-2">Aktif kullanıcı bulunmuyor.</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+                <div className="bg-white rounded-xl border border-slate-200 p-4">
+                  <p className="text-xs text-slate-400 mb-1">Toplam İlan Görüntüleme</p>
+                  <p className="text-xl font-bold text-slate-700">{toplamGoruntulenme.toLocaleString('tr-TR')}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 p-4">
+                  <p className="text-xs text-slate-400 mb-1">Üye Etkileşimi (Favori)</p>
+                  <p className="text-xl font-bold text-slate-700">{favoriEtkilesimSayisi.toLocaleString('tr-TR')}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 p-4">
+                  <p className="text-xs text-slate-400 mb-1">Tahmini Misafir Ziyareti</p>
+                  <p className="text-xl font-bold text-slate-700">{tahminiMisafirGoruntulenme.toLocaleString('tr-TR')}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 p-4">
+                  <p className="text-xs text-slate-400 mb-1">Bekleyen Tavsiye</p>
+                  <p className="text-xl font-bold text-slate-700">{bekleyenTavsiyeSayisi.toLocaleString('tr-TR')}</p>
                 </div>
               </div>
             </div>
@@ -930,10 +975,11 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
             !sekmeYetkiVarMi('destek') ? <YetkisizUyari sekme="Destek Talepleri" /> : (
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2 flex flex-col gap-3">
-                {destekler.map(d => (
+                {destekTalepleri.map(d => (
                   <div key={d.id} onClick={async () => {
                     setSeciliDestek(d);
                     setDestekCevap(d.cevap || '');
+                    setSeciliTavsiye(null);
                     if (d.durum === 'bekliyor') {
                       await supabase.from('destek').update({ durum: 'islemde' }).eq('id', d.id);
                       setDestekler(prev => prev.map(x => x.id === d.id ? { ...x, durum: 'islemde' } : x));
@@ -958,7 +1004,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                     </div>
                   </div>
                 ))}
-                {destekler.length === 0 && <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">Hiç destek talebi yok</div>}
+                {destekTalepleri.length === 0 && <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">Hiç destek talebi yok</div>}
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-4">
                 {seciliDestek ? (
@@ -974,6 +1020,55 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
             )
           )}
 
+          {/* --- TAVSIYELER --- */}
+          {!yukleniyor && aktifSekme === 'tavsiyeler' && (
+            !sekmeYetkiVarMi('tavsiyeler') ? <YetkisizUyari sekme="Tavsiyeler" /> : (
+            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2 flex flex-col gap-3">
+                {tavsiyeKayitlari.map((d: any) => (
+                  <div key={d.id} onClick={async () => {
+                    setSeciliTavsiye(d);
+                    setTavsiyeCevap(d.cevap || '');
+                    setSeciliDestek(null);
+                    if (d.durum === 'bekliyor') {
+                      await supabase.from('destek').update({ durum: 'islemde' }).eq('id', d.id);
+                      setDestekler(prev => prev.map(x => x.id === d.id ? { ...x, durum: 'islemde' } : x));
+                      window.dispatchEvent(new Event('bildirimler:degisti'));
+                    }
+                  }}
+                    className={'bg-white rounded-xl border p-4 cursor-pointer hover:border-orange-300 transition ' + (seciliTavsiye?.id === d.id ? 'border-orange-400' : 'border-slate-200')}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-700 text-sm">{tavsiyeKonuTemizle(d.konu)}</p>
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{d.mesaj}</p>
+                      </div>
+                      <span className={'flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ' + (
+                        d.durum === 'cevaplandi'
+                          ? 'bg-green-100 text-green-700'
+                          : d.durum === 'islemde'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                      )}>
+                        {d.durum === 'cevaplandi' ? 'Cevaplandi' : d.durum === 'islemde' ? 'Islemde' : 'Bekliyor'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {tavsiyeKayitlari.length === 0 && <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">Henüz tavsiye yok</div>}
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 p-4">
+                {seciliTavsiye ? (
+                  <>
+                    <p className="text-sm font-semibold text-slate-700 mb-1">{tavsiyeKonuTemizle(seciliTavsiye.konu)}</p>
+                    <p className="text-xs text-slate-500 mb-3">{seciliTavsiye.mesaj}</p>
+                    <textarea className={ic + ' mb-3 resize-none'} placeholder="Cevabin..." rows={5} value={tavsiyeCevap} onChange={e => setTavsiyeCevap(e.target.value)} />
+                    <button onClick={async () => { if (!seciliTavsiye || !tavsiyeCevap) return; await supabase.from('destek').update({ cevap: tavsiyeCevap, durum: 'cevaplandi', cevap_tarihi: new Date().toISOString() }).eq('id', seciliTavsiye.id); setTavsiyeCevap(''); setSeciliTavsiye(null); hepsiniYukle(); window.dispatchEvent(new Event('bildirimler:degisti')); }} className={btnO + ' w-full'}>Cevapla</button>
+                  </>
+                ) : <p className="text-sm text-slate-400 text-center py-8">Detay için bir tavsiye seç</p>}
+              </div>
+            </div>
+            )
+          )}
           {/* ─── PERSONEL ─── */}
           {!yukleniyor && aktifSekme === 'personel' && (
             !isSuperAdmin ? <YetkisizUyari sekme="Personel Yönetimi" /> : (
@@ -1331,3 +1426,4 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
     </div>
   );
 }
+

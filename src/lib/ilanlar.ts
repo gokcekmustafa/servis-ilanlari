@@ -340,6 +340,34 @@ export async function destekGonder(talep: {
   return { data, error };
 }
 
+export const TAVSIYE_KONU_ON_EKI = '[TAVSIYE] ';
+
+export function destekKaydiTavsiyeMi(konu?: string) {
+  return (konu || '').trim().startsWith(TAVSIYE_KONU_ON_EKI.trim());
+}
+
+export function tavsiyeKonuTemizle(konu?: string) {
+  if (!konu) return 'Tavsiye';
+  return konu.replace(TAVSIYE_KONU_ON_EKI, '').trim() || 'Tavsiye';
+}
+
+export async function tavsiyeGonder(talep: {
+  user_id: string;
+  konu: string;
+  mesaj: string;
+}) {
+  const temizKonu = (talep.konu || '').trim() || 'Genel Tavsiye';
+  const { data, error } = await supabase
+    .from('destek')
+    .insert([{
+      user_id: talep.user_id,
+      konu: `${TAVSIYE_KONU_ON_EKI}${temizKonu}`,
+      mesaj: talep.mesaj,
+    }])
+    .select();
+  return { data, error };
+}
+
 export async function destekTalepleriniGetir() {
   const { data, error } = await supabase
     .from('destek')
