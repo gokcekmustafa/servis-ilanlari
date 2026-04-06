@@ -588,7 +588,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
+    <div className="flex h-screen overflow-hidden bg-slate-100">
 
       {/* MOBİL ÜST BAR */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-slate-800 flex items-center justify-between px-4 py-3 shadow-lg">
@@ -616,7 +616,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
       )}
 
       {/* MASAÜSTÜ SIDEBAR */}
-      <aside className="hidden lg:flex w-56 bg-slate-800 flex-shrink-0 flex-col">
+      <aside className="hidden lg:flex w-56 h-screen bg-slate-800 flex-shrink-0 flex-col">
         <SidebarIcerik />
       </aside>
 
@@ -709,7 +709,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
           {!yukleniyor && aktifSekme === 'kullanicilar' && (
             !sekmeYetkiVarMi('kullanicilar') ? <YetkisizUyari sekme="Kullanıcı Yönetimi" /> : (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="sm:hidden divide-y divide-slate-100">
+              <div className="sm:hidden divide-y divide-slate-100 max-h-[62vh] overflow-y-auto">
                 {kullanicilar.filter(u => u.type !== 'admin').map(u => {
                   const ks = Object.values(u.kisitlamalar || {}).filter(Boolean).length;
                   return (
@@ -735,10 +735,10 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                   <div className="text-center py-12 text-slate-400 text-sm">Henüz üye yok</div>
                 )}
               </div>
-              <div className="hidden sm:block overflow-x-auto">
+              <div className="hidden sm:block max-h-[62vh] overflow-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
+                    <tr className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
                       {['Ad Soyad', 'Telefon', 'Tip', 'Durum', 'Kısıtlama', 'Kayıt Tarihi', 'İşlem'].map(h => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">{h}</th>
                       ))}
@@ -794,7 +794,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                   {ilanSureMesaj && <span className="text-xs text-slate-600">{ilanSureMesaj}</span>}
                 </div>
               </div>
-              <div className="sm:hidden divide-y divide-slate-100">
+              <div className="sm:hidden divide-y divide-slate-100 max-h-[62vh] overflow-y-auto">
                 {ilanlar.map(ilan => (
                   <div key={ilan.id} className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-2">
@@ -823,10 +823,10 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                 ))}
                 {ilanlar.length === 0 && <div className="text-center py-12 text-slate-400 text-sm">Hiç ilan yok</div>}
               </div>
-              <div className="hidden sm:block overflow-x-auto">
+              <div className="hidden sm:block max-h-[62vh] overflow-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
+                    <tr className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
                       {['İlan Veren', 'Kategori', 'Tarih', 'Durum', 'İşlemler'].map(h => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">{h}</th>
                       ))}
@@ -988,7 +988,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
           {!yukleniyor && aktifSekme === 'popup' && (
             !sekmeYetkiVarMi('popup') ? <YetkisizUyari sekme="Popup Mesajlari" /> : (
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2 flex flex-col gap-3">
+              <div className="lg:col-span-2 flex flex-col gap-3 lg:max-h-[62vh] lg:overflow-y-auto lg:pr-1">
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500">
                   Popup mesajlari: Misafirler ve kullanicilar icin acilis popup'i olarak gorunur. Ayni anda sadece bir popup aktif olabilir.
                 </div>
@@ -1110,7 +1110,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
           {!yukleniyor && aktifSekme === 'duyurular' && (
             !sekmeYetkiVarMi('duyurular') ? <YetkisizUyari sekme="Duyurular" /> : (
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2 flex flex-col gap-3">
+              <div className="lg:col-span-2 flex flex-col gap-3 lg:max-h-[62vh] lg:overflow-y-auto lg:pr-1">
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500">
                   Duyurular sadece kullanicilara gider. Popup olarak gosterilmez.
                 </div>
@@ -1158,7 +1158,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
           {!yukleniyor && aktifSekme === 'destek' && (
             !sekmeYetkiVarMi('destek') ? <YetkisizUyari sekme="Destek Talepleri" /> : (
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2 flex flex-col gap-3">
+              <div className="lg:col-span-2 flex flex-col gap-3 lg:max-h-[62vh] lg:overflow-y-auto lg:pr-1">
                 {destekTalepleri.map(d => (
                   <div key={d.id} onClick={async () => {
                     setSeciliDestek(d);

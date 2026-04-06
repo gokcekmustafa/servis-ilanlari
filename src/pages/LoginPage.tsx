@@ -48,7 +48,7 @@ export default function LoginPage({ onLogin, onGoRegister, onGoHome }: LoginPage
             <Truck className="text-orange-400" size={24} />
           </div>
           <span className="text-slate-800 font-bold text-2xl tracking-tight">
-            salonum<span className="text-orange-500">.site</span>
+            ilanhemen<span className="text-orange-500">.com</span>
           </span>
         </div>
 

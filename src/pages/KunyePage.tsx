@@ -17,7 +17,7 @@ export default function KunyePage({ onGoBack }: { onGoBack: () => void }) {
           </div>
           <div className="flex justify-between py-3 border-b border-gray-100">
             <span className="font-medium text-gray-600">Web Adresi</span>
-            <span className="text-gray-800">salonum.site</span>
+            <span className="text-gray-800">ilanhemen.com</span>
           </div>
           <div className="flex justify-between py-3 border-b border-gray-100">
             <span className="font-medium text-gray-600">Kurulis Yili</span>

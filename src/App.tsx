@@ -872,6 +872,29 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
     || !!selectedAracSatisMinKm
     || !!selectedAracSatisMaxKm;
 
+  const aktifFiltreEtiketleri = [
+    aktifKategori ? (KATEGORILER.find(k => k.id === aktifKategori)?.label || 'Kategori') : '',
+    selectedSehir ? `Kalkis sehir: ${selectedSehir}` : '',
+    selectedKalkisIlce ? `Kalkis ilce: ${selectedKalkisIlce}` : '',
+    selectedKalkisMah ? `Kalkis mahalle: ${selectedKalkisMah}` : '',
+    selectedVarisIl ? `Varis sehir: ${selectedVarisIl}` : '',
+    selectedVarisIlce ? `Varis ilce: ${selectedVarisIlce}` : '',
+    selectedVarisMah ? `Varis mahalle: ${selectedVarisMah}` : '',
+    selectedAracimVarIsTamamenBos ? 'Sadece tamamen bosta olanlar' : '',
+    selectedAracimVarIsModel ? `Model: ${selectedAracimVarIsModel}` : '',
+    selectedAracimVarIsMinYil ? `Yil ve uzeri: ${selectedAracimVarIsMinYil}` : '',
+    selectedAracimVarIsMinKoltuk ? `Koltuk ve uzeri: ${selectedAracimVarIsMinKoltuk}` : '',
+    selectedSoforumIsEmekli ? (selectedSoforumIsEmekli === 'evet' ? 'Emekli' : 'Emekli degil') : '',
+    selectedAracSatisModel ? `Model: ${selectedAracSatisModel}` : '',
+    selectedAracSatisMinYil ? `Yil ve uzeri: ${selectedAracSatisMinYil}` : '',
+    selectedAracSatisMinKoltuk ? `Koltuk ve uzeri: ${selectedAracSatisMinKoltuk}` : '',
+    selectedAracSatisMinFiyat ? `Min fiyat: ${selectedAracSatisMinFiyat}` : '',
+    selectedAracSatisMaxFiyat ? `Max fiyat: ${selectedAracSatisMaxFiyat}` : '',
+    selectedAracSatisMinKm ? `Min km: ${selectedAracSatisMinKm}` : '',
+    selectedAracSatisMaxKm ? `Max km: ${selectedAracSatisMaxKm}` : '',
+  ].filter(Boolean) as string[];
+  const aktifFiltreSayisi = aktifFiltreEtiketleri.length;
+
   const sadeceIlIlceKonumFiltresi = aktifKategori === 'aracim_var_is' || aktifKategori === 'soforum_is';
   const konumFiltresiGoster = aktifKategori !== 'aracimi_satiyorum';
 
@@ -907,7 +930,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
               <h2 className="text-sm font-bold text-white tracking-wide">İlan Kategorileri</h2>
               <span className="text-xs text-white/80 font-medium">{ilanlar.length} aktif ilan</span>
             </div>
-            <div className="flex overflow-x-auto gap-1.5 p-2 scrollbar-hide">
+            <div className="flex overflow-x-auto gap-2 p-2 scrollbar-hide snap-x snap-mandatory">
               {KATEGORILER.map((kat) => {
                 const sayi = kategoriSayisi(kat.id);
                 const isSelected = aktifKategori === kat.id;
@@ -916,7 +939,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                     key={kat.id}
                     onClick={() => handleKategoriDegistir(kat.id)}
                     className={
-                      "flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg text-center transition-all flex-shrink-0 w-[calc(12.5%-6px)] min-w-[80px] " +
+                      "snap-start flex flex-col items-center gap-1 px-2.5 py-2 rounded-lg text-center transition-all flex-shrink-0 w-[132px] sm:w-[120px] " +
                       (isSelected
                         ? "border-2 border-[#f7971e] bg-orange-50 shadow-sm shadow-orange-100"
                         : "border-2 border-gray-200 bg-gray-50 hover:border-orange-300 hover:bg-orange-50")
@@ -939,21 +962,43 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
         </div>
 
         {/* Mobil Filtre Butonu */}
-        <div className="lg:hidden mb-3 flex gap-2">
-          <button
-            onClick={() => setFiltreAcik(true)}
-            className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-300 hover:border-[#f7971e] text-gray-700 py-2 rounded text-sm font-medium transition"
-          >
-            <SlidersHorizontal size={14} /> Filtrele
-          </button>
-          {aktivFiltreVar && (
-            <button onClick={handleClear} className="px-3 flex items-center gap-1 bg-white border border-gray-300 hover:border-red-300 text-gray-600 rounded transition text-sm">
-              <X size={14} /> Temizle
-            </button>
-          )}
+        <div className="lg:hidden mb-3 sticky top-2 z-20">
+          <div className="rounded-xl border border-gray-200 bg-white/95 backdrop-blur px-2.5 py-2 shadow-sm">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setFiltreAcik(true)}
+                className="flex-1 min-h-[42px] flex items-center justify-center gap-2 bg-white border border-gray-300 hover:border-[#f7971e] text-gray-700 rounded-lg text-sm font-semibold transition"
+              >
+                <SlidersHorizontal size={15} />
+                Filtrele
+                {aktifFiltreSayisi > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full text-[11px] bg-orange-100 text-orange-700">
+                    {aktifFiltreSayisi}
+                  </span>
+                )}
+              </button>
+              {aktivFiltreVar && (
+                <button
+                  onClick={handleClear}
+                  className="min-h-[42px] px-3 flex items-center gap-1 bg-white border border-gray-300 hover:border-red-300 text-gray-600 rounded-lg transition text-sm font-medium"
+                >
+                  <X size={14} /> Temizle
+                </button>
+              )}
+            </div>
+            {aktivFiltreVar && (
+              <div className="mt-2 flex gap-1.5 overflow-x-auto pb-0.5">
+                {aktifFiltreEtiketleri.map((etiket, idx) => (
+                  <span key={`${etiket}-${idx}`} className="shrink-0 text-[11px] bg-orange-50 border border-orange-200 text-orange-700 px-2 py-1 rounded-full">
+                    {etiket}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-3 sm:gap-4">
           {/* SOL: FİLTRELER */}
           <div className="hidden lg:block w-52 flex-shrink-0">
             <div className="bg-white border border-gray-200 rounded overflow-hidden sticky top-10">
@@ -1236,7 +1281,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                 {/* Küçük reklam — h-32'nin %150'si = h-48 */}
                 <div
                   onClick={() => kenarKucukReklam?.link_url && window.open(kenarKucukReklam.link_url, '_blank')}
-                  className={`relative w-full h-48 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarKucukReklam?.link_url ? 'cursor-pointer' : ''}`}
+                  className={`relative w-full h-40 sm:h-48 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarKucukReklam?.link_url ? 'cursor-pointer' : ''}`}
                 >
                   {kenarKucukReklam?.resim_url ? (
                     <img src={kenarKucukReklam.resim_url} alt={kenarKucukReklam.baslik || 'Reklam'} className="w-full h-full object-contain" />
@@ -1250,7 +1295,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                 {/* Büyük reklam — h-48'in %150'si = h-72 */}
                 <div
                   onClick={() => kenarBuyukReklam?.link_url && window.open(kenarBuyukReklam.link_url, '_blank')}
-                  className={`relative w-full h-72 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarBuyukReklam?.link_url ? 'cursor-pointer' : ''}`}
+                  className={`relative w-full h-56 sm:h-72 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarBuyukReklam?.link_url ? 'cursor-pointer' : ''}`}
                 >
                   {kenarBuyukReklam?.resim_url ? (
                     <img src={kenarBuyukReklam.resim_url} alt={kenarBuyukReklam.baslik || 'Reklam'} className="w-full h-full object-contain" />
@@ -1264,8 +1309,8 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded px-3 py-2 mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="bg-white border border-gray-200 rounded px-3 py-2.5 mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
                 {aktifKategori && (
                   <span className="flex items-center gap-1 text-xs bg-orange-50 border border-orange-200 text-orange-700 px-2 py-0.5 rounded font-medium">
                     {KATEGORILER.find(k => k.id === aktifKategori)?.label}
@@ -1276,11 +1321,11 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                   <span className="font-semibold text-gray-800">{filtrelenmisIlanlar.length}</span> ilan bulundu
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2">
                 <select
                   value={siralama}
                   onChange={(e) => setSiralama(e.target.value)}
-                  className="text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-[#f7971e] bg-white text-gray-700"
+                  className="text-xs border border-gray-200 rounded px-2 py-2 sm:py-1.5 focus:outline-none focus:border-[#f7971e] bg-white text-gray-700 min-h-[38px]"
                 >
                   <option value="yeni">En Yeni</option>
                   <option value="eski">En Eski</option>
@@ -1289,16 +1334,16 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                   <button
                     onClick={() => { setKompaktGorunum(false); localStorage.setItem('gorunum_tercihi', 'detayli'); }}
                     title="Detaylı görünüm"
-                    className={`px-2 py-1.5 text-xs transition ${!kompaktGorunum ? 'bg-[#f7971e] text-white' : 'text-gray-400 hover:bg-gray-50'}`}
+                    className={`px-2.5 py-2 sm:py-1.5 text-[11px] font-semibold transition ${!kompaktGorunum ? 'bg-[#f7971e] text-white' : 'text-gray-500 hover:bg-gray-50'}`}
                   >
-                    ☰☰
+                    Detay
                   </button>
                   <button
                     onClick={() => { setKompaktGorunum(true); localStorage.setItem('gorunum_tercihi', 'kompakt'); }}
                     title="Kompakt görünüm"
-                    className={`px-2 py-1.5 text-xs transition ${kompaktGorunum ? 'bg-[#f7971e] text-white' : 'text-gray-400 hover:bg-gray-50'}`}
+                    className={`px-2.5 py-2 sm:py-1.5 text-[11px] font-semibold transition ${kompaktGorunum ? 'bg-[#f7971e] text-white' : 'text-gray-500 hover:bg-gray-50'}`}
                   >
-                    ≡≡≡
+                    Kompakt
                   </button>
                 </div>
               </div>
@@ -1336,12 +1381,16 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
       {filtreAcik && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col">
           <div className="flex-1 bg-black/50" onClick={() => setFiltreAcik(false)} />
-          <div className="bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-y-auto">
-            <div className="sticky top-0 bg-[#f7971e] px-4 py-3 flex items-center justify-between">
-              <h3 className="font-bold text-white text-sm">Filtrele</h3>
-              <button onClick={() => setFiltreAcik(false)} className="text-white/80 hover:text-white"><X size={20} /></button>
+          <div className="bg-white rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="sticky top-0 bg-[#f7971e] px-4 pt-2 pb-3">
+              <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-white/50" />
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-white text-sm">Filtrele</h3>
+                <button onClick={() => setFiltreAcik(false)} className="text-white/80 hover:text-white"><X size={20} /></button>
+              </div>
+              <p className="text-[11px] text-white/90 mt-1">{filtrelenmisIlanlar.length} ilan eslesiyor</p>
             </div>
-            <div className="p-4 space-y-4">
+            <div className="overflow-y-auto p-4 space-y-4 pb-28 mobile-filter-sheet">
 
               {/* Kategori */}
               <div>
@@ -1526,13 +1575,12 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                 </div>
               )}
 
-              <div className="pt-2 space-y-2">
-                <button onClick={() => setFiltreAcik(false)} className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white font-bold py-2.5 rounded transition text-sm">Uygula</button>
-                {aktivFiltreVar && (
-                  <button onClick={handleClear} className="w-full bg-gray-100 text-gray-600 py-2 rounded text-sm font-medium transition hover:bg-gray-200">Temizle</button>
-                )}
-              </div>
-
+            </div>
+            <div className="sticky bottom-0 border-t border-gray-100 bg-white/95 backdrop-blur px-4 py-3 space-y-2">
+              <button onClick={() => setFiltreAcik(false)} className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white font-bold py-3 rounded-lg transition text-sm min-h-[44px]">Uygula</button>
+              {aktivFiltreVar && (
+                <button onClick={handleClear} className="w-full bg-gray-100 text-gray-700 py-2.5 rounded-lg text-sm font-medium transition hover:bg-gray-200 min-h-[42px]">Temizle</button>
+              )}
             </div>
           </div>
         </div>

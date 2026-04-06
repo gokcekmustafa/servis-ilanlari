@@ -16,7 +16,7 @@ export default function KullanimKosullariPage({ onGoBack }: { onGoBack: () => vo
           <div>
             <h2 className="font-bold text-gray-800 mb-2">1. Taraflar ve Kapsam</h2>
             <p>
-              Bu kullanim kosullari, salonum.site platformunu kullanan tum ziyaretci ve uyeler
+              Bu kullanim kosullari, ilanhemen.com platformunu kullanan tum ziyaretci ve uyeler
               icin baglayicidir. Platforma erisen her kullanici, bu metni okudugunu, anladigini
               ve kosullari kabul ettigini beyan eder.
             </p>

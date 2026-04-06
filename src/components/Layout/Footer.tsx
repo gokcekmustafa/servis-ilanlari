@@ -24,7 +24,7 @@ export default function Footer({ onNavigate }: FooterProps) {
                   <Truck className="text-white" size={18} />
                 </div>
                 <span className="text-white font-bold text-base">
-                  salonum<span className="text-orange-400">.site</span>
+                  ilanhemen<span className="text-orange-400">.com</span>
                 </span>
               </div>
               <p className="text-slate-400 text-xs leading-snug">
@@ -90,7 +90,7 @@ export default function Footer({ onNavigate }: FooterProps) {
         {/* ALT SERIT */}
         <div className="bg-slate-800 rounded-b-lg px-6 py-2 flex items-center justify-between">
           <span className="text-slate-500 text-xs">
-            2026 salonum.site — Tum haklari saklidir
+            2026 ilanhemen.com — Tum haklari saklidir
           </span>
           <div className="flex items-center gap-4">
             <button

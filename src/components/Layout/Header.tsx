@@ -106,10 +106,17 @@ export default function Header({
   };
 
   useEffect(() => {
-  kullaniciSayisi().then(({ count }) => { if (count !== null) setSayi(count); });
-  headerReklamYukle();
-  platformLogoYukle();
-}, []);
+    headerReklamYukle();
+    platformLogoYukle();
+  }, []);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setSayi(null);
+      return;
+    }
+    kullaniciSayisi().then(({ count }) => { if (count !== null) setSayi(count); });
+  }, [isAdmin]);
 
   useEffect(() => {
     bildirimleriYukle();
@@ -317,18 +324,20 @@ export default function Header({
       <div className="max-w-5xl mx-auto relative">
 
         {/* 1. ÜST ŞERİT */}
-        <div className="bg-slate-600 rounded-t-lg px-3 sm:px-4 py-1.5 flex items-center gap-2">
-          <span className="text-slate-300 text-xs truncate flex-shrink-0">
-            Kayıtlı Kişi:{' '}
-            <span className="text-white font-bold">
-              {sayi !== null ? sayi.toLocaleString('tr-TR') : '...'}
+        <div className="bg-slate-600 rounded-t-lg px-3 sm:px-4 py-1.5 sm:py-2 min-h-[46px] flex items-center gap-2">
+          {isAdmin && (
+            <span className="text-slate-300 text-xs truncate flex-shrink-0">
+              Kayıtlı Kişi:{' '}
+              <span className="text-white font-bold">
+                {sayi !== null ? sayi.toLocaleString('tr-TR') : '...'}
+              </span>
             </span>
-          </span>
+          )}
 
           <div className="flex-1 flex justify-end pr-2">
             <button
               onClick={onIlanEkle}
-              className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded transition whitespace-nowrap"
+              className="bg-orange-500 hover:bg-orange-600 text-white text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded transition whitespace-nowrap"
             >
               Ücretsiz İlan Ver
             </button>
@@ -386,7 +395,7 @@ export default function Header({
           {/* Mobil: hamburger */}
           <div className="flex md:hidden items-center gap-1 flex-shrink-0">
             {isLoggedIn && (
-              <button data-bildirim-toggle="true" onClick={(e) => { e.stopPropagation(); handleZilTikla(); }} className="relative p-1.5 text-slate-300 hover:text-white transition" type="button">
+              <button data-bildirim-toggle="true" onClick={(e) => { e.stopPropagation(); handleZilTikla(); }} className="relative p-2 text-slate-300 hover:text-white transition" type="button">
                 <Bell size={18} />
                 {toplamBildirim > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
@@ -395,11 +404,11 @@ export default function Header({
                 )}
               </button>
             )}
-            <button
-              onClick={() => setMenuAcik(!menuAcik)}
-              className="p-1.5 text-slate-300 hover:text-white transition"
-              aria-label="Menü"
-            >
+              <button
+                onClick={() => setMenuAcik(!menuAcik)}
+                className="p-2 text-slate-300 hover:text-white transition"
+                aria-label="Menü"
+              >
               {menuAcik ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
@@ -468,7 +477,7 @@ export default function Header({
 </div>
               <div className="leading-tight">
                 <div className="text-slate-800 font-bold text-base sm:text-xl tracking-tight">
-                  salonum<span className="text-orange-500">.site</span>
+                  ilanhemen<span className="text-orange-500">.com</span>
                 </div>
                 <div className="text-slate-400 text-[10px] sm:text-xs hidden sm:block">
                   Servis İlanları Platformu
@@ -524,7 +533,7 @@ export default function Header({
     </div>
   )}
 </div>
-                <span className="text-white font-bold text-base">salonum<span className="text-orange-400">.site</span></span>
+                <span className="text-white font-bold text-base">ilanhemen<span className="text-orange-400">.com</span></span>
               </div>
               <button onClick={() => setMenuAcik(false)} className="p-2 text-slate-300 hover:text-white">
                 <X size={22} />
