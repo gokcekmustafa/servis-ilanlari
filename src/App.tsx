@@ -467,6 +467,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
   const [duyuru, setDuyuru] = useState<any>(null);
   const [popupAcik, setPopupAcik] = useState(false);
   const [otomatikKapatTimer, setOtomatikKapatTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [popupAcilisTimer, setPopupAcilisTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [filtreAcik, setFiltreAcik] = useState(false);
   const [kompaktGorunum, setKompaktGorunum] = useState(() => localStorage.getItem('gorunum_tercihi') === 'kompakt');
   const [listeReklam, setListeReklam] = useState<any>(null);
@@ -477,10 +478,18 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
   useEffect(() => {
     ilanlarYukle();
     setDuyuru(null);
+    popupDuyuruYukle();
     listeReklamYukle();
     reklamSiklikYukle();
     kenarReklamlariYukle();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (popupAcilisTimer) clearTimeout(popupAcilisTimer);
+      if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
+    };
+  }, [popupAcilisTimer, otomatikKapatTimer]);
 
   useEffect(() => {
     document.body.style.overflow = filtreAcik ? 'hidden' : '';
@@ -520,12 +529,49 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
     if (data?.deger) setReklamSiklik(Number(data.deger));
   };
 
+  const popupDuyuruYukle = async () => {
+    const { data } = await supabase
+      .from('duyurular')
+      .select('*')
+      .eq('aktif', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!data) return;
+
+    const sessionKey = 'duyuru_kapatildi_' + data.id;
+    if (sessionStorage.getItem(sessionKey) === '1') return;
+
+    setDuyuru(data);
+    const gecikme = Math.max(0, Number(data.saniye || 0)) * 1000;
+
+    if (gecikme === 0) {
+      setPopupAcik(true);
+      return;
+    }
+
+    const acilis = setTimeout(() => {
+      if (sessionStorage.getItem(sessionKey) === '1') return;
+      setPopupAcik(true);
+    }, gecikme);
+    setPopupAcilisTimer(acilis);
+  };
+
+  const popupKapat = (kullaniciDavranisiylaKapatildi = false) => {
+    if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
+    if (popupAcilisTimer) clearTimeout(popupAcilisTimer);
+    setPopupAcik(false);
+    if (kullaniciDavranisiylaKapatildi && duyuru?.id) {
+      sessionStorage.setItem('duyuru_kapatildi_' + duyuru.id, '1');
+    }
+  };
+
   useEffect(() => {
     if (!popupAcik || !duyuru) return;
     const sure = (duyuru.goster_sure || 8) * 1000;
     const timer = setTimeout(() => {
-      setPopupAcik(false);
-      sessionStorage.setItem('duyuru_kapatildi_' + duyuru.id, '1');
+      popupKapat(false);
     }, sure);
     setOtomatikKapatTimer(timer);
     return () => clearTimeout(timer);
@@ -1019,14 +1065,14 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
       {/* DUYURU POPUP */}
       {popupAcik && duyuru && (
         <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4"
-          onClick={() => { setPopupAcik(false); if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer); }}>
+          onClick={() => popupKapat(true)}>
           <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl overflow-hidden"
             onClick={e => e.stopPropagation()}>
             {duyuru.resim_url && <img src={duyuru.resim_url} alt={duyuru.baslik || 'Duyuru'} className="w-full h-48 object-cover" />}
             <div className="p-5">
               {duyuru.baslik && <h2 className="text-base font-bold text-gray-900 mb-2">{duyuru.baslik}</h2>}
               {duyuru.mesaj && <p className="text-sm text-gray-600 mb-4">{duyuru.mesaj}</p>}
-              <button onClick={() => { setPopupAcik(false); if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer); }}
+              <button onClick={() => popupKapat(true)}
                 className="w-full bg-[#f7971e] hover:bg-[#e8881a] text-white py-2.5 rounded font-bold transition">Kapat</button>
             </div>
           </div>
@@ -1233,11 +1279,13 @@ export default function App() {
   onGoRegister: () => setCurrentPage('register'),
   onGoNotifications: () => {
     if (isAdmin) {
-      sessionStorage.setItem('admin_aktif_sekme', 'destek');
+      const hedefSekme = sessionStorage.getItem('admin_aktif_sekme') || 'destek';
+      sessionStorage.setItem('admin_aktif_sekme', hedefSekme);
       setCurrentPage('admin');
       return;
     }
-    sessionStorage.setItem('panel_aktif_sekme', 'mesajlar');
+    const hedefSekme = sessionStorage.getItem('panel_aktif_sekme') || 'mesajlar';
+    sessionStorage.setItem('panel_aktif_sekme', hedefSekme);
     setCurrentPage('panel');
   },
   onLogout: handleLogout,

@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 
 const KURUMSAL_FIRMA_ANAHTAR = 'kurumsal_firma_listesi';
 const ONLINE_PREFIX = 'online_user_';
+const KULLANICI_DUYURU_PREFIX = 'kullanici_duyuru_';
 const CEVRIMICI_TIMEOUT_MS = 2 * 60 * 1000;
 
 type CevrimiciKayit = {
@@ -10,6 +11,15 @@ type CevrimiciKayit = {
   full_name: string;
   type?: string;
   last_seen: string;
+};
+
+export type KullaniciDuyuru = {
+  id: string;
+  baslik: string;
+  mesaj: string;
+  resim_url?: string;
+  created_at: string;
+  aktif?: boolean;
 };
 
 function guvenliJsonParse(raw: unknown) {
@@ -55,9 +65,22 @@ function firmaListesiNormalize(list: any[]): KurumsalFirma[] {
   (list || []).forEach((f) => {
     const n = firmaNormalize(f);
     if (!n) return;
-    benzersiz.set(n.ad.toLocaleLowerCase('tr-TR'), n);
+    benzersiz.set(n.ad.toLowerCase(), n);
   });
   return Array.from(benzersiz.values());
+}
+
+function kullaniciDuyuruNormalize(v: any): KullaniciDuyuru | null {
+  const id = String(v?.id || '').trim();
+  if (!id) return null;
+  return {
+    id,
+    baslik: String(v?.baslik || '').trim(),
+    mesaj: String(v?.mesaj || '').trim(),
+    resim_url: String(v?.resim_url || '').trim() || undefined,
+    created_at: String(v?.created_at || new Date().toISOString()),
+    aktif: v?.aktif !== false,
+  };
 }
 
 export async function kurumsalFirmaListesiGetir(): Promise<KurumsalFirma[]> {
@@ -67,13 +90,14 @@ export async function kurumsalFirmaListesiGetir(): Promise<KurumsalFirma[]> {
     .eq('anahtar', KURUMSAL_FIRMA_ANAHTAR)
     .maybeSingle();
 
-  if (error || !data?.deger) return ISTANBUL_OKUL_PERSONEL_FIRMALARI;
+  if (error) return ISTANBUL_OKUL_PERSONEL_FIRMALARI;
+  if (!data) return ISTANBUL_OKUL_PERSONEL_FIRMALARI;
+  if (typeof data.deger !== 'string') return ISTANBUL_OKUL_PERSONEL_FIRMALARI;
 
   const parsed = guvenliJsonParse(data.deger);
   if (!Array.isArray(parsed)) return ISTANBUL_OKUL_PERSONEL_FIRMALARI;
 
-  const temiz = firmaListesiNormalize(parsed);
-  return temiz.length > 0 ? temiz : ISTANBUL_OKUL_PERSONEL_FIRMALARI;
+  return firmaListesiNormalize(parsed);
 }
 
 export async function kurumsalFirmaListesiKaydet(list: KurumsalFirma[]) {
@@ -149,4 +173,59 @@ export async function cevrimiciKullanicilariGetir() {
     );
 
   return { data: cevrimici, error: null };
+}
+
+export async function kullaniciDuyurusuYayinla(input: {
+  baslik?: string;
+  mesaj: string;
+  resim_url?: string;
+}) {
+  const id = crypto.randomUUID();
+  const payload: KullaniciDuyuru = {
+    id,
+    baslik: String(input.baslik || '').trim(),
+    mesaj: String(input.mesaj || '').trim(),
+    resim_url: String(input.resim_url || '').trim() || undefined,
+    created_at: new Date().toISOString(),
+    aktif: true,
+  };
+
+  const { data, error } = await supabase
+    .from('ayarlar')
+    .upsert(
+      { anahtar: `${KULLANICI_DUYURU_PREFIX}${id}`, deger: JSON.stringify(payload) },
+      { onConflict: 'anahtar' }
+    )
+    .select()
+    .maybeSingle();
+
+  return { data, error };
+}
+
+export async function kullaniciDuyurulariniGetir() {
+  const { data, error } = await supabase
+    .from('ayarlar')
+    .select('anahtar, deger')
+    .like('anahtar', `${KULLANICI_DUYURU_PREFIX}%`);
+
+  if (error || !data) return { data: [] as KullaniciDuyuru[], error };
+
+  const list = data
+    .map((row: any) => guvenliJsonParse(row?.deger))
+    .map(kullaniciDuyuruNormalize)
+    .filter(Boolean)
+    .filter((v: any) => v.aktif !== false)
+    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  return { data: list as KullaniciDuyuru[], error: null };
+}
+
+export async function kullaniciDuyurusunuSil(id: string) {
+  const temiz = String(id || '').trim();
+  if (!temiz) return { error: null };
+  const { error } = await supabase
+    .from('ayarlar')
+    .delete()
+    .eq('anahtar', `${KULLANICI_DUYURU_PREFIX}${temiz}`);
+  return { error };
 }

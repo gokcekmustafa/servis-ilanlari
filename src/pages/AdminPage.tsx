@@ -13,6 +13,9 @@ import {
   cevrimiciKullanicilariGetir,
   kurumsalFirmaListesiGetir,
   kurumsalFirmaListesiKaydet,
+  kullaniciDuyurulariniGetir,
+  kullaniciDuyurusuYayinla,
+  kullaniciDuyurusunuSil,
 } from '../lib/platformAyarlar';
 import type { KurumsalFirma } from '../data/kurumsalFirmalar';
 import { Ilan } from '../types';
@@ -128,6 +131,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   const [ilanSureMesaj, setIlanSureMesaj] = useState('');
 
   const [yeniDuyuru, setYeniDuyuru]       = useState({ baslik: '', mesaj: '', resim_url: '', saniye: 2, goster_sure: 8 });
+  const [yeniDuyuruHedef, setYeniDuyuruHedef] = useState<'popup' | 'kullanici' | 'herikisi'>('popup');
   const [duyuruYukleniyor, setDuyuruYukleniyor] = useState(false);
   const [duyuruSurukle, setDuyuruSurukle]       = useState(false);
   const [seciliDestek, setSeciliDestek]   = useState<any>(null);
@@ -136,6 +140,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   const [tavsiyeCevap, setTavsiyeCevap]   = useState('');
   const [favoriEtkilesimSayisi, setFavoriEtkilesimSayisi] = useState(0);
   const [cevrimiciKullanicilar, setCevrimiciKullanicilar] = useState<any[]>([]);
+  const [kullaniciDuyurulari, setKullaniciDuyurulari] = useState<any[]>([]);
   const [kurumsalFirmalar, setKurumsalFirmalar] = useState<KurumsalFirma[]>([]);
   const [firmaKaydediliyor, setFirmaKaydediliyor] = useState(false);
   const [firmaMesaj, setFirmaMesaj] = useState('');
@@ -192,12 +197,32 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
     }
   }, [aktifSekme, destekler]);
 
+  useEffect(() => {
+    if (aktifSekme !== 'tavsiyeler') return;
+    const hedefTavsiyeId = sessionStorage.getItem('admin_secili_tavsiye');
+    if (!hedefTavsiyeId) return;
+    const hedef = destekler.find((d: any) => d.id === hedefTavsiyeId && destekKaydiTavsiyeMi(d?.konu));
+    if (!hedef) return;
+
+    setSeciliTavsiye(hedef);
+    setTavsiyeCevap(hedef.cevap || '');
+    setSeciliDestek(null);
+    sessionStorage.removeItem('admin_secili_tavsiye');
+
+    if (hedef.durum === 'bekliyor') {
+      supabase.from('destek').update({ durum: 'islemde' }).eq('id', hedef.id).then(() => {
+        setDestekler(prev => prev.map(x => x.id === hedef.id ? { ...x, durum: 'islemde' } : x));
+        window.dispatchEvent(new Event('bildirimler:degisti'));
+      });
+    }
+  }, [aktifSekme, destekler]);
+
   const hepsiniYukle = async () => {
     setYukleniyor(true);
     const aktifSureGun = await ilanAktifSureGunGetir();
     setIlanAktifSureGun(aktifSureGun);
     await suresiDolanIlanlariPasiflestir(aktifSureGun);
-    const [u, i, r, d, ds, ayar, logoAyar, favoriSayim, onlineListe, firmaListe] = await Promise.all([
+    const [u, i, r, d, ds, ayar, logoAyar, favoriSayim, onlineListe, firmaListe, kullaniciDuyuruListe] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('ilanlar').select('*').order('created_at', { ascending: false }),
       supabase.from('reklamlar').select('*').order('id', { ascending: false }),
@@ -208,6 +233,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
       supabase.from('favoriler').select('*', { count: 'exact', head: true }),
       cevrimiciKullanicilariGetir(),
       kurumsalFirmaListesiGetir(),
+      kullaniciDuyurulariniGetir(),
     ]);
     setKullanicilar(u.data || []);
     setIlanlar(i.data || []);
@@ -217,6 +243,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
     setFavoriEtkilesimSayisi(favoriSayim.count || 0);
     setCevrimiciKullanicilar(onlineListe.data || []);
     setKurumsalFirmalar(firmaListe || []);
+    setKullaniciDuyurulari(kullaniciDuyuruListe.data || []);
     if (ayar.data?.deger) setReklamSiklik(Number(ayar.data.deger));
     if (logoAyar.data?.deger) setPlatformLogo(logoAyar.data.deger);
     setYukleniyor(false);
@@ -616,18 +643,20 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                 </div>
                 <div className="bg-white rounded-xl border border-slate-200 p-4">
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Çevrimiçi Kullanıcılar</p>
-                  {cevrimiciKullanicilar.slice(0, 8).map((u: any) => (
-                    <div key={u.user_id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-                      <div className="min-w-0">
-                        <p className="text-sm text-slate-600 truncate mr-2">{u.full_name || 'Kullanici'}</p>
-                        <p className="text-[11px] text-slate-400">{u.type === 'admin' || u.type === 'superadmin' ? 'Yonetici' : 'Kullanici'}</p>
+                  <div className="max-h-64 overflow-y-auto pr-1">
+                    {cevrimiciKullanicilar.map((u: any) => (
+                      <div key={u.user_id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                        <div className="min-w-0">
+                          <p className="text-sm text-slate-600 truncate mr-2">{u.full_name || 'Kullanici'}</p>
+                          <p className="text-[11px] text-slate-400">{u.type === 'admin' || u.type === 'superadmin' ? 'Yonetici' : 'Kullanici'}</p>
+                        </div>
+                        <span className="text-[11px] text-emerald-600 font-medium whitespace-nowrap">
+                          {new Date(u.last_seen).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
-                      <span className="text-[11px] text-emerald-600 font-medium whitespace-nowrap">
-                        {new Date(u.last_seen).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  ))}
-                  {cevrimiciKullanicilar.length === 0 && <p className="text-xs text-slate-400 py-2">Şu an çevrimiçi kullanıcı yok.</p>}
+                    ))}
+                    {cevrimiciKullanicilar.length === 0 && <p className="text-xs text-slate-400 py-2">Şu an çevrimiçi kullanıcı yok.</p>}
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
@@ -934,61 +963,117 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
             !sekmeYetkiVarMi('duyurular') ? <YetkisizUyari sekme="Duyuru Yönetimi" /> : (
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2 flex flex-col gap-3">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500">
+                  Popup duyurular: Misafirler ve kullanicilar icin acilis popup'i olarak gorunur.
+                </div>
                 {duyurular.map(d => (
-                  <div key={d.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                    {d.resim_url && (
-                      <div className="relative">
-                        <img src={d.resim_url} alt={d.baslik} className="w-full h-36 object-cover" />
-                        <span className={`absolute top-2 left-2 text-xs font-semibold px-2 py-0.5 rounded-full ${d.aktif ? 'bg-green-500 text-white' : 'bg-slate-500 text-white'}`}>
-                          {d.aktif ? 'Aktif' : 'Pasif'}
-                        </span>
-                      </div>
-                    )}
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-slate-700 text-sm">{d.baslik}</p>
-                          <p className="text-xs text-slate-500 mt-1">{d.mesaj}</p>
-                          <div className="flex items-center gap-3 mt-1">
-                            <p className="text-xs text-slate-400">{d.saniye} sn. sonra açılır</p>
-                            <p className="text-xs text-slate-400">{d.goster_sure || 8} sn. görünür kalır</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {!d.resim_url && (
-                            <button onClick={async () => { await supabase.from('duyurular').update({ aktif: !d.aktif }).eq('id', d.id); hepsiniYukle(); }}
-                              className={'text-xs font-semibold px-3 py-1.5 rounded-lg border transition whitespace-nowrap ' + (d.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}>
-                              {d.aktif ? 'Aktif' : 'Pasif'}
-                            </button>
-                          )}
-                          <button onClick={async () => { await supabase.from('duyurular').delete().eq('id', d.id); hepsiniYukle(); }} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={15} /></button>
-                        </div>
-                      </div>
-                      {d.resim_url && (
-                        <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
-                          <button onClick={async () => { await supabase.from('duyurular').update({ aktif: !d.aktif }).eq('id', d.id); hepsiniYukle(); }}
-                            className={'flex-1 text-xs font-semibold py-1.5 rounded-lg border transition ' + (d.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}>
-                            {d.aktif ? 'Aktif' : 'Pasif'}
+                  <div key={d.id} className="bg-white rounded-xl border border-slate-200 p-4">
+                    <div className="w-full sm:max-w-md mx-auto mb-4">
+                      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        {d.resim_url && (
+                          <img src={d.resim_url} alt={d.baslik || 'Duyuru'} className="w-full h-48 object-cover" />
+                        )}
+                        <div className="p-5">
+                          {d.baslik && <h3 className="text-base font-bold text-gray-900 mb-2">{d.baslik}</h3>}
+                          {d.mesaj && <p className="text-sm text-gray-600 mb-4">{d.mesaj}</p>}
+                          <button type="button" disabled className="w-full bg-[#f7971e] text-white py-2.5 rounded font-bold opacity-90">
+                            Kapat
                           </button>
                         </div>
-                      )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-slate-700 text-sm">{d.baslik || 'Basliksiz duyuru'}</p>
+                        <p className="text-xs text-slate-500 mt-1">{d.mesaj || 'Mesaj yok'}</p>
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + (d.aktif ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500')}>
+                            {d.aktif ? 'Aktif' : 'Pasif'}
+                          </span>
+                          <p className="text-xs text-slate-400">{d.saniye} sn. sonra acilir</p>
+                          <p className="text-xs text-slate-400">{d.goster_sure || 8} sn. gorunur kalir</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={async () => { await supabase.from('duyurular').update({ aktif: !d.aktif }).eq('id', d.id); hepsiniYukle(); }}
+                          className={'text-xs font-semibold px-3 py-1.5 rounded-lg border transition whitespace-nowrap ' + (d.aktif ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200')}
+                        >
+                          {d.aktif ? 'Aktif' : 'Pasif'}
+                        </button>
+                        <button
+                          onClick={async () => { await supabase.from('duyurular').delete().eq('id', d.id); hepsiniYukle(); }}
+                          className="text-red-400 hover:text-red-600 p-1"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
                 {duyurular.length === 0 && <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-400 text-sm">Hiç duyuru eklenmemiş</div>}
+
+                <div className="mt-2 bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500">
+                  Kullanici duyurulari: Sadece kullanici zili ve kullanici panelindeki Duyurular sekmesinde gorunur.
+                </div>
+                {kullaniciDuyurulari.map((d: any) => (
+                  <div key={d.id} className="bg-white rounded-xl border border-slate-200 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-slate-700 text-sm">{d.baslik || 'Kullanici Duyurusu'}</p>
+                        <p className="text-xs text-slate-500 mt-1">{d.mesaj}</p>
+                        <p className="text-[11px] text-slate-400 mt-1">{new Date(d.created_at).toLocaleString('tr-TR')}</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          await kullaniciDuyurusunuSil(d.id);
+                          hepsiniYukle();
+                          window.dispatchEvent(new Event('bildirimler:degisti'));
+                        }}
+                        className="text-red-400 hover:text-red-600 p-1"
+                        title="Sil"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {kullaniciDuyurulari.length === 0 && <div className="bg-white rounded-xl border border-slate-200 py-8 text-center text-slate-400 text-sm">Kullanici duyurusu yok</div>}
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-4">
                 <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5"><PlusCircle size={15} className="text-orange-500" />Yeni Duyuru</p>
+                <label className="text-xs text-slate-500 mb-1 block">Yayin Kanali</label>
+                <select className={ic + ' mb-2'} value={yeniDuyuruHedef} onChange={e => setYeniDuyuruHedef(e.target.value as any)}>
+                  <option value="popup">Popup (misafir + kullanici)</option>
+                  <option value="kullanici">Sadece kullanici bildirimi</option>
+                  <option value="herikisi">Popup + kullanici bildirimi</option>
+                </select>
                 <input className={ic + ' mb-2'} placeholder="Başlık (opsiyonel)" value={yeniDuyuru.baslik} onChange={e => setYeniDuyuru({ ...yeniDuyuru, baslik: e.target.value })} />
                 <textarea className={ic + ' mb-3 resize-none'} placeholder="Mesaj — resim eklemediyseniz zorunludur" rows={3} value={yeniDuyuru.mesaj} onChange={e => setYeniDuyuru({ ...yeniDuyuru, mesaj: e.target.value })} />
                 <p className="text-xs font-medium text-slate-500 mb-1.5">Resim <span className="text-slate-400 font-normal">(opsiyonel)</span></p>
                 {yeniDuyuru.resim_url ? (
-                  <div className="mb-3 relative rounded-xl overflow-hidden border border-slate-200">
-                    <img src={yeniDuyuru.resim_url} className="w-full h-32 object-cover" alt="Önizleme" />
-                    <button onClick={() => setYeniDuyuru({ ...yeniDuyuru, resim_url: '' })}
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold shadow-md hover:bg-red-600 transition">×</button>
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-3 py-2">
-                      <p className="text-white text-xs font-medium">✓ Resim yüklendi</p>
+                  <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500 mb-2">Popup onizleme (canli gorunumle ayni olculer)</p>
+                    <div className="w-full sm:max-w-md mx-auto">
+                      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <img src={yeniDuyuru.resim_url} className="w-full h-48 object-cover" alt="Popup onizleme" />
+                        <div className="p-5">
+                          {yeniDuyuru.baslik && <h3 className="text-base font-bold text-gray-900 mb-2">{yeniDuyuru.baslik}</h3>}
+                          {yeniDuyuru.mesaj && <p className="text-sm text-gray-600 mb-4">{yeniDuyuru.mesaj}</p>}
+                          <button type="button" disabled className="w-full bg-[#f7971e] text-white py-2.5 rounded font-bold opacity-90">
+                            Kapat
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={() => setYeniDuyuru({ ...yeniDuyuru, resim_url: '' })}
+                        className="text-xs text-red-500 hover:text-red-600 font-semibold"
+                      >
+                        Resmi Kaldir
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -1013,12 +1098,26 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                   </div>
                 </div>
                 <button onClick={async () => {
-                  const eklenebilir = yeniDuyuru.resim_url || yeniDuyuru.mesaj;
+                  const eklenebilir = yeniDuyuru.resim_url || yeniDuyuru.mesaj || yeniDuyuru.baslik;
                   if (!eklenebilir) return;
-                  await supabase.from('duyurular').insert([{ ...yeniDuyuru, aktif: true }]);
+
+                  if (yeniDuyuruHedef === 'popup' || yeniDuyuruHedef === 'herikisi') {
+                    await supabase.from('duyurular').insert([{ ...yeniDuyuru, aktif: true }]);
+                  }
+
+                  if (yeniDuyuruHedef === 'kullanici' || yeniDuyuruHedef === 'herikisi') {
+                    await kullaniciDuyurusuYayinla({
+                      baslik: yeniDuyuru.baslik,
+                      mesaj: yeniDuyuru.mesaj || yeniDuyuru.baslik || 'Yeni duyuru',
+                      resim_url: yeniDuyuru.resim_url,
+                    });
+                  }
+
                   setYeniDuyuru({ baslik: '', mesaj: '', resim_url: '', saniye: 2, goster_sure: 8 });
+                  setYeniDuyuruHedef('popup');
+                  window.dispatchEvent(new Event('bildirimler:degisti'));
                   hepsiniYukle();
-                }} disabled={duyuruYukleniyor || (!yeniDuyuru.resim_url && !yeniDuyuru.mesaj)}
+                }} disabled={duyuruYukleniyor || (!yeniDuyuru.resim_url && !yeniDuyuru.mesaj && !yeniDuyuru.baslik)}
                   className={btnO + ' w-full disabled:opacity-50 disabled:cursor-not-allowed'}>Duyuru Ekle</button>
               </div>
             </div>

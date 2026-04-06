@@ -108,7 +108,6 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
     const sure = (duyuru.goster_sure || 8) * 1000;
     const timer = setTimeout(() => {
       setPopupAcik(false);
-      sessionStorage.setItem('duyuru_kapatildi_' + duyuru.id, '1');
     }, sure);
     setOtomatikKapatTimer(timer);
     return () => clearTimeout(timer);
@@ -449,6 +448,7 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
           onClick={() => {
             setPopupAcik(false);
             if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
+            if (duyuru?.id) sessionStorage.setItem('duyuru_kapatildi_' + duyuru.id, '1');
           }}
         >
           <div
@@ -465,6 +465,7 @@ export default function HomePage({ onGoLogin, onIlanDetay }: HomePageProps) {
                 onClick={() => {
                   setPopupAcik(false);
                   if (otomatikKapatTimer) clearTimeout(otomatikKapatTimer);
+                  if (duyuru?.id) sessionStorage.setItem('duyuru_kapatildi_' + duyuru.id, '1');
                 }}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition"
               >

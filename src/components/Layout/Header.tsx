@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Truck, LogOut, LayoutDashboard, Bell, Menu, X } from 'lucide-react';
 import { kullaniciSayisi } from '../../lib/auth';
-import { okunmamisMesajSayisi, okunmamisDestekSayisi } from '../../lib/ilanlar';
+import { okunmamisMesajSayisi, destekKaydiTavsiyeMi, tavsiyeKonuTemizle } from '../../lib/ilanlar';
 import { mevcutKullanici } from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
+import { kullaniciDuyurulariniGetir } from '../../lib/platformAyarlar';
 
 type HeaderProps = {
   isLoggedIn: boolean;
@@ -19,12 +20,13 @@ type HeaderProps = {
 
 type HeaderBildirim = {
   id: string;
-  tip: 'mesaj' | 'destek';
+  tip: 'mesaj' | 'destek' | 'tavsiye' | 'uye' | 'duyuru';
   baslik: string;
   aciklama: string;
   createdAt: string;
   conversationId?: string;
   destekId?: string;
+  duyuruId?: string;
 };
 
 export default function Header({
@@ -32,7 +34,10 @@ export default function Header({
 }: HeaderProps) {
   const [sayi, setSayi] = useState<number | null>(null);
   const [okunmamis, setOkunmamis] = useState(0);
+  const [okunmamisDuyuru, setOkunmamisDuyuru] = useState(0);
   const [bekleyenDestek, setBekleyenDestek] = useState(0);
+  const [bekleyenTavsiye, setBekleyenTavsiye] = useState(0);
+  const [yeniUyeSayisi, setYeniUyeSayisi] = useState(0);
   const [bildirimAcik, setBildirimAcik] = useState(false);
   const [bildirimYukleniyor, setBildirimYukleniyor] = useState(false);
   const [bildirimler, setBildirimler] = useState<HeaderBildirim[]>([]);
@@ -41,6 +46,22 @@ export default function Header({
   const [platformLogo, setPlatformLogo] = useState<string>('');
   const bildirimPanelRef = useRef<HTMLDivElement>(null);
 
+  const okunanDuyuruAnahtar = (uid: string) => `kullanici_duyuru_okunan_${uid}`;
+  const silinenDuyuruAnahtar = (uid: string) => `kullanici_duyuru_silinen_${uid}`;
+  const depodanSetGetir = (anahtar: string) => {
+    try {
+      const ham = localStorage.getItem(anahtar);
+      const parsed = ham ? JSON.parse(ham) : [];
+      if (!Array.isArray(parsed)) return new Set<string>();
+      return new Set<string>(parsed.map((v: any) => String(v)));
+    } catch {
+      return new Set<string>();
+    }
+  };
+  const depoyaSetKaydet = (anahtar: string, set: Set<string>) => {
+    localStorage.setItem(anahtar, JSON.stringify(Array.from(set)));
+  };
+
   const bildirimleriYukle = () => {
     if (!isLoggedIn) return;
     const user = mevcutKullanici();
@@ -48,12 +69,40 @@ export default function Header({
 
     if (isAdmin) {
       setOkunmamis(0);
-      okunmamisDestekSayisi().then(({ count }) => { setBekleyenDestek(count ?? 0); });
+      setOkunmamisDuyuru(0);
+      const destekVesaati = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      Promise.all([
+        supabase.from('destek').select('id, konu').eq('durum', 'bekliyor'),
+        supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true })
+          .neq('type', 'admin')
+          .neq('type', 'superadmin')
+          .gt('created_at', destekVesaati),
+      ]).then(([destekRes, uyeRes]) => {
+        const kayitlar = destekRes.data || [];
+        const tavsiye = kayitlar.filter((d: any) => destekKaydiTavsiyeMi(d?.konu)).length;
+        const destek = kayitlar.length - tavsiye;
+        setBekleyenDestek(destek);
+        setBekleyenTavsiye(tavsiye);
+        setYeniUyeSayisi(uyeRes.count ?? 0);
+      });
       return;
     }
 
     setBekleyenDestek(0);
-    okunmamisMesajSayisi(user.id).then(({ count }) => { setOkunmamis(count ?? 0); });
+    setBekleyenTavsiye(0);
+    setYeniUyeSayisi(0);
+    Promise.all([
+      okunmamisMesajSayisi(user.id),
+      kullaniciDuyurulariniGetir(),
+    ]).then(([mesajRes, duyuruRes]) => {
+      setOkunmamis(mesajRes.count ?? 0);
+      const silinen = depodanSetGetir(silinenDuyuruAnahtar(user.id));
+      const okunan = depodanSetGetir(okunanDuyuruAnahtar(user.id));
+      const okunmamisDuyurular = (duyuruRes.data || []).filter((d: any) => !silinen.has(d.id) && !okunan.has(d.id));
+      setOkunmamisDuyuru(okunmamisDuyurular.length);
+    });
   };
 
   useEffect(() => {
@@ -111,21 +160,48 @@ export default function Header({
     setBildirimYukleniyor(true);
 
     if (isAdmin) {
-      const { data } = await supabase
-        .from('destek')
-        .select('id, konu, mesaj, created_at, profiles(full_name, phone_number)')
-        .eq('durum', 'bekliyor')
-        .order('created_at', { ascending: false })
-        .limit(8);
+      const son24Saat = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const [destekRes, uyeRes] = await Promise.all([
+        supabase
+          .from('destek')
+          .select('id, konu, mesaj, created_at, profiles(full_name, phone_number)')
+          .eq('durum', 'bekliyor')
+          .order('created_at', { ascending: false })
+          .limit(12),
+        supabase
+          .from('profiles')
+          .select('id, full_name, phone_number, created_at, type')
+          .neq('type', 'admin')
+          .neq('type', 'superadmin')
+          .gt('created_at', son24Saat)
+          .order('created_at', { ascending: false })
+          .limit(6),
+      ]);
 
-      const adminBildirimleri: HeaderBildirim[] = (data || []).map((d: any) => ({
-        id: `destek-${d.id}`,
-        tip: 'destek',
-        baslik: d.konu || 'Destek talebi',
-        aciklama: d.profiles?.full_name || d.profiles?.phone_number || (d.mesaj || '').slice(0, 90),
-        createdAt: d.created_at,
-        destekId: d.id,
+      const destekBildirimleri: HeaderBildirim[] = (destekRes.data || []).map((d: any) => {
+        const tavsiyeMi = destekKaydiTavsiyeMi(d?.konu);
+        return {
+          id: `${tavsiyeMi ? 'tavsiye' : 'destek'}-${d.id}`,
+          tip: tavsiyeMi ? 'tavsiye' : 'destek',
+          baslik: tavsiyeMi ? `Yeni Tavsiye: ${tavsiyeKonuTemizle(d.konu)}` : (d.konu || 'Destek talebi'),
+          aciklama: d.profiles?.full_name || d.profiles?.phone_number || (d.mesaj || '').slice(0, 90),
+          createdAt: d.created_at,
+          destekId: d.id,
+        };
+      });
+
+      const uyeBildirimleri: HeaderBildirim[] = (uyeRes.data || []).map((u: any) => ({
+        id: `uye-${u.id}`,
+        tip: 'uye',
+        baslik: 'Yeni Kullanici Kaydi',
+        aciklama: u.full_name || u.phone_number || 'Yeni kullanici',
+        createdAt: u.created_at,
       }));
+
+      const adminBildirimleri = [...destekBildirimleri, ...uyeBildirimleri]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 12);
+
       setBildirimler(adminBildirimleri);
       setBildirimYukleniyor(false);
       return;
@@ -148,6 +224,10 @@ export default function Header({
       .order('created_at', { ascending: false })
       .limit(8);
 
+    const duyuruRes = await kullaniciDuyurulariniGetir();
+    const silinen = depodanSetGetir(silinenDuyuruAnahtar(user.id));
+    const okunan = depodanSetGetir(okunanDuyuruAnahtar(user.id));
+
     const kullaniciBildirimleri: HeaderBildirim[] = (data || []).map((m: any) => ({
       id: `mesaj-${m.id}`,
       tip: 'mesaj',
@@ -156,7 +236,23 @@ export default function Header({
       createdAt: m.created_at,
       conversationId: m.conversation_id || [m.gonderen_id, m.alan_id].sort().join('_'),
     }));
-    setBildirimler(kullaniciBildirimleri);
+
+    const duyuruBildirimleri: HeaderBildirim[] = (duyuruRes.data || [])
+      .filter((d: any) => !silinen.has(d.id) && !okunan.has(d.id))
+      .map((d: any) => ({
+        id: `duyuru-${d.id}`,
+        tip: 'duyuru',
+        baslik: d.baslik || 'Platform Duyurusu',
+        aciklama: d.mesaj || 'Yeni duyuru',
+        createdAt: d.created_at,
+        duyuruId: d.id,
+      }));
+
+    const hepsi = [...duyuruBildirimleri, ...kullaniciBildirimleri]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 12);
+
+    setBildirimler(hepsi);
     setBildirimYukleniyor(false);
   };
 
@@ -170,6 +266,25 @@ export default function Header({
       sessionStorage.setItem('admin_aktif_sekme', 'destek');
       if (bildirim.destekId) {
         sessionStorage.setItem('admin_secili_destek', bildirim.destekId);
+      }
+    } else if (bildirim.tip === 'tavsiye') {
+      sessionStorage.setItem('admin_aktif_sekme', 'tavsiyeler');
+      if (bildirim.destekId) {
+        sessionStorage.setItem('admin_secili_tavsiye', bildirim.destekId);
+      }
+    } else if (bildirim.tip === 'uye') {
+      sessionStorage.setItem('admin_aktif_sekme', 'kullanicilar');
+    } else if (bildirim.tip === 'duyuru') {
+      sessionStorage.setItem('panel_aktif_sekme', 'duyurular');
+      if (bildirim.duyuruId) {
+        sessionStorage.setItem('panel_secili_duyuru', bildirim.duyuruId);
+      }
+      const user = mevcutKullanici();
+      if (user?.id && bildirim.duyuruId) {
+        const key = okunanDuyuruAnahtar(user.id);
+        const okunan = depodanSetGetir(key);
+        okunan.add(bildirim.duyuruId);
+        depoyaSetKaydet(key, okunan);
       }
     }
 
@@ -185,9 +300,9 @@ export default function Header({
     }
   };
 
-  const toplamBildirim = isAdmin ? bekleyenDestek : okunmamis;
-  const bildirimPaneliBaslik = isAdmin ? 'Yeni Destek Talepleri' : 'Yeni Mesajlar';
-  const bildirimPaneliYonlendirmeMetni = isAdmin ? 'Destek Taleplerine Git' : 'Mesajlara Git';
+  const toplamBildirim = isAdmin ? (bekleyenDestek + bekleyenTavsiye + yeniUyeSayisi) : (okunmamis + okunmamisDuyuru);
+  const bildirimPaneliBaslik = isAdmin ? 'Yonetici Bildirimleri' : 'Yeni Bildirimler';
+  const bildirimPaneliYonlendirmeMetni = isAdmin ? 'Yonetim Paneline Git' : 'Panele Git';
 
   const navLinks = [
     { label: 'Anasayfa', page: 'home' },
@@ -321,7 +436,12 @@ export default function Header({
             </div>
             <div className="px-4 py-3 border-t border-slate-100 bg-white">
               <button
-                onClick={() => { setBildirimAcik(false); onGoNotifications(); }}
+                onClick={() => {
+                  setBildirimAcik(false);
+                  if (isAdmin) sessionStorage.setItem('admin_aktif_sekme', 'destek');
+                  else sessionStorage.setItem('panel_aktif_sekme', 'mesajlar');
+                  onGoNotifications();
+                }}
                 className="w-full text-sm font-semibold text-orange-600 hover:text-orange-700"
               >
                 {bildirimPaneliYonlendirmeMetni}

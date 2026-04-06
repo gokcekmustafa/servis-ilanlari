@@ -10,13 +10,14 @@ import { ilceler } from '../data/ilceler';
 import { mahalleler } from '../data/mahalleler';
 import { mevcutKullanici } from '../lib/auth';
 import { supabase } from '../lib/supabase';
+import { kullaniciDuyurulariniGetir } from '../lib/platformAyarlar';
 import {
   Eye, Trash2, Plus, Heart, Car, MessageSquare,
-  HelpCircle, User, LogOut, Bell, Menu, X, Pencil, Save, Camera,
+  HelpCircle, User, LogOut, Bell, Menu, X, Pencil, Save, Camera, Megaphone,
   Upload
 } from 'lucide-react';
 
-type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'favoriler' | 'destek' | 'tavsiye';
+type Sekme = 'profil' | 'ilanlar' | 'araclar' | 'mesajlar' | 'duyurular' | 'favoriler' | 'destek' | 'tavsiye';
 
 type PanelPageProps = {
   onLogout: () => void;
@@ -819,6 +820,8 @@ export default function PanelPage({ onLogout, onIlanEkle, onIlanDetay, userId, b
   const [araclar, setAraclar] = useState<any[]>([]);
   const [favoriler, setFavoriler] = useState<any[]>([]);
   const [mesajlar, setMesajlar] = useState<any[]>([]);
+  const [kullaniciDuyurulari, setKullaniciDuyurulari] = useState<any[]>([]);
+  const [seciliDuyuruId, setSeciliDuyuruId] = useState<string | null>(null);
   const [okunmamisSayi, setOkunmamisSayi] = useState(0);
   const [aktifKonusmaId, setAktifKonusmaId] = useState<string | null>(null);
   const [cevapMetni, setCevapMetni] = useState('');
@@ -854,6 +857,47 @@ const [notMetin, setNotMetin] = useState('');
   yeniSifre: '',
 });
 
+  const okunanDuyuruAnahtar = `kullanici_duyuru_okunan_${userId}`;
+  const silinenDuyuruAnahtar = `kullanici_duyuru_silinen_${userId}`;
+  const depodanSetGetir = (anahtar: string) => {
+    try {
+      const ham = localStorage.getItem(anahtar);
+      const parsed = ham ? JSON.parse(ham) : [];
+      if (!Array.isArray(parsed)) return new Set<string>();
+      return new Set<string>(parsed.map((v: any) => String(v)));
+    } catch {
+      return new Set<string>();
+    }
+  };
+  const depoyaSetKaydet = (anahtar: string, set: Set<string>) => {
+    localStorage.setItem(anahtar, JSON.stringify(Array.from(set)));
+  };
+
+  const duyurulariOkunduIsaretle = (ids: string[]) => {
+    if (!ids.length) return;
+    const okunan = depodanSetGetir(okunanDuyuruAnahtar);
+    ids.forEach(id => okunan.add(id));
+    depoyaSetKaydet(okunanDuyuruAnahtar, okunan);
+    window.dispatchEvent(new Event('bildirimler:degisti'));
+  };
+
+  const kullaniciDuyurulariYukle = async () => {
+    const { data } = await kullaniciDuyurulariniGetir();
+    const silinen = depodanSetGetir(silinenDuyuruAnahtar);
+    const list = (data || []).filter((d: any) => !silinen.has(d.id));
+    setKullaniciDuyurulari(list);
+    return list;
+  };
+
+  const handleDuyuruSil = (duyuruId: string) => {
+    const silinen = depodanSetGetir(silinenDuyuruAnahtar);
+    silinen.add(duyuruId);
+    depoyaSetKaydet(silinenDuyuruAnahtar, silinen);
+    setKullaniciDuyurulari(prev => prev.filter((d: any) => d.id !== duyuruId));
+    if (seciliDuyuruId === duyuruId) setSeciliDuyuruId(null);
+    window.dispatchEvent(new Event('bildirimler:degisti'));
+  };
+
   useEffect(() => {
   okunmamisMesajSayisi(userId).then(({ count }) => {
     setOkunmamisSayi(count || 0);
@@ -869,6 +913,11 @@ const [notMetin, setNotMetin] = useState('');
     if (aktifSekme === 'araclar') araclarimYukle();
     if (aktifSekme === 'favoriler') favorileriYukle();
     if (aktifSekme === 'mesajlar') mesajlariYukle();
+    if (aktifSekme === 'duyurular') {
+      kullaniciDuyurulariYukle().then((list: any[]) => {
+        duyurulariOkunduIsaretle((list || []).map((d: any) => d.id));
+      });
+    }
   }, [aktifSekme]);
 
   useEffect(() => {
@@ -895,6 +944,15 @@ const [notMetin, setNotMetin] = useState('');
       window.dispatchEvent(new Event('bildirimler:degisti'));
     });
   }, [aktifSekme, mesajlar, userId]);
+
+  useEffect(() => {
+    if (aktifSekme !== 'duyurular') return;
+    const hedefDuyuru = sessionStorage.getItem('panel_secili_duyuru');
+    if (!hedefDuyuru) return;
+    setSeciliDuyuruId(hedefDuyuru);
+    duyurulariOkunduIsaretle([hedefDuyuru]);
+    sessionStorage.removeItem('panel_secili_duyuru');
+  }, [aktifSekme]);
 
   useEffect(() => {
     sessionStorage.setItem('panel_aktif_sekme', aktifSekme);
@@ -1206,6 +1264,7 @@ const handleKonusmaSil = async (conversationId: string) => {
     { id: 'ilanlar', label: 'İlanlarım', icon: Eye },
     { id: 'araclar', label: 'Araçlarım', icon: Car },
     { id: 'mesajlar', label: 'Mesajlar', icon: MessageSquare, badge: okunmamisSayi },
+    { id: 'duyurular', label: 'Duyurular', icon: Megaphone },
     { id: 'favoriler', label: 'Favorilerim', icon: Heart },
     { id: 'destek', label: 'Destek', icon: HelpCircle },
     { id: 'tavsiye', label: 'Admine Tavsiye Gönder', icon: HelpCircle },
@@ -1778,6 +1837,44 @@ const aktifKonusma = konusmalar.find(k => k.conversationId === aktifKonusmaId) |
     </div>
   </div>
 )}
+
+            {/* DUYURULAR */}
+            {aktifSekme === 'duyurular' && (
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-4 sm:px-5 py-4 border-b border-slate-100">
+                  <h2 className="font-bold text-slate-800 text-base">Duyurular</h2>
+                </div>
+                <div className="p-4 sm:p-5">
+                  {kullaniciDuyurulari.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400">
+                      <Megaphone size={40} className="mx-auto mb-3 opacity-30" />
+                      <p className="text-sm font-medium">Gösterilecek duyuru yok</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {kullaniciDuyurulari.map((duyuru: any) => (
+                        <div key={duyuru.id} className={'border rounded-xl p-4 transition ' + (seciliDuyuruId === duyuru.id ? 'border-orange-300 bg-orange-50' : 'border-slate-200')}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-slate-700 text-sm">{duyuru.baslik || 'Platform Duyurusu'}</p>
+                              <p className="text-xs text-slate-500 mt-1 whitespace-pre-wrap">{duyuru.mesaj}</p>
+                              <p className="text-[11px] text-slate-400 mt-2">{new Date(duyuru.created_at).toLocaleString('tr-TR')}</p>
+                            </div>
+                            <button
+                              onClick={() => handleDuyuruSil(duyuru.id)}
+                              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"
+                              title="Sil"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* FAVORİLER */}
             {aktifSekme === 'favoriler' && (
