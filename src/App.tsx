@@ -19,7 +19,17 @@ import { Ilan, KategoriType } from './types';
 import { mevcutKullanici, cikisYap, girisYap } from './lib/auth';
 import { ilanlariGetir } from './lib/ilanlar';
 import { supabase } from './lib/supabase';
-import { kullaniciOnlineIziGuncelle, kullaniciOnlineIziTemizle } from './lib/platformAyarlar';
+import {
+  kullaniciOnlineIziGuncelle,
+  kullaniciOnlineIziTemizle,
+  siteIcerigiGetir,
+  siteKategorileriGetir,
+  SITE_KATEGORI_RENKLERI,
+  VARSAYILAN_SITE_ICERIGI,
+  VARSAYILAN_SITE_KATEGORILERI,
+  SiteIcerigi,
+  SiteKategori,
+} from './lib/platformAyarlar';
 import { SlidersHorizontal, X } from 'lucide-react';
 
 function ReklamBanner({ konum }: { konum: 'kenar_sol' | 'kenar_sag' }) {
@@ -184,8 +194,53 @@ const KATEGORILER = [
   },
 ] as const;
 
+type HomeKategori = {
+  id: KategoriType;
+  label: string;
+  aciklama: string;
+  icon: string;
+  bg: string;
+  border: string;
+  numColor: string;
+  iconBg: string;
+  serit: string;
+};
+
+function kategoriLabelParcala(label: string) {
+  const kelimeler = String(label || '').trim().split(/\s+/).filter(Boolean);
+  if (kelimeler.length === 0) return { label1: 'Kategori', label2: '' };
+  if (kelimeler.length === 1) return { label1: kelimeler[0], label2: '' };
+  const orta = Math.ceil(kelimeler.length / 2);
+  return {
+    label1: kelimeler.slice(0, orta).join(' '),
+    label2: kelimeler.slice(orta).join(' '),
+  };
+}
+
+function kategorileriUiyaDonustur(kategoriler: SiteKategori[]): HomeKategori[] {
+  const fallbackStilMap = new Map<string, any>(Array.from(KATEGORILER).map((k) => [String(k.id), k]));
+  const temiz = (kategoriler || []).filter((k) => k && k.aktif !== false && String(k.id || '').trim() && String(k.label || '').trim());
+  const kaynak = temiz.length > 0 ? temiz : VARSAYILAN_SITE_KATEGORILERI;
+  return kaynak.map((kat) => {
+    const id = String(kat.id);
+    const stil = fallbackStilMap.get(id);
+    const renk = SITE_KATEGORI_RENKLERI[kat.renk] || SITE_KATEGORI_RENKLERI.slate;
+    return {
+      id,
+      label: kat.label,
+      aciklama: kat.aciklama || stil?.aciklama || '',
+      icon: kat.icon || stil?.icon || '📌',
+      bg: stil?.bg || renk.kartBg,
+      border: stil?.border || renk.kartBorder,
+      numColor: stil?.numColor || renk.kartSayi,
+      iconBg: stil?.iconBg || renk.kartIconBg,
+      serit: stil?.serit || renk.serit,
+    };
+  });
+}
+
 function metinNorm(v: any) {
-  return String(v ?? '').trim().toLocaleLowerCase('tr-TR');
+  return String(v ?? '').trim().toLowerCase();
 }
 
 function metinAyni(a: any, b: any) {
@@ -485,7 +540,23 @@ function InlineGiris({ onLogin, onGoRegister }: { onLogin: () => void; onGoRegis
     </div>
   );
 }
-function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLoggedIn }: { onGoLogin: () => void; onGoRegister: () => void; onIlanDetay: (ilan: Ilan) => void; onLoginSuccess: () => void; isLoggedIn: boolean }) {
+function HomePage({
+  onGoLogin,
+  onGoRegister,
+  onIlanDetay,
+  onLoginSuccess,
+  isLoggedIn,
+  kategoriler,
+  siteIcerik,
+}: {
+  onGoLogin: () => void;
+  onGoRegister: () => void;
+  onIlanDetay: (ilan: Ilan) => void;
+  onLoginSuccess: () => void;
+  isLoggedIn: boolean;
+  kategoriler: HomeKategori[];
+  siteIcerik: SiteIcerigi;
+}) {
   const [ilanlar, setIlanlar] = useState<Ilan[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [aktifKategori, setAktifKategori] = useState<KategoriType | null>(null);
@@ -791,6 +862,14 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
   )).sort((a, b) => (koltukSayisiDonustur(a) || 0) - (koltukSayisiDonustur(b) || 0));
 
   const kategoriSayisi = (id: KategoriType) => ilanlar.filter(i => i.kategori === id).length;
+  const kategoriEtiketMap = React.useMemo(
+    () => Object.fromEntries(kategoriler.map((k) => [k.id, k.label])),
+    [kategoriler]
+  );
+  const kategoriRenkMap = React.useMemo(
+    () => Object.fromEntries(kategoriler.map((k) => [k.id, k.serit])),
+    [kategoriler]
+  );
 
   const filtrelenmisIlanlar = ilanlar
     .filter(ilan => {
@@ -873,7 +952,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
     || !!selectedAracSatisMaxKm;
 
   const aktifFiltreEtiketleri = [
-    aktifKategori ? (KATEGORILER.find(k => k.id === aktifKategori)?.label || 'Kategori') : '',
+    aktifKategori ? (kategoriler.find(k => k.id === aktifKategori)?.label || 'Kategori') : '',
     selectedSehir ? `Kalkis sehir: ${selectedSehir}` : '',
     selectedKalkisIlce ? `Kalkis ilce: ${selectedKalkisIlce}` : '',
     selectedKalkisMah ? `Kalkis mahalle: ${selectedKalkisMah}` : '',
@@ -902,7 +981,16 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
     const result: React.ReactNode[] = [];
     filtrelenmisIlanlar.forEach((ilan, index) => {
       result.push(
-        <IlanCard key={ilan.id} ilan={ilan} onDetay={() => onIlanDetay(ilan)} isLoggedIn={!!isLoggedIn} onGoLogin={onGoLogin} kompakt={kompaktGorunum} />
+        <IlanCard
+          key={ilan.id}
+          ilan={ilan}
+          onDetay={() => onIlanDetay(ilan)}
+          isLoggedIn={!!isLoggedIn}
+          onGoLogin={onGoLogin}
+          kompakt={kompaktGorunum}
+          kategoriEtiketMap={kategoriEtiketMap}
+          kategoriRenkMap={kategoriRenkMap}
+        />
       );
       if ((index + 1) % reklamSiklik === 5 && index < filtrelenmisIlanlar.length - 1) {
         result.push(
@@ -927,11 +1015,13 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
         <div className="mb-4">
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
             <div className="flex items-center justify-between px-5 py-3 bg-[#f7971e]">
-              <h2 className="text-sm font-bold text-white tracking-wide">İlan Kategorileri</h2>
-              <span className="text-xs text-white/80 font-medium">{ilanlar.length} aktif ilan</span>
+              <h2 className="text-sm font-bold text-white tracking-wide">{siteIcerik.anasayfa.kategori_baslik || 'Ilan Kategorileri'}</h2>
+              <span className="text-xs text-white/80 font-medium">
+                {(siteIcerik.anasayfa.aktif_ilan_metin_sablon || '{count} aktif ilan').replace('{count}', String(ilanlar.length))}
+              </span>
             </div>
             <div className="flex overflow-x-auto gap-2 p-2 scrollbar-hide snap-x snap-mandatory">
-              {KATEGORILER.map((kat) => {
+              {kategoriler.map((kat) => {
                 const sayi = kategoriSayisi(kat.id);
                 const isSelected = aktifKategori === kat.id;
                 return (
@@ -970,7 +1060,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                 className="flex-1 min-h-[42px] flex items-center justify-center gap-2 bg-white border border-gray-300 hover:border-[#f7971e] text-gray-700 rounded-lg text-sm font-semibold transition"
               >
                 <SlidersHorizontal size={15} />
-                Filtrele
+                {siteIcerik.anasayfa.filtrele_buton || 'Filtrele'}
                 {aktifFiltreSayisi > 0 && (
                   <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full text-[11px] bg-orange-100 text-orange-700">
                     {aktifFiltreSayisi}
@@ -982,7 +1072,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                   onClick={handleClear}
                   className="min-h-[42px] px-3 flex items-center gap-1 bg-white border border-gray-300 hover:border-red-300 text-gray-600 rounded-lg transition text-sm font-medium"
                 >
-                  <X size={14} /> Temizle
+                  <X size={14} /> {siteIcerik.anasayfa.temizle_buton || 'Temizle'}
                 </button>
               )}
             </div>
@@ -1019,7 +1109,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                   <span className="truncate">Tüm Kategoriler</span>
                   <span className={"flex-shrink-0 ml-1 text-[10px] px-1.5 py-0.5 rounded " + (!aktifKategori ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-500")}>{ilanlar.length}</span>
                 </button>
-                {KATEGORILER.map(kat => {
+                {kategoriler.map(kat => {
                   const sayi = kategoriSayisi(kat.id);
                   const isActive = aktifKategori === kat.id;
                   return (
@@ -1313,7 +1403,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
               <div className="flex flex-wrap items-center gap-2">
                 {aktifKategori && (
                   <span className="flex items-center gap-1 text-xs bg-orange-50 border border-orange-200 text-orange-700 px-2 py-0.5 rounded font-medium">
-                    {KATEGORILER.find(k => k.id === aktifKategori)?.label}
+                    {kategoriler.find(k => k.id === aktifKategori)?.label}
                     <button onClick={() => handleKategoriDegistir(null)} className="ml-1 hover:text-orange-900"><X size={11} /></button>
                   </span>
                 )}
@@ -1403,7 +1493,7 @@ function HomePage({ onGoLogin, onGoRegister, onIlanDetay, onLoginSuccess, isLogg
                     <span>Tüm Kategoriler</span>
                     <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">{ilanlar.length}</span>
                   </button>
-                  {KATEGORILER.map(kat => (
+                  {kategoriler.map(kat => (
                     <button
                       key={kat.id}
                       onClick={() => handleKategoriDegistir(kat.id)}
@@ -1619,6 +1709,8 @@ export default function App() {
   const [selectedIlan, setSelectedIlan] = useState<Ilan | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
   const [yukleniyor, setYukleniyor] = useState(true);
+  const [siteIcerik, setSiteIcerik] = useState<SiteIcerigi>(VARSAYILAN_SITE_ICERIGI);
+  const [kategorilerUi, setKategorilerUi] = useState<HomeKategori[]>(() => kategorileriUiyaDonustur(VARSAYILAN_SITE_KATEGORILERI));
   const scrollPozisyon = useRef(0);
 
   const setCurrentPage = (page: Page) => {
@@ -1669,13 +1761,24 @@ export default function App() {
   };
 
   useEffect(() => {
-    const path = window.location.pathname.replace('/', '');
-    if (path && validPages.includes(path as Page)) {
-      setCurrentPageState(path as Page);
-    }
-    const user = mevcutKullanici();
-    if (user) kullaniciyiIsle(user);
-    setYukleniyor(false);
+    const baslat = async () => {
+      const path = window.location.pathname.replace('/', '');
+      if (path && validPages.includes(path as Page)) {
+        setCurrentPageState(path as Page);
+      }
+
+      const [icerikRes, kategoriRes] = await Promise.all([
+        siteIcerigiGetir(),
+        siteKategorileriGetir(),
+      ]);
+      if (icerikRes.data) setSiteIcerik(icerikRes.data);
+      if (kategoriRes.data) setKategorilerUi(kategorileriUiyaDonustur(kategoriRes.data));
+
+      const user = mevcutKullanici();
+      if (user) kullaniciyiIsle(user);
+      setYukleniyor(false);
+    };
+    baslat();
   }, []);
 
   useEffect(() => {
@@ -1776,6 +1879,15 @@ export default function App() {
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
+  const siteAyarlariniYenile = async () => {
+    const [icerikRes, kategoriRes] = await Promise.all([
+      siteIcerigiGetir(),
+      siteKategorileriGetir(),
+    ]);
+    if (icerikRes.data) setSiteIcerik(icerikRes.data);
+    if (kategoriRes.data) setKategorilerUi(kategorileriUiyaDonustur(kategoriRes.data));
+  };
+
   const goBack = () => {
   const hedef = prevPage || 'home';
   if (hedef === 'panel') {
@@ -1799,6 +1911,8 @@ export default function App() {
   const headerProps = {
   isLoggedIn,
   isAdmin,
+  siteAdi: siteIcerik.site_adi,
+  menuEtiketleri: siteIcerik.menu,
   onGoLogin: () => setCurrentPage('login'),
   onGoRegister: () => setCurrentPage('register'),
   onGoNotifications: () => {
@@ -1820,6 +1934,9 @@ export default function App() {
 
   const footerProps = {
     onNavigate: (page: any) => setCurrentPage(page),
+    siteAdi: siteIcerik.site_adi,
+    footerKisaMetin: siteIcerik.footer_kisa_metin,
+    menuEtiketleri: siteIcerik.menu,
   };
 
   if (yukleniyor) {
@@ -1846,11 +1963,21 @@ export default function App() {
   </div>
 );
 
-  if (currentPage === 'detay' && selectedIlan) return withLayout(<IlanDetayPage ilan={selectedIlan} onGoBack={goBack} onGoLogin={() => setCurrentPage('login')} isLoggedIn={isLoggedIn} />);
+  if (currentPage === 'detay' && selectedIlan) return withLayout(
+    <IlanDetayPage
+      ilan={selectedIlan}
+      onGoBack={goBack}
+      onGoLogin={() => setCurrentPage('login')}
+      isLoggedIn={isLoggedIn}
+      kategoriEtiketMap={Object.fromEntries(kategorilerUi.map((k) => [k.id, k.label]))}
+      kategoriRenkMap={Object.fromEntries(kategorilerUi.map((k) => [k.id, k.serit]))}
+    />
+  );
   if (currentPage === 'ilan-ekle') return withLayout(<IlanEklePage
     userId={userId || ''}
     onGoBack={() => setCurrentPage('home')}
     onSuccess={() => setCurrentPage('home')}
+    kategoriSecenekleri={kategorilerUi.map((k) => ({ id: k.id, label: k.label, color: `${k.border} ${k.bg} ${k.numColor}` }))}
   />);
   if (currentPage === 'panel') return withLayout(<PanelPage
   onLogout={handleLogout}
@@ -1868,15 +1995,16 @@ export default function App() {
         isSuperAdmin={isSuperAdmin}
         yetkiler={yetkiler}
         defaultSekme={(sessionStorage.getItem('admin_aktif_sekme') as any) || 'istatistik'}
+        onSiteAyarGuncellendi={siteAyarlariniYenile}
       />,
       false
     );
   }
 
-  if (currentPage === 'hakkimizda') return withLayout(<HakkimizdaPage onGoBack={goBack} />);
-  if (currentPage === 'nasil-isliyor') return withLayout(<NasilIsliyorPage onGoBack={goBack} />);
-  if (currentPage === 'sss') return withLayout(<SSSPage onGoBack={goBack} />);
-  if (currentPage === 'iletisim') return withLayout(<IletisimPage onGoBack={goBack} />);
+  if (currentPage === 'hakkimizda') return withLayout(<HakkimizdaPage onGoBack={goBack} icerik={siteIcerik.hakkimizda} />);
+  if (currentPage === 'nasil-isliyor') return withLayout(<NasilIsliyorPage onGoBack={goBack} icerik={siteIcerik.nasil_isliyor} />);
+  if (currentPage === 'sss') return withLayout(<SSSPage onGoBack={goBack} icerik={siteIcerik.sss} />);
+  if (currentPage === 'iletisim') return withLayout(<IletisimPage onGoBack={goBack} icerik={siteIcerik.iletisim} />);
   if (currentPage === 'kullanim-kosullari') return withLayout(<KullanimKosullariPage onGoBack={goBack} />);
   if (currentPage === 'kisisel-veriler') return withLayout(<KisiselVerilerPage onGoBack={goBack} />);
   if (currentPage === 'kunye') return withLayout(<KunyePage onGoBack={goBack} />);
@@ -1894,6 +2022,8 @@ export default function App() {
   onIlanDetay={handleIlanDetay}
   onLoginSuccess={handleLogin}
   isLoggedIn={isLoggedIn}
+  kategoriler={kategorilerUi}
+  siteIcerik={siteIcerik}
 />
     </>
   );

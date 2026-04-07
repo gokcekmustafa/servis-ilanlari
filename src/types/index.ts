@@ -1,14 +1,6 @@
 // src/types/index.ts
 
-export type KategoriType =
-  | 'isim_var_arac'
-  | 'aracim_var_is'
-  | 'sofor_ariyorum'
-  | 'hostes_ariyorum'
-  | 'hostesim_is'
-  | 'soforum_is'
-  | 'plaka_satiyorum'
-  | 'aracimi_satiyorum';
+export type KategoriType = string;
 
 export interface Ilan {
   id: string;

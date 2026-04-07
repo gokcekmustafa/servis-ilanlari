@@ -1,20 +1,32 @@
-import React from 'react';
+﻿import React from 'react';
 import { Truck } from 'lucide-react';
 
 type FooterProps = {
   onNavigate: (page: any) => void;
+  siteAdi?: string;
+  footerKisaMetin?: string;
+  menuEtiketleri?: {
+    home?: string;
+    hakkimizda?: string;
+    nasil_isliyor?: string;
+    sss?: string;
+    iletisim?: string;
+  };
 };
 
-export default function Footer({ onNavigate }: FooterProps) {
+export default function Footer({ onNavigate, siteAdi, footerKisaMetin, menuEtiketleri }: FooterProps) {
+  const site = String(siteAdi || 'ilanhemen.com');
+  const [siteSol, ...siteSagParcalar] = site.split('.');
+  const siteSag = siteSagParcalar.join('.') || 'com';
+  const yil = new Date().getFullYear();
+
   return (
     <footer className="bg-slate-100 px-4 pb-2 mt-4">
       <div className="max-w-5xl mx-auto">
 
-        {/* ANA FOOTER */}
         <div className="bg-slate-700 rounded-t-lg px-6 py-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-0">
 
-            {/* LOGO + ACIKLAMA */}
             <div className="md:col-span-1">
               <div
                 className="flex items-center gap-2 cursor-pointer mb-3"
@@ -24,16 +36,14 @@ export default function Footer({ onNavigate }: FooterProps) {
                   <Truck className="text-white" size={18} />
                 </div>
                 <span className="text-white font-bold text-base">
-                  ilanhemen<span className="text-orange-400">.com</span>
+                  {siteSol}<span className="text-orange-400">.{siteSag}</span>
                 </span>
               </div>
               <p className="text-slate-400 text-xs leading-snug">
-                Servis araci ve sofor ilanlari platformu. Turkiye genelinde
-                binlerce ilan ile hizmetinizdeyiz.
+                {footerKisaMetin || 'Servis araci ve sofor ilanlari platformu. Turkiye genelinde binlerce ilan ile hizmetinizdeyiz.'}
               </p>
             </div>
 
-            {/* GIZLILIK */}
             <div>
               <h3 className="text-orange-400 font-semibold text-xs uppercase tracking-wider mb-3">
                 Gizlilik ve Kullanim
@@ -45,7 +55,7 @@ export default function Footer({ onNavigate }: FooterProps) {
                   { label: 'Kullanim Kosullari', page: 'kullanim-kosullari' },
                   { label: 'Kisisel Verilerin Korunmasi', page: 'kisisel-veriler' },
                   { label: 'Yardim', page: 'sss' },
-                  { label: 'Hakkimizda', page: 'hakkimizda' },
+                  { label: menuEtiketleri?.hakkimizda || 'Hakkimizda', page: 'hakkimizda' },
                 ].map((item) => (
                   <li key={item.label}>
                     <button
@@ -59,17 +69,16 @@ export default function Footer({ onNavigate }: FooterProps) {
               </ul>
             </div>
 
-            {/* KURUMSAL */}
             <div>
               <h3 className="text-orange-400 font-semibold text-xs uppercase tracking-wider mb-3">
                 Kurumsal
               </h3>
               <ul className="space-y-2">
                 {[
-                  { label: 'Hakkimizda', page: 'hakkimizda' },
-                  { label: 'Nasil Isliyor', page: 'nasil-isliyor' },
-                  { label: 'Sikca Sorulan Sorular', page: 'sss' },
-                  { label: 'Iletisim', page: 'iletisim' },
+                  { label: menuEtiketleri?.hakkimizda || 'Hakkimizda', page: 'hakkimizda' },
+                  { label: menuEtiketleri?.nasil_isliyor || 'Nasil Isliyor', page: 'nasil-isliyor' },
+                  { label: menuEtiketleri?.sss || 'Sikca Sorulan Sorular', page: 'sss' },
+                  { label: menuEtiketleri?.iletisim || 'Iletisim', page: 'iletisim' },
                   { label: 'Kunye', page: 'kunye' },
                 ].map((item) => (
                   <li key={item.label}>
@@ -87,10 +96,9 @@ export default function Footer({ onNavigate }: FooterProps) {
           </div>
         </div>
 
-        {/* ALT SERIT */}
         <div className="bg-slate-800 rounded-b-lg px-6 py-2 flex items-center justify-between">
           <span className="text-slate-500 text-xs">
-            2026 ilanhemen.com — Tum haklari saklidir
+            {yil} {site} - Tum haklari saklidir
           </span>
           <div className="flex items-center gap-4">
             <button

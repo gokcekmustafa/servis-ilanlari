@@ -16,7 +16,15 @@ import {
   kullaniciDuyurulariniGetir,
   kullaniciDuyurusuYayinla,
   kullaniciDuyurusunuSil,
+  siteIcerigiGetir,
+  siteIcerigiKaydet,
+  siteKategorileriGetir,
+  siteKategorileriKaydet,
+  VARSAYILAN_SITE_ICERIGI,
+  VARSAYILAN_SITE_KATEGORILERI,
+  SITE_KATEGORI_RENKLERI,
 } from '../lib/platformAyarlar';
+import type { SiteIcerigi, SiteKategori, SiteKategoriRenk } from '../lib/platformAyarlar';
 import type { KurumsalFirma } from '../data/kurumsalFirmalar';
 import { Ilan } from '../types';
 import {
@@ -59,9 +67,10 @@ type AdminPageProps = {
   isSuperAdmin: boolean;
   yetkiler: PersonelYetkiler;
   defaultSekme?: Sekme | 'bildirimler';
+  onSiteAyarGuncellendi?: () => void;
 };
 
-type Sekme = 'istatistik' | 'ilanlar' | 'kullanicilar' | 'reklamlar' | 'popup' | 'duyurular' | 'destek' | 'tavsiyeler' | 'firmalar' | 'personel' | 'logo';
+type Sekme = 'istatistik' | 'ilanlar' | 'kullanicilar' | 'reklamlar' | 'popup' | 'duyurular' | 'site' | 'destek' | 'tavsiyeler' | 'firmalar' | 'personel' | 'logo';
 
 const SEKME_YETKI: Partial<Record<Sekme, keyof PersonelYetkiler>> = {
   ilanlar:      'ilan_onay',
@@ -69,6 +78,7 @@ const SEKME_YETKI: Partial<Record<Sekme, keyof PersonelYetkiler>> = {
   reklamlar:    'reklam_yonetimi',
   popup:        'duyuru_yonetimi',
   duyurular:    'duyuru_yonetimi',
+  site:         'duyuru_yonetimi',
   destek:       'destek_yonetimi',
   tavsiyeler:   'destek_yonetimi',
   firmalar:     'kullanici_yonetimi',
@@ -100,7 +110,7 @@ const KISITLAMA_TANIM: Record<string, { label: string; aciklama: string; ikon: R
 
 // ─── ANA COMPONENT ────────────────────────────────────────────────────────────
 
-export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkiler, defaultSekme }: AdminPageProps) {
+export default function AdminPage({ onLogout, onIlanDetay, isSuperAdmin, yetkiler, defaultSekme, onSiteAyarGuncellendi }: AdminPageProps) {
   const ilkSekme: Sekme = defaultSekme === 'bildirimler' ? 'destek' : (defaultSekme || 'istatistik');
   const [aktifSekme, setAktifSekme] = useState<Sekme>(ilkSekme);
   const [ilanlar, setIlanlar]             = useState<any[]>([]);
@@ -145,6 +155,10 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
   const [kurumsalFirmalar, setKurumsalFirmalar] = useState<KurumsalFirma[]>([]);
   const [firmaKaydediliyor, setFirmaKaydediliyor] = useState(false);
   const [firmaMesaj, setFirmaMesaj] = useState('');
+  const [siteIcerikForm, setSiteIcerikForm] = useState<SiteIcerigi>(VARSAYILAN_SITE_ICERIGI);
+  const [siteKategoriForm, setSiteKategoriForm] = useState<SiteKategori[]>(VARSAYILAN_SITE_KATEGORILERI);
+  const [siteKaydediliyor, setSiteKaydediliyor] = useState(false);
+  const [siteMesaj, setSiteMesaj] = useState('');
 
   const [detayModal, setDetayModal]               = useState<any>(null);
   const [detaySifre, setDetaySifre]               = useState('');
@@ -223,7 +237,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
     const aktifSureGun = await ilanAktifSureGunGetir();
     setIlanAktifSureGun(aktifSureGun);
     await suresiDolanIlanlariPasiflestir(aktifSureGun);
-    const [u, i, r, d, ds, ayar, logoAyar, favoriSayim, onlineListe, firmaListe, kullaniciDuyuruListe] = await Promise.all([
+    const [u, i, r, d, ds, ayar, logoAyar, favoriSayim, onlineListe, firmaListe, kullaniciDuyuruListe, siteIcerikRes, siteKategoriRes] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('ilanlar').select('*').order('created_at', { ascending: false }),
       supabase.from('reklamlar').select('*').order('id', { ascending: false }),
@@ -235,6 +249,8 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
       cevrimiciKullanicilariGetir(),
       kurumsalFirmaListesiGetir(),
       kullaniciDuyurulariniGetir(),
+      siteIcerigiGetir(),
+      siteKategorileriGetir(),
     ]);
     setKullanicilar(u.data || []);
     setIlanlar(i.data || []);
@@ -257,6 +273,8 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
     setCevrimiciKullanicilar(onlineListe.data || []);
     setKurumsalFirmalar(firmaListe || []);
     setKullaniciDuyurulari(kullaniciDuyuruListe.data || []);
+    setSiteIcerikForm(siteIcerikRes.data || VARSAYILAN_SITE_ICERIGI);
+    setSiteKategoriForm(siteKategoriRes.data || VARSAYILAN_SITE_KATEGORILERI);
     if (ayar.data?.deger) setReklamSiklik(Number(ayar.data.deger));
     if (logoAyar.data?.deger) setPlatformLogo(logoAyar.data.deger);
     setYukleniyor(false);
@@ -486,6 +504,89 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
 
   // ─── STILLER ────────────────────────────────────────────────────────────────
 
+  const siteRenkSecenekleri = Object.keys(SITE_KATEGORI_RENKLERI) as SiteKategoriRenk[];
+
+  const siteSssMaddesiGuncelle = (index: number, alan: 'soru' | 'cevap', deger: string) => {
+    setSiteIcerikForm((prev) => {
+      const sorular = [...(prev.sss?.sorular || [])];
+      if (!sorular[index]) return prev;
+      sorular[index] = { ...sorular[index], [alan]: deger };
+      return { ...prev, sss: { ...prev.sss, sorular } };
+    });
+  };
+
+  const siteSssMaddesiEkle = () => {
+    setSiteIcerikForm((prev) => ({
+      ...prev,
+      sss: {
+        ...prev.sss,
+        sorular: [...(prev.sss?.sorular || []), { soru: '', cevap: '' }],
+      },
+    }));
+  };
+
+  const siteSssMaddesiSil = (index: number) => {
+    setSiteIcerikForm((prev) => ({
+      ...prev,
+      sss: {
+        ...prev.sss,
+        sorular: (prev.sss?.sorular || []).filter((_, i) => i !== index),
+      },
+    }));
+  };
+
+  const siteKategoriAlanGuncelle = (
+    index: number,
+    alan: keyof SiteKategori,
+    deger: string | boolean
+  ) => {
+    setSiteKategoriForm((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [alan]: deger } : item))
+    );
+  };
+
+  const siteKategoriEkle = () => {
+    setSiteKategoriForm((prev) => [
+      ...prev,
+      { id: '', label: '', aciklama: '', icon: '📌', renk: 'slate', aktif: true },
+    ]);
+    setSiteMesaj('Yeni kategori satiri eklendi.');
+    setTimeout(() => setSiteMesaj(''), 1800);
+  };
+
+  const siteKategoriSil = (index: number) => {
+    setSiteKategoriForm((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const siteAyarlariniVarsayilanaDon = () => {
+    if (!window.confirm('Site icerigi ve kategori listesi varsayilanlara donsun mu?')) return;
+    setSiteIcerikForm(VARSAYILAN_SITE_ICERIGI);
+    setSiteKategoriForm(VARSAYILAN_SITE_KATEGORILERI);
+    setSiteMesaj('Varsayilan degerler yuklendi. Kaydet derseniz canliya gecer.');
+    setTimeout(() => setSiteMesaj(''), 2600);
+  };
+
+  const siteAyarlariniKaydet = async () => {
+    setSiteKaydediliyor(true);
+    setSiteMesaj('');
+    const [icerikRes, kategoriRes] = await Promise.all([
+      siteIcerigiKaydet(siteIcerikForm),
+      siteKategorileriKaydet(siteKategoriForm),
+    ]);
+    setSiteKaydediliyor(false);
+
+    if (icerikRes.error || kategoriRes.error) {
+      const hata = icerikRes.error?.message || kategoriRes.error?.message || 'Bilinmeyen hata';
+      setSiteMesaj('Kaydedilemedi: ' + hata);
+      return;
+    }
+
+    setSiteMesaj('Site ayarlari kaydedildi.');
+    await onSiteAyarGuncellendi?.();
+    await hepsiniYukle();
+    setTimeout(() => setSiteMesaj(''), 2500);
+  };
+
   const ic   = 'w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
   const btnO = 'bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition';
   const btnS = 'bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium px-4 py-2.5 rounded-lg transition';
@@ -527,6 +628,7 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
     { id: 'reklamlar',    label: 'Reklamlar',      icon: Image,          sayi: reklamlar.length },
     { id: 'popup',        label: 'Popup Mesajlari', icon: Bell,          sayi: duyurular.length },
     { id: 'duyurular',    label: 'Duyurular',      icon: Megaphone,      sayi: kullaniciDuyurulari.length },
+    { id: 'site',         label: 'Site Yonetimi',  icon: Edit2,          sayi: siteKategoriForm.length },
     { id: 'destek',       label: 'Destek Talepleri', icon: Bell,         sayi: bekleyenDestekSayisi },
     { id: 'tavsiyeler',   label: 'Tavsiyeler',      icon: Star,          sayi: bekleyenTavsiyeSayisi },
     { id: 'firmalar',     label: 'Kurumsal Firmalar', icon: Building2,   sayi: kurumsalFirmalar.length },
@@ -1153,6 +1255,179 @@ const [logoYukleniyor, setLogoYukleniyor] = useState(false);
                 }} disabled={!yeniKullaniciDuyuru.baslik.trim() || !yeniKullaniciDuyuru.mesaj.trim()} className={btnO + ' w-full disabled:opacity-50 disabled:cursor-not-allowed'}>Duyuru Ekle</button>
               </div>
             </div>
+            )
+          )}
+          {!yukleniyor && aktifSekme === 'site' && (
+            !sekmeYetkiVarMi('site') ? <YetkisizUyari sekme="Site Yonetimi" /> : (
+              <div className="space-y-4">
+                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <h2 className="font-bold text-slate-800 text-base">Site Icerik ve Kategori Yonetimi</h2>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Header menusu, bilgi sayfalari ve kategori listesi buradan tek yerden yonetilir.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={siteAyarlariniVarsayilanaDon} className={btnS}>Varsayilana Don</button>
+                      <button onClick={siteAyarlariniKaydet} disabled={siteKaydediliyor} className={btnO + ' disabled:opacity-50'}>
+                        {siteKaydediliyor ? 'Kaydediliyor...' : 'Tumunu Kaydet'}
+                      </button>
+                    </div>
+                  </div>
+                  {siteMesaj && (
+                    <div className={'mt-3 px-3 py-2 rounded-lg text-xs border ' + (siteMesaj.includes('Kaydedilemedi') ? 'bg-red-50 border-red-200 text-red-600' : 'bg-green-50 border-green-200 text-green-700')}>
+                      {siteMesaj}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-3">Genel Alanlar</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">Site adi (logo yaninda)</label>
+                      <input
+                        className={ic}
+                        value={siteIcerikForm.site_adi}
+                        onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, site_adi: e.target.value }))}
+                        placeholder="ilanhemen.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">Footer kisa metin</label>
+                      <input
+                        className={ic}
+                        value={siteIcerikForm.footer_kisa_metin}
+                        onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, footer_kisa_metin: e.target.value }))}
+                        placeholder="Kisa aciklama"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-3">Header Menu Etiketleri</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <input className={ic} placeholder="Anasayfa" value={siteIcerikForm.menu.home} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, menu: { ...prev.menu, home: e.target.value } }))} />
+                    <input className={ic} placeholder="Hakkimizda" value={siteIcerikForm.menu.hakkimizda} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, menu: { ...prev.menu, hakkimizda: e.target.value } }))} />
+                    <input className={ic} placeholder="Nasil Isliyor" value={siteIcerikForm.menu.nasil_isliyor} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, menu: { ...prev.menu, nasil_isliyor: e.target.value } }))} />
+                    <input className={ic} placeholder="S.S.S" value={siteIcerikForm.menu.sss} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, menu: { ...prev.menu, sss: e.target.value } }))} />
+                    <input className={ic} placeholder="Iletisim" value={siteIcerikForm.menu.iletisim} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, menu: { ...prev.menu, iletisim: e.target.value } }))} />
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-3">Anasayfa Metinleri</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input className={ic} placeholder="Kategori basligi" value={siteIcerikForm.anasayfa.kategori_baslik} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, anasayfa: { ...prev.anasayfa, kategori_baslik: e.target.value } }))} />
+                    <input className={ic} placeholder="{count} aktif ilan" value={siteIcerikForm.anasayfa.aktif_ilan_metin_sablon} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, anasayfa: { ...prev.anasayfa, aktif_ilan_metin_sablon: e.target.value } }))} />
+                    <input className={ic} placeholder="Filtrele butonu" value={siteIcerikForm.anasayfa.filtrele_buton} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, anasayfa: { ...prev.anasayfa, filtrele_buton: e.target.value } }))} />
+                    <input className={ic} placeholder="Temizle butonu" value={siteIcerikForm.anasayfa.temizle_buton} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, anasayfa: { ...prev.anasayfa, temizle_buton: e.target.value } }))} />
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-3">Hakkimizda Sayfasi</h3>
+                  <div className="space-y-3">
+                    <input className={ic} placeholder="Baslik" value={siteIcerikForm.hakkimizda.baslik} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, hakkimizda: { ...prev.hakkimizda, baslik: e.target.value } }))} />
+                    <textarea className={ic + ' resize-none'} rows={3} placeholder="Paragraf 1" value={siteIcerikForm.hakkimizda.paragraf_1} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, hakkimizda: { ...prev.hakkimizda, paragraf_1: e.target.value } }))} />
+                    <textarea className={ic + ' resize-none'} rows={3} placeholder="Paragraf 2" value={siteIcerikForm.hakkimizda.paragraf_2} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, hakkimizda: { ...prev.hakkimizda, paragraf_2: e.target.value } }))} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input className={ic} placeholder="Imza ust" value={siteIcerikForm.hakkimizda.imza_ust} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, hakkimizda: { ...prev.hakkimizda, imza_ust: e.target.value } }))} />
+                      <input className={ic} placeholder="Imza alt" value={siteIcerikForm.hakkimizda.imza_alt} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, hakkimizda: { ...prev.hakkimizda, imza_alt: e.target.value } }))} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-3">Nasil Isliyor Sayfasi</h3>
+                  <div className="space-y-3">
+                    <input className={ic} placeholder="Baslik" value={siteIcerikForm.nasil_isliyor.baslik} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, nasil_isliyor: { ...prev.nasil_isliyor, baslik: e.target.value } }))} />
+                    <textarea className={ic + ' resize-none'} rows={2} placeholder="Aciklama" value={siteIcerikForm.nasil_isliyor.aciklama} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, nasil_isliyor: { ...prev.nasil_isliyor, aciklama: e.target.value } }))} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input className={ic} placeholder="Adim 1 baslik" value={siteIcerikForm.nasil_isliyor.adim_1_baslik} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, nasil_isliyor: { ...prev.nasil_isliyor, adim_1_baslik: e.target.value } }))} />
+                      <input className={ic} placeholder="Adim 1 aciklama" value={siteIcerikForm.nasil_isliyor.adim_1_aciklama} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, nasil_isliyor: { ...prev.nasil_isliyor, adim_1_aciklama: e.target.value } }))} />
+                      <input className={ic} placeholder="Adim 2 baslik" value={siteIcerikForm.nasil_isliyor.adim_2_baslik} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, nasil_isliyor: { ...prev.nasil_isliyor, adim_2_baslik: e.target.value } }))} />
+                      <input className={ic} placeholder="Adim 2 aciklama" value={siteIcerikForm.nasil_isliyor.adim_2_aciklama} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, nasil_isliyor: { ...prev.nasil_isliyor, adim_2_aciklama: e.target.value } }))} />
+                      <input className={ic} placeholder="Adim 3 baslik" value={siteIcerikForm.nasil_isliyor.adim_3_baslik} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, nasil_isliyor: { ...prev.nasil_isliyor, adim_3_baslik: e.target.value } }))} />
+                      <input className={ic} placeholder="Adim 3 aciklama" value={siteIcerikForm.nasil_isliyor.adim_3_aciklama} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, nasil_isliyor: { ...prev.nasil_isliyor, adim_3_aciklama: e.target.value } }))} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-slate-700">S.S.S Sayfasi</h3>
+                    <button onClick={siteSssMaddesiEkle} className={btnS + ' flex items-center gap-1'}><PlusCircle size={14} />Soru Ekle</button>
+                  </div>
+                  <input className={ic + ' mb-3'} placeholder="Sayfa basligi" value={siteIcerikForm.sss.baslik} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, sss: { ...prev.sss, baslik: e.target.value } }))} />
+                  <div className="space-y-2">
+                    {(siteIcerikForm.sss.sorular || []).map((s, index) => (
+                      <div key={`sss-${index}`} className="border border-slate-100 rounded-lg p-3">
+                        <div className="flex justify-end mb-2">
+                          <button onClick={() => siteSssMaddesiSil(index)} className="text-red-500 hover:text-red-600 text-xs font-semibold">Sil</button>
+                        </div>
+                        <input className={ic + ' mb-2'} placeholder="Soru" value={s.soru} onChange={(e) => siteSssMaddesiGuncelle(index, 'soru', e.target.value)} />
+                        <textarea className={ic + ' resize-none'} rows={2} placeholder="Cevap" value={s.cevap} onChange={(e) => siteSssMaddesiGuncelle(index, 'cevap', e.target.value)} />
+                      </div>
+                    ))}
+                    {(siteIcerikForm.sss.sorular || []).length === 0 && (
+                      <div className="text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg p-3 text-center">
+                        Henuz soru eklenmedi.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-3">Iletisim Sayfasi</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input className={ic} placeholder="Baslik" value={siteIcerikForm.iletisim.baslik} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, iletisim: { ...prev.iletisim, baslik: e.target.value } }))} />
+                    <input className={ic} placeholder="Adres" value={siteIcerikForm.iletisim.adres} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, iletisim: { ...prev.iletisim, adres: e.target.value } }))} />
+                    <input className={ic} placeholder="Destek mail" value={siteIcerikForm.iletisim.destek_mail} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, iletisim: { ...prev.iletisim, destek_mail: e.target.value } }))} />
+                    <input className={ic} placeholder="Iletisim mail" value={siteIcerikForm.iletisim.iletisim_mail} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, iletisim: { ...prev.iletisim, iletisim_mail: e.target.value } }))} />
+                    <input className={ic} placeholder="Form baslik" value={siteIcerikForm.iletisim.form_baslik} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, iletisim: { ...prev.iletisim, form_baslik: e.target.value } }))} />
+                    <input className={ic} placeholder="Form basari mesaji" value={siteIcerikForm.iletisim.form_basarili_mesaj} onChange={(e) => setSiteIcerikForm((prev) => ({ ...prev, iletisim: { ...prev.iletisim, form_basarili_mesaj: e.target.value } }))} />
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-slate-700">Kategori Listesi</h3>
+                    <button onClick={siteKategoriEkle} className={btnS + ' flex items-center gap-1'}><PlusCircle size={14} />Kategori Ekle</button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {siteKategoriForm.map((kat, index) => (
+                      <div key={`site-kat-${index}`} className="border border-slate-100 rounded-lg p-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-2 items-center">
+                          <input className={ic} placeholder="Kategori ID (bos birakirsan labeldan uretilir)" value={kat.id || ''} onChange={(e) => siteKategoriAlanGuncelle(index, 'id', e.target.value)} />
+                          <input className={ic} placeholder="Kategori label" value={kat.label} onChange={(e) => siteKategoriAlanGuncelle(index, 'label', e.target.value)} />
+                          <input className={ic} placeholder="Aciklama" value={kat.aciklama || ''} onChange={(e) => siteKategoriAlanGuncelle(index, 'aciklama', e.target.value)} />
+                          <input className={ic} placeholder="Icon (emoji)" value={kat.icon || ''} onChange={(e) => siteKategoriAlanGuncelle(index, 'icon', e.target.value)} />
+                          <select className={ic} value={kat.renk} onChange={(e) => siteKategoriAlanGuncelle(index, 'renk', e.target.value)}>
+                            {siteRenkSecenekleri.map((renk) => (
+                              <option key={renk} value={renk}>{renk}</option>
+                            ))}
+                          </select>
+                          <div className="flex items-center justify-between gap-2">
+                            <label className="flex items-center gap-1.5 text-xs text-slate-600">
+                              <input type="checkbox" className="accent-orange-500" checked={kat.aktif !== false} onChange={(e) => siteKategoriAlanGuncelle(index, 'aktif', e.target.checked)} />
+                              Aktif
+                            </label>
+                            <button onClick={() => siteKategoriSil(index)} className="text-red-500 hover:text-red-600 text-xs font-semibold">Sil</button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {siteKategoriForm.length === 0 && (
+                      <div className="text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg p-3 text-center">
+                        Henuz kategori yok.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             )
           )}
           {!yukleniyor && aktifSekme === 'destek' && (

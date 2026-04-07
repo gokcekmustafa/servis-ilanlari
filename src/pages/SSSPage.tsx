@@ -1,43 +1,46 @@
-import React, { useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
+import type { SiteIcerigi, SiteSSSMaddesi } from '../lib/platformAyarlar';
 
-const sorular = [
+type SSSPageProps = {
+  onGoBack: () => void;
+  icerik?: SiteIcerigi['sss'];
+};
+
+const varsayilanSorular: SiteSSSMaddesi[] = [
   {
     soru: 'Nasil Uye Olunur?',
-    cevap: 'Ana sayfanin sag ust kismindaki "Uye Ol" ikonuna tikladiktan sonra gelen "UYE OL" formunu doldurarak kolayca uye olabilirsiniz.',
+    cevap: 'Ana sayfanin sag ust kismindaki Uye Ol alanindan kayit formunu doldurarak kolayca uye olabilirsiniz.',
   },
   {
-    soru: 'Uye Olmadan İlan Verebilir Miyim?',
+    soru: 'Uye Olmadan Ilan Verebilir Miyim?',
     cevap: 'Uye olmadan ilan veremezsiniz.',
   },
   {
-    soru: 'İlan vermek ucretli mi?',
+    soru: 'Ilan vermek ucretli mi?',
     cevap: 'Tamamen ucretsizdir.',
   },
   {
-    soru: 'İlanlarim kac gun yayinda kalir?',
-    cevap: '10 gun yayinda kalir. Süre bitince ilaniniz pasif olur. Ilanlarim sayfasindan tekrar aktif ederek sureyi sifirdan baslatabilirsiniz.',
+    soru: 'Ilanlarim kac gun yayinda kalir?',
+    cevap: 'Ilanlar varsayilan sure boyunca yayinda kalir. Sure bitince ilaniniz pasif olur ve panelden tekrar aktif edebilirsiniz.',
   },
   {
-    soru: 'Nasil banner verilir?',
-    cevap: 'İletisim formundan veya info@servisilanlari.com adresine mail atarak fiyat listemizi size gondereceğiz.',
-  },
-  {
-    soru: 'Uyelik iptali?',
-    cevap: 'Profilim sayfanizdan "uyeligimi sil" butonu ile tum bilgileriniz ile verdiginiz tum ilanlari kalici olarak silebilirsiniz.',
-  },
-  {
-    soru: 'Bireysel Tasimaci nedir?',
-    cevap: 'Arac sahiplerini Bireysel Tasimaci olarak siniflandiriyoruz.',
-  },
-  {
-    soru: 'Firma degisikligi yapabilir miyim?',
-    cevap: 'Profilim sayfanizdan, Firma guncelleme adimlari ile firma degisikligi yapabilirsiniz. Onceki firmaniz adina verdiginiz tum ilanlar silinir.',
+    soru: 'Uyelik iptali nasil yapilir?',
+    cevap: 'Profilim sayfanizdan hesabinizi ve ilanlarinizi kalici olarak silebilirsiniz.',
   },
 ];
 
-export default function SSSPage({ onGoBack }: { onGoBack: () => void }) {
+export default function SSSPage({ onGoBack, icerik }: SSSPageProps) {
   const [acik, setAcik] = useState<number | null>(null);
+
+  const sorular = useMemo(() => {
+    const liste = Array.isArray(icerik?.sorular)
+      ? icerik!.sorular.filter((item) => String(item?.soru || '').trim() && String(item?.cevap || '').trim())
+      : [];
+    return liste.length > 0 ? liste : varsayilanSorular;
+  }, [icerik]);
+
+  const baslik = icerik?.baslik || 'Sikca Sorulan Sorular';
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
@@ -46,10 +49,10 @@ export default function SSSPage({ onGoBack }: { onGoBack: () => void }) {
         Geri Don
       </button>
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-        <h1 className="text-2xl font-bold text-[#1a3c6e] mb-6">Sikca Sorulan Sorular</h1>
+        <h1 className="text-2xl font-bold text-[#1a3c6e] mb-6">{baslik}</h1>
         <div className="flex flex-col gap-3">
           {sorular.map((item, index) => (
-            <div key={index} className="border border-gray-200 rounded-xl overflow-hidden">
+            <div key={`${item.soru}-${index}`} className="border border-gray-200 rounded-xl overflow-hidden">
               <button
                 onClick={() => setAcik(acik === index ? null : index)}
                 className="w-full flex items-center justify-between px-5 py-4 text-left font-medium text-gray-800 hover:bg-gray-50 transition"

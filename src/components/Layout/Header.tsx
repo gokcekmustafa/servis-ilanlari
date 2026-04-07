@@ -9,6 +9,14 @@ import { kullaniciDuyurulariniGetir } from '../../lib/platformAyarlar';
 type HeaderProps = {
   isLoggedIn: boolean;
   isAdmin: boolean;
+  siteAdi?: string;
+  menuEtiketleri?: {
+    home?: string;
+    hakkimizda?: string;
+    nasil_isliyor?: string;
+    sss?: string;
+    iletisim?: string;
+  };
   onGoLogin: () => void;
   onGoRegister: () => void;
   onGoNotifications: () => void;
@@ -30,7 +38,7 @@ type HeaderBildirim = {
 };
 
 export default function Header({
-  isLoggedIn, isAdmin, onGoLogin, onGoRegister, onGoNotifications, onLogout, onIlanEkle, onGoPanel, onNavigate,
+  isLoggedIn, isAdmin, siteAdi, menuEtiketleri, onGoLogin, onGoRegister, onGoNotifications, onLogout, onIlanEkle, onGoPanel, onNavigate,
 }: HeaderProps) {
   const [sayi, setSayi] = useState<number | null>(null);
   const [okunmamis, setOkunmamis] = useState(0);
@@ -311,12 +319,16 @@ export default function Header({
   const bildirimPaneliBaslik = isAdmin ? 'Yonetici Bildirimleri' : 'Yeni Bildirimler';
   const bildirimPaneliYonlendirmeMetni = isAdmin ? 'Yonetim Paneline Git' : 'Panele Git';
 
+  const siteAdiParca = String(siteAdi || 'ilanhemen.com');
+  const [siteAdiSol, ...siteAdiSagParcalar] = siteAdiParca.split('.');
+  const siteAdiSag = siteAdiSagParcalar.join('.') || 'com';
+
   const navLinks = [
-    { label: 'Anasayfa', page: 'home' },
-    { label: 'Hakkımızda', page: 'hakkimizda' },
-    { label: 'Nasıl İşliyor', page: 'nasil-isliyor' },
-    { label: 'S.S.S', page: 'sss' },
-    { label: 'İletişim', page: 'iletisim' },
+    { label: menuEtiketleri?.home || 'Anasayfa', page: 'home' },
+    { label: menuEtiketleri?.hakkimizda || 'Hakkımızda', page: 'hakkimizda' },
+    { label: menuEtiketleri?.nasil_isliyor || 'Nasıl İşliyor', page: 'nasil-isliyor' },
+    { label: menuEtiketleri?.sss || 'S.S.S', page: 'sss' },
+    { label: menuEtiketleri?.iletisim || 'İletişim', page: 'iletisim' },
   ];
 
   return (
@@ -475,10 +487,10 @@ export default function Header({
     </div>
   )}
 </div>
-              <div className="leading-tight">
-                <div className="text-slate-800 font-bold text-base sm:text-xl tracking-tight">
-                  ilanhemen<span className="text-orange-500">.com</span>
-                </div>
+                <div className="leading-tight">
+                  <div className="text-slate-800 font-bold text-base sm:text-xl tracking-tight">
+                  {siteAdiSol}<span className="text-orange-500">.{siteAdiSag}</span>
+                  </div>
                 <div className="text-slate-400 text-[10px] sm:text-xs hidden sm:block">
                   Servis İlanları Platformu
                 </div>
@@ -533,7 +545,7 @@ export default function Header({
     </div>
   )}
 </div>
-                <span className="text-white font-bold text-base">ilanhemen<span className="text-orange-400">.com</span></span>
+                <span className="text-white font-bold text-base">{siteAdiSol}<span className="text-orange-400">.{siteAdiSag}</span></span>
               </div>
               <button onClick={() => setMenuAcik(false)} className="p-2 text-slate-300 hover:text-white">
                 <X size={22} />

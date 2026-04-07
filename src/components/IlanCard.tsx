@@ -22,6 +22,8 @@ type IlanCardProps = {
   onGoLogin?: () => void;
   isLoggedIn?: boolean;
   kompakt?: boolean; // bunu ekle
+  kategoriEtiketMap?: Record<string, string>;
+  kategoriRenkMap?: Record<string, string>;
 };
 
 const kategoriConfig: Record<KategoriType, { label: string; label1: string; label2: string; bg: string; text: string; serit: string }> = {
@@ -34,6 +36,16 @@ const kategoriConfig: Record<KategoriType, { label: string; label1: string; labe
   plaka_satiyorum:   { label: 'PLAKIMI SATIYORUM',           label1: 'Plakamı',     label2: 'Satıyorum',      bg: 'bg-red-500',    text: 'text-white', serit: 'bg-red-500' },
   aracimi_satiyorum: { label: 'ARACIMI SATIYORUM',           label1: 'Aracımı',     label2: 'Satıyorum',      bg: 'bg-teal-500',   text: 'text-white', serit: 'bg-teal-500' },
 };
+
+function kategoriLabelSatirlari(label: string) {
+  const kelimeler = String(label || '').trim().split(/\s+/).filter(Boolean);
+  if (kelimeler.length <= 1) return { label1: kelimeler[0] || label, label2: '' };
+  const orta = Math.ceil(kelimeler.length / 2);
+  return {
+    label1: kelimeler.slice(0, orta).join(' '),
+    label2: kelimeler.slice(orta).join(' '),
+  };
+}
 
 function zamanFarki(tarih: string): string {
   const farkMs = new Date().getTime() - new Date(tarih).getTime();
@@ -154,8 +166,27 @@ function IlanThumbnail({ resimler }: { resimler: string[] }) {
   );
 }
 
-export default function IlanCard({ ilan, onDetay, onGoLogin, isLoggedIn, kompakt = false }: IlanCardProps) {
-  const config = kategoriConfig[ilan.kategori] ?? { label: 'DİĞER', label1: '', label2: '', bg: 'bg-gray-500', text: 'text-white', serit: 'bg-gray-300' };
+export default function IlanCard({
+  ilan,
+  onDetay,
+  onGoLogin,
+  isLoggedIn,
+  kompakt = false,
+  kategoriEtiketMap,
+  kategoriRenkMap,
+}: IlanCardProps) {
+  const varsayilanConfig = kategoriConfig[ilan.kategori] ?? { label: 'DIGER', label1: '', label2: '', bg: 'bg-gray-500', text: 'text-white', serit: 'bg-gray-300' };
+  const customLabel = kategoriEtiketMap?.[ilan.kategori];
+  const customRenk = kategoriRenkMap?.[ilan.kategori];
+  const satir = customLabel ? kategoriLabelSatirlari(customLabel) : null;
+  const config = {
+    ...varsayilanConfig,
+    label: customLabel || varsayilanConfig.label,
+    label1: satir?.label1 || varsayilanConfig.label1,
+    label2: satir?.label2 || varsayilanConfig.label2,
+    bg: customRenk || varsayilanConfig.bg,
+    serit: customRenk || varsayilanConfig.serit,
+  };
   const ilanVeren = ilan.profiles?.full_name || ilan.ilan_veren || 'Kullanıcı';
   const telefon = ilan.profiles?.phone_number || '';
   const firmaLogo = ilan.profiles?.avatar_url || '';

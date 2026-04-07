@@ -10,6 +10,8 @@ type IlanDetayPageProps = {
   onGoLogin: () => void;
   isLoggedIn: boolean;
   tumIlanlar?: Ilan[];
+  kategoriEtiketMap?: Record<string, string>;
+  kategoriRenkMap?: Record<string, string>;
 };
 
 const kategoriBadge: Record<KategoriType, { label: string; color: string }> = {
@@ -293,8 +295,20 @@ function IletisimIcerik({
     </div>
   );
 }
-export default function IlanDetayPage({ ilan, onGoBack, onGoLogin, isLoggedIn, tumIlanlar }: IlanDetayPageProps) {
-  const badge = kategoriBadge[ilan.kategori];
+export default function IlanDetayPage({
+  ilan,
+  onGoBack,
+  onGoLogin,
+  isLoggedIn,
+  tumIlanlar,
+  kategoriEtiketMap,
+  kategoriRenkMap,
+}: IlanDetayPageProps) {
+  const varsayilanBadge = kategoriBadge[ilan.kategori] || { label: String(ilan.kategori || 'Kategori'), color: 'bg-slate-500' };
+  const badge = {
+    label: kategoriEtiketMap?.[ilan.kategori] || varsayilanBadge.label,
+    color: kategoriRenkMap?.[ilan.kategori] || varsayilanBadge.color,
+  };
   const user = mevcutKullanici();
   const [isFavori, setIsFavori] = useState(false);
   const [mesajMetni, setMesajMetni] = useState('');

@@ -27,7 +27,13 @@ const MARKA_MODELLER: Record<string, string[]> = {
   'Neoplan': ['Cityliner', 'Tourliner', 'Skyliner'],
   'Opel': ['Movano', 'Vivaro', 'Combo'],
 };
-const kategoriler = [
+type KategoriSecenegi = {
+  id: KategoriType;
+  label: string;
+  color?: string;
+};
+
+const varsayilanKategoriler: KategoriSecenegi[] = [
   { id: 'isim_var_arac' as KategoriType, label: 'Isim Var Arac Ariyorum', color: 'border-blue-400 bg-blue-50 text-blue-700' },
   { id: 'aracim_var_is' as KategoriType, label: 'Aracim Var Is Ariyorum', color: 'border-green-400 bg-green-50 text-green-700' },
   { id: 'sofor_ariyorum' as KategoriType, label: 'Sofor Ariyorum', color: 'border-orange-400 bg-orange-50 text-orange-700' },
@@ -309,9 +315,31 @@ function KonumBilgisi({ il, ilce, mah, giris, cikis, onIlChange, onIlceChange, o
 }
 
 // ─── Ana Bileşen ──────────────────────────────────────────────────────────────
-type IlanEklePageProps = { onGoBack: () => void; onSuccess: () => void; userId: string; };
+type IlanEklePageProps = {
+  onGoBack: () => void;
+  onSuccess: () => void;
+  userId: string;
+  kategoriSecenekleri?: KategoriSecenegi[];
+};
 
-export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePageProps) {
+export default function IlanEklePage({ onGoBack, onSuccess, userId, kategoriSecenekleri }: IlanEklePageProps) {
+  const kategoriler = React.useMemo(() => {
+    const kaynak = (kategoriSecenekleri && kategoriSecenekleri.length > 0) ? kategoriSecenekleri : varsayilanKategoriler;
+    const seen = new Set<string>();
+    const temiz: KategoriSecenegi[] = [];
+    kaynak.forEach((kat) => {
+      const id = String(kat?.id || '').trim();
+      const label = String(kat?.label || '').trim();
+      if (!id || !label || seen.has(id)) return;
+      seen.add(id);
+      temiz.push({
+        id,
+        label,
+        color: kat.color || 'border-slate-300 bg-slate-50 text-slate-700',
+      });
+    });
+    return temiz.length > 0 ? temiz : varsayilanKategoriler;
+  }, [kategoriSecenekleri]);
   const [adim, setAdim] = useState<number>(() => {
     const savedUserId = sessionStorage.getItem('ilan-ekle-userId');
     if (savedUserId !== userId) { sessionStorage.removeItem('ilan-ekle-adim'); sessionStorage.removeItem('ilan-ekle-kategori'); sessionStorage.removeItem('ilan-ekle-userId'); return 1; }
@@ -321,7 +349,9 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
   const [selectedKategori, setSelectedKategori] = useState<KategoriType | null>(() => {
     const savedUserId = sessionStorage.getItem('ilan-ekle-userId');
     if (savedUserId !== userId) return null;
-    return sessionStorage.getItem('ilan-ekle-kategori') as KategoriType | null;
+    const saved = sessionStorage.getItem('ilan-ekle-kategori') as KategoriType | null;
+    if (!saved) return null;
+    return kategoriler.some((kat) => kat.id === saved) ? saved : null;
   });
 
   const [hata, setHata] = useState('');
@@ -368,6 +398,13 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
   const [soforumIs, setSoforumIs] = useState({ surucubelgesi: '', ehliyet_alinma_tarihi: '', sinav_belgeleri: '', dogum_tarihi: '', dogum_yeri: '', arac_turu: [] as string[], belgeler: [] as string[], yabanci_diller: [] as string[], emekli: 'hayir', mesleki_yeterlilik: 'var', sabika_kaydi: 'var', tam_zamanlimi: 'hayir', servis_tasimacilik_deneyimi: 'var', baska_ise_gider_misiniz: 'hayir', maas_beklentisi: '' });
   const [plakaSatiyorum, setPlakaSatiyorum] = useState({ plaka_il: '', plaka_harf: '', plaka_no: '', ucret: '', aracla_birlikte: false, yol_belgesi_var: false, noter_satisi: false, hisseli: false });
   const [aracimiSatiyorum, setAracimiSatiyorum] = useState({ marka: '', model: '', yil: '', plaka: '', koltuk_sayisi: '', arac_tipi: '', km: '', ucret: '', hasar_kaydi: 'yok', noter_satisi: false, aracla_birlikte_plaka: false });
+
+  React.useEffect(() => {
+    if (!selectedKategori) return;
+    if (kategoriler.some((kat) => kat.id === selectedKategori)) return;
+    setSelectedKategori(null);
+    sessionStorage.removeItem('ilan-ekle-kategori');
+  }, [kategoriler, selectedKategori]);
 
   React.useEffect(() => {
     if (selectedKategori === 'aracim_var_is') {
@@ -495,7 +532,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
           </div>
 
           <div className="p-5 md:p-6">
-            {selectedKategori && <div className={kategoriRenk[selectedKategori] + ' text-white px-4 py-2 rounded-lg mb-4 text-xs font-semibold'}>Secilen Kategori: {selectedKategoriLabel}</div>}
+            {selectedKategori && <div className={(kategoriRenk[selectedKategori] || 'bg-slate-600') + ' text-white px-4 py-2 rounded-lg mb-4 text-xs font-semibold'}>Secilen Kategori: {selectedKategoriLabel}</div>}
             {hata && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">{hata}</div>}
 
             {/* ADIM 1 */}
@@ -873,7 +910,7 @@ export default function IlanEklePage({ onGoBack, onSuccess, userId }: IlanEklePa
                 <p className="text-sm font-semibold text-slate-600 mb-4">Ilan Onizleme</p>
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5">
                   <div className="mb-3">
-  <span className={kategoriRenk[selectedKategori!] + ' text-white text-xs font-bold px-3 py-1 rounded-full uppercase'}>
+  <span className={(kategoriRenk[selectedKategori!] || 'bg-slate-600') + ' text-white text-xs font-bold px-3 py-1 rounded-full uppercase'}>
     {selectedKategoriLabel}
   </span>
   {baslik && (
