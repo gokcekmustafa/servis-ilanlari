@@ -2007,7 +2007,13 @@ export default function App() {
   if (currentPage === 'iletisim') return withLayout(<IletisimPage onGoBack={goBack} icerik={siteIcerik.iletisim} />);
   if (currentPage === 'kullanim-kosullari') return withLayout(<KullanimKosullariPage onGoBack={goBack} />);
   if (currentPage === 'kisisel-veriler') return withLayout(<KisiselVerilerPage onGoBack={goBack} />);
-  if (currentPage === 'kunye') return withLayout(<KunyePage onGoBack={goBack} />);
+  if (currentPage === 'kunye') return withLayout(
+    <KunyePage
+      onGoBack={goBack}
+      siteAdi={siteIcerik.site_adi}
+      icerik={siteIcerik.iletisim}
+    />
+  );
 
   return withLayout(
     <>
