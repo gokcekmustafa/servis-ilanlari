@@ -37,6 +37,23 @@ const kategoriConfig: Record<KategoriType, { label: string; label1: string; labe
   aracimi_satiyorum: { label: 'ARACIMI SATIYORUM',           label1: 'Aracımı',     label2: 'Satıyorum',      bg: 'bg-teal-500',   text: 'text-white', serit: 'bg-teal-500' },
 };
 
+const SOLUK_BASLIK_RENKLERI: Record<string, string> = {
+  'bg-blue-500': 'bg-blue-400',
+  'bg-green-500': 'bg-green-400',
+  'bg-orange-500': 'bg-orange-400',
+  'bg-purple-500': 'bg-purple-400',
+  'bg-pink-500': 'bg-pink-400',
+  'bg-yellow-500': 'bg-yellow-400',
+  'bg-red-500': 'bg-red-400',
+  'bg-teal-500': 'bg-teal-400',
+  'bg-gray-500': 'bg-gray-400',
+  'bg-slate-500': 'bg-slate-400',
+};
+
+function solukBaslikRengi(renk: string) {
+  return SOLUK_BASLIK_RENKLERI[renk] || renk;
+}
+
 function kategoriLabelSatirlari(label: string) {
   const kelimeler = String(label || '').trim().split(/\s+/).filter(Boolean);
   if (kelimeler.length <= 1) return { label1: kelimeler[0] || label, label2: '' };
@@ -384,6 +401,7 @@ if (kompakt) {
       </>
     );
   }
+  const kompaktBaslikRenk = solukBaslikRengi(config.bg);
 
   return (
     <div
@@ -422,10 +440,10 @@ if (kompakt) {
       )}
 
       {/* Sol renkli şerit — kategori isimli */}
-      <div className={`${config.bg} w-20 self-stretch flex-shrink-0 flex items-center justify-center px-1`}>
+      <div className={`${kompaktBaslikRenk} w-20 self-stretch flex-shrink-0 flex items-center justify-center px-1`}>
         <div className="text-white text-center leading-tight">
-          <div className="text-[9px] font-bold">{config.label1}</div>
-          <div className="text-[9px] font-bold">{config.label2}</div>
+          <div className="text-[10px] sm:text-[11px] font-bold leading-[1.05]">{config.label1}</div>
+          <div className="text-[10px] sm:text-[11px] font-bold leading-[1.05]">{config.label2}</div>
         </div>
       </div>
 
@@ -505,7 +523,7 @@ if (kompakt) {
 )}
       {/* ÜST BAŞLIK */}
       <div className={`${config.bg} flex items-center justify-between px-4 py-2`}>
-        <span className={`text-xs font-bold tracking-wide ${config.text}`}>{config.label}</span>
+        <span className={`text-[13px] font-bold tracking-wide ${config.text} truncate pr-2`}>{config.label}</span>
         <button
   onClick={(e) => { e.stopPropagation(); ilanGorulduIsaretle(ilan.id); setGoruldu(true); onDetay(ilan); }}
   className="text-[11px] font-semibold text-white/90 hover:text-white flex items-center gap-1 transition mr-6"

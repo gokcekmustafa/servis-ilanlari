@@ -25,6 +25,22 @@ const kategoriBadge: Record<KategoriType, { label: string; color: string }> = {
   aracimi_satiyorum:{ label: 'Araç Satılık',              color: 'bg-teal-500' },
 };
 
+const DETAY_SOLUK_BASLIK_RENKLERI: Record<string, string> = {
+  'bg-blue-500': 'bg-blue-400',
+  'bg-green-500': 'bg-green-400',
+  'bg-orange-500': 'bg-orange-400',
+  'bg-purple-500': 'bg-purple-400',
+  'bg-pink-500': 'bg-pink-400',
+  'bg-yellow-500': 'bg-yellow-400',
+  'bg-red-500': 'bg-red-400',
+  'bg-teal-500': 'bg-teal-400',
+  'bg-slate-500': 'bg-slate-400',
+};
+
+function solukDetayBaslikRengi(renk: string) {
+  return DETAY_SOLUK_BASLIK_RENKLERI[renk] || renk;
+}
+
 function BilgiKutusu({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   if (!value || value === '-' || value === 'undefined' || value === 'null') return null;
   return (
@@ -309,6 +325,7 @@ export default function IlanDetayPage({
     label: kategoriEtiketMap?.[ilan.kategori] || varsayilanBadge.label,
     color: kategoriRenkMap?.[ilan.kategori] || varsayilanBadge.color,
   };
+  const detayBadgeRenk = solukDetayBaslikRengi(badge.color);
   const user = mevcutKullanici();
   const [isFavori, setIsFavori] = useState(false);
   const [mesajMetni, setMesajMetni] = useState('');
@@ -378,8 +395,8 @@ export default function IlanDetayPage({
 
             {/* BAŞLIK KARTI */}
             <div className="rounded-xl overflow-hidden border border-slate-200">
-              <div className={`${badge.color} px-4 py-3 flex items-center justify-between`}>
-                <span className="text-white text-sm font-bold uppercase tracking-wide">{badge.label}</span>
+              <div className={`${detayBadgeRenk} px-4 py-3 flex items-center justify-between`}>
+                <span className="text-white text-[15px] font-bold uppercase tracking-wide leading-tight truncate pr-2">{badge.label}</span>
                 {!kendiIlani && (
                   <button onClick={handleFavori}
                     className={'hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ' +

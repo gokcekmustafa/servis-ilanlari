@@ -240,11 +240,15 @@ const KATEGORI_TR_ETIKET: Record<string, string> = {
   aracimi_satiyorum: 'Aracımı satıyorum',
 };
 
-function mobilKategoriEtiketi(kat: { id: string; label: string }) {
-  const ham = String(kat.label || '').trim();
-  if (!ham) return KATEGORI_TR_ETIKET[kat.id] || '';
+function kategoriGosterimEtiketi(id: string, label?: string) {
+  const ham = String(label || '').trim();
+  if (!ham) return KATEGORI_TR_ETIKET[id] || '';
   if (/[çğıöşüÇĞİÖŞÜ]/.test(ham)) return ham;
-  return KATEGORI_TR_ETIKET[kat.id] || ham;
+  return KATEGORI_TR_ETIKET[id] || ham;
+}
+
+function mobilKategoriEtiketi(kat: { id: string; label: string }) {
+  return kategoriGosterimEtiketi(kat.id, kat.label);
 }
 
 function kategorileriUiyaDonustur(kategoriler: SiteKategori[]): HomeKategori[] {
@@ -893,7 +897,7 @@ function HomePage({
 
   const kategoriSayisi = (id: KategoriType) => ilanlar.filter(i => i.kategori === id).length;
   const kategoriEtiketMap = React.useMemo(
-    () => Object.fromEntries(kategoriler.map((k) => [k.id, k.label])),
+    () => Object.fromEntries(kategoriler.map((k) => [k.id, kategoriGosterimEtiketi(k.id, k.label)])),
     [kategoriler]
   );
   const kategoriRenkMap = React.useMemo(
@@ -982,7 +986,7 @@ function HomePage({
     || !!selectedAracSatisMaxKm;
 
   const aktifFiltreEtiketleri = [
-    aktifKategori ? (kategoriler.find(k => k.id === aktifKategori)?.label || 'Kategori') : '',
+    aktifKategori ? (kategoriGosterimEtiketi(aktifKategori, kategoriler.find(k => k.id === aktifKategori)?.label) || 'Kategori') : '',
     selectedSehir ? `Kalkis sehir: ${selectedSehir}` : '',
     selectedKalkisIlce ? `Kalkis ilce: ${selectedKalkisIlce}` : '',
     selectedKalkisMah ? `Kalkis mahalle: ${selectedKalkisMah}` : '',
@@ -1097,7 +1101,7 @@ function HomePage({
                       style={{ fontSize: '16px' }}>
                       {kat.icon}
                     </div>
-                    <div className="text-[10px] font-bold text-gray-800 leading-snug">{kat.label}</div>
+                    <div className="text-[11px] font-bold text-gray-800 leading-snug">{kategoriGosterimEtiketi(kat.id, kat.label)}</div>
                     <div className={"inline-flex items-center justify-center text-[11px] font-bold px-2.5 py-0.5 rounded-full " +
                       (isSelected ? "bg-[#f7971e] text-white" : kat.iconBg + " " + kat.numColor)}>
                       {sayi}
@@ -1178,7 +1182,7 @@ function HomePage({
                     >
                       <span className="flex items-center gap-1 min-w-0">
                         <span className="flex-shrink-0">{kat.icon}</span>
-                        <span className="truncate">{kat.label}</span>
+                        <span className="truncate">{kategoriGosterimEtiketi(kat.id, kat.label)}</span>
                       </span>
                       <span className={"flex-shrink-0 ml-1 text-[10px] px-1.5 py-0.5 rounded " + (isActive ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-500")}>{sayi}</span>
                     </button>
@@ -1461,7 +1465,7 @@ function HomePage({
               <div className="flex flex-wrap items-center gap-2">
                 {aktifKategori && (
                   <span className="flex items-center gap-1 text-xs bg-orange-50 border border-orange-200 text-orange-700 px-2 py-0.5 rounded font-medium">
-                    {kategoriler.find(k => k.id === aktifKategori)?.label}
+                    {aktifKategori ? kategoriGosterimEtiketi(aktifKategori, kategoriler.find(k => k.id === aktifKategori)?.label) : ''}
                     <button onClick={() => handleKategoriDegistir(null)} className="ml-1 hover:text-orange-900"><X size={11} /></button>
                   </span>
                 )}
@@ -1557,7 +1561,7 @@ function HomePage({
                       onClick={() => handleKategoriDegistir(kat.id)}
                       className={"w-full text-left flex justify-between items-center px-3 py-2 rounded text-xs font-medium transition border " + (aktifKategori === kat.id ? "bg-orange-50 text-[#f7971e] border-orange-200" : "text-gray-600 hover:bg-gray-50 border-transparent")}
                     >
-                      <span className="flex items-center gap-1.5"><span>{kat.icon}</span>{kat.label}</span>
+                      <span className="flex items-center gap-1.5"><span>{kat.icon}</span>{kategoriGosterimEtiketi(kat.id, kat.label)}</span>
                       <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">{kategoriSayisi(kat.id)}</span>
                     </button>
                   ))}
@@ -2027,7 +2031,7 @@ export default function App() {
       onGoBack={goBack}
       onGoLogin={() => setCurrentPage('login')}
       isLoggedIn={isLoggedIn}
-      kategoriEtiketMap={Object.fromEntries(kategorilerUi.map((k) => [k.id, k.label]))}
+      kategoriEtiketMap={Object.fromEntries(kategorilerUi.map((k) => [k.id, kategoriGosterimEtiketi(k.id, k.label)]))}
       kategoriRenkMap={Object.fromEntries(kategorilerUi.map((k) => [k.id, k.serit]))}
     />
   );
