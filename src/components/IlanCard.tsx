@@ -39,13 +39,13 @@ const kategoriConfig: Record<KategoriType, { label: string; label1: string; labe
 
 const SOLUK_BASLIK_RENKLERI: Record<string, string> = {
   'bg-blue-500': 'bg-blue-200 sm:bg-blue-300',
-  'bg-green-500': 'bg-green-200 sm:bg-green-300',
+  'bg-green-500': 'bg-emerald-200 sm:bg-green-300',
   'bg-orange-500': 'bg-orange-200 sm:bg-orange-300',
-  'bg-purple-500': 'bg-purple-200 sm:bg-purple-300',
-  'bg-pink-500': 'bg-pink-200 sm:bg-pink-300',
-  'bg-yellow-500': 'bg-yellow-200 sm:bg-yellow-300',
+  'bg-purple-500': 'bg-fuchsia-200 sm:bg-purple-300',
+  'bg-pink-500': 'bg-rose-200 sm:bg-pink-300',
+  'bg-yellow-500': 'bg-amber-200 sm:bg-yellow-300',
   'bg-red-500': 'bg-red-200 sm:bg-red-300',
-  'bg-teal-500': 'bg-teal-200 sm:bg-teal-300',
+  'bg-teal-500': 'bg-cyan-200 sm:bg-teal-300',
   'bg-gray-500': 'bg-gray-200 sm:bg-gray-300',
   'bg-slate-500': 'bg-slate-200 sm:bg-slate-300',
 };
@@ -56,13 +56,13 @@ function solukBaslikRengi(renk: string) {
 
 const MOBIL_SOLUK_DETAY_BASLIK_RENKLERI: Record<string, string> = {
   'bg-blue-500': 'bg-blue-200 sm:bg-blue-500',
-  'bg-green-500': 'bg-green-200 sm:bg-green-500',
+  'bg-green-500': 'bg-emerald-200 sm:bg-green-500',
   'bg-orange-500': 'bg-orange-200 sm:bg-orange-500',
-  'bg-purple-500': 'bg-purple-200 sm:bg-purple-500',
-  'bg-pink-500': 'bg-pink-200 sm:bg-pink-500',
-  'bg-yellow-500': 'bg-yellow-200 sm:bg-yellow-500',
+  'bg-purple-500': 'bg-fuchsia-200 sm:bg-purple-500',
+  'bg-pink-500': 'bg-rose-200 sm:bg-pink-500',
+  'bg-yellow-500': 'bg-amber-200 sm:bg-yellow-500',
   'bg-red-500': 'bg-red-200 sm:bg-red-500',
-  'bg-teal-500': 'bg-teal-200 sm:bg-teal-500',
+  'bg-teal-500': 'bg-cyan-200 sm:bg-teal-500',
   'bg-gray-500': 'bg-gray-200 sm:bg-gray-500',
   'bg-slate-500': 'bg-slate-200 sm:bg-slate-500',
 };
@@ -458,7 +458,7 @@ if (kompakt) {
 
       {/* Sol renkli şerit — kategori isimli */}
       <div className={`${kompaktBaslikRenk} w-20 self-stretch flex-shrink-0 flex items-center justify-center px-1`}>
-        <div className="text-white text-center leading-tight">
+        <div className="text-slate-800 sm:text-white text-center leading-tight">
           <div className="text-[13px] sm:text-[13px] font-bold leading-[1.02]">{config.label1}</div>
           <div className="text-[13px] sm:text-[13px] font-bold leading-[1.02]">{config.label2}</div>
         </div>
@@ -541,10 +541,10 @@ if (kompakt) {
 )}
       {/* ÜST BAŞLIK */}
       <div className={`${detayBaslikRenk} flex items-center justify-between px-4 py-2`}>
-        <span className={`text-[14px] sm:text-[13px] font-bold tracking-wide ${config.text} truncate pr-2`}>{config.label}</span>
+        <span className={`text-[14px] sm:text-[13px] font-bold tracking-wide ${config.text} text-slate-800 sm:text-white truncate pr-2`}>{config.label}</span>
         <button
   onClick={(e) => { e.stopPropagation(); ilanGorulduIsaretle(ilan.id); setGoruldu(true); onDetay(ilan); }}
-  className="text-xs sm:text-[11px] font-semibold text-white/90 hover:text-white flex items-center gap-1 transition mr-6"
+  className="text-xs sm:text-[11px] font-semibold text-slate-700 sm:text-white/90 hover:text-slate-900 sm:hover:text-white flex items-center gap-1 transition mr-6"
 >
   İlan Detayı <ArrowRight size={11} />
 </button>
