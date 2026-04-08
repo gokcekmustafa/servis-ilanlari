@@ -497,23 +497,23 @@ export default function Header({
               </div>
             </div>
 
-            <div className="w-full sm:flex-1 h-32 sm:h-48">
+            <div className="w-full sm:flex-1 min-h-32 sm:min-h-48">
               {headerReklam ? (
                 <div
                   onClick={() => headerReklam.link_url && window.open(headerReklam.link_url, '_blank')}
-                  className="cursor-pointer w-full h-full rounded-lg overflow-hidden relative"
+                  className="cursor-pointer w-full rounded-lg overflow-hidden relative"
                 >
                   <img
                     src={headerReklam.resim_url}
                     alt={headerReklam.baslik || 'Reklam'}
-                    className="w-full h-full object-contain rounded-lg"
+                    className="block w-full h-auto min-h-32 sm:min-h-48 object-contain rounded-lg bg-white"
                   />
                   <span className="absolute top-1 right-1 bg-black/40 text-white text-[10px] px-1.5 py-0.5 rounded">
                     Reklam
                   </span>
                 </div>
               ) : (
-                <div className="w-full h-full bg-slate-50 border border-dashed border-slate-200 rounded-lg flex items-center justify-center">
+                <div className="w-full min-h-32 sm:min-h-48 bg-slate-50 border border-dashed border-slate-200 rounded-lg flex items-center justify-center">
                   <span className="text-slate-300 text-xs">Reklam Alanı</span>
                 </div>
               )}

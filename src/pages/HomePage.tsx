@@ -24,7 +24,7 @@ function ReklamKarti({ reklam }: ReklamKartiProps) {
       className="cursor-pointer rounded-lg overflow-hidden border border-gray-200 hover:border-blue-300 transition-all"
     >
       <div className="relative">
-        <img src={reklam.resim_url} alt={reklam.baslik || 'Reklam'} className="w-full h-24 object-cover" />
+        <img src={reklam.resim_url} alt={reklam.baslik || 'Reklam'} className="block w-full h-auto min-h-24 object-contain bg-white" />
         <span className="absolute top-1.5 right-1.5 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">
           Reklam
         </span>

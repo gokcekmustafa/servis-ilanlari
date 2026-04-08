@@ -315,10 +315,10 @@ function ListeReklamKarti({ reklam }: { reklam: any }) {
         <img
           src={reklam.resim_url}
           alt={reklam.baslik || 'Reklam'}
-          className="w-full h-28 sm:h-36 object-contain"
+          className="block w-full h-auto min-h-28 sm:min-h-36 object-contain bg-white"
         />
       ) : (
-        <div className="w-full h-28 sm:h-36 bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center">
+        <div className="w-full min-h-28 sm:min-h-36 bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center">
           <span className="text-slate-300 text-xs">Reklam Alanı</span>
         </div>
       )}
@@ -1433,12 +1433,12 @@ function HomePage({
                 {/* Küçük reklam — h-32'nin %150'si = h-48 */}
                 <div
                   onClick={() => kenarKucukReklam?.link_url && window.open(kenarKucukReklam.link_url, '_blank')}
-                  className={`relative w-full h-40 sm:h-48 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarKucukReklam?.link_url ? 'cursor-pointer' : ''}`}
+                  className={`relative w-full min-h-40 sm:min-h-48 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarKucukReklam?.link_url ? 'cursor-pointer' : ''}`}
                 >
                   {kenarKucukReklam?.resim_url ? (
-                    <img src={kenarKucukReklam.resim_url} alt={kenarKucukReklam.baslik || 'Reklam'} className="w-full h-full object-contain" />
+                    <img src={kenarKucukReklam.resim_url} alt={kenarKucukReklam.baslik || 'Reklam'} className="block w-full h-auto min-h-40 sm:min-h-48 object-contain bg-white" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center border border-dashed border-slate-200">
+                    <div className="w-full min-h-40 sm:min-h-48 flex items-center justify-center border border-dashed border-slate-200">
                       <span className="text-slate-300 text-xs">Reklam Alanı</span>
                     </div>
                   )}
@@ -1447,12 +1447,12 @@ function HomePage({
                 {/* Büyük reklam — h-48'in %150'si = h-72 */}
                 <div
                   onClick={() => kenarBuyukReklam?.link_url && window.open(kenarBuyukReklam.link_url, '_blank')}
-                  className={`relative w-full h-56 sm:h-72 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarBuyukReklam?.link_url ? 'cursor-pointer' : ''}`}
+                  className={`relative w-full min-h-56 sm:min-h-72 rounded border border-gray-200 overflow-hidden bg-slate-50 ${kenarBuyukReklam?.link_url ? 'cursor-pointer' : ''}`}
                 >
                   {kenarBuyukReklam?.resim_url ? (
-                    <img src={kenarBuyukReklam.resim_url} alt={kenarBuyukReklam.baslik || 'Reklam'} className="w-full h-full object-contain" />
+                    <img src={kenarBuyukReklam.resim_url} alt={kenarBuyukReklam.baslik || 'Reklam'} className="block w-full h-auto min-h-56 sm:min-h-72 object-contain bg-white" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center border border-dashed border-slate-200">
+                    <div className="w-full min-h-56 sm:min-h-72 flex items-center justify-center border border-dashed border-slate-200">
                       <span className="text-slate-300 text-xs">Reklam Alanı</span>
                     </div>
                   )}
