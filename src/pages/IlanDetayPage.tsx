@@ -333,6 +333,7 @@ export default function IlanDetayPage({
   const [mesajFormuAcik, setMesajFormuAcik] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(false);
   const [iletisimAcik, setIletisimAcik] = useState(false);
+  const [adayResimBuyukAcik, setAdayResimBuyukAcik] = useState(false);
 
   const ek = ilan.ekbilgiler || {};
   const ucret = ek.ucret;
@@ -353,9 +354,9 @@ export default function IlanDetayPage({
   }, [isLoggedIn, ilan.id]);
 
   useEffect(() => {
-    document.body.style.overflow = iletisimAcik ? 'hidden' : '';
+    document.body.style.overflow = (iletisimAcik || adayResimBuyukAcik) ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [iletisimAcik]);
+  }, [iletisimAcik, adayResimBuyukAcik]);
 
   const handleFavori = async () => {
     if (!isLoggedIn) { onGoLogin(); return; }
@@ -417,7 +418,7 @@ export default function IlanDetayPage({
             </div>
 
             {/* ── FOTOĞRAF GALERİSİ ── */}
-            {resimler.length > 0 && <ResimGalerisi resimler={resimler} />}
+            {resimler.length > 0 && !personelAdayIlan && <ResimGalerisi resimler={resimler} />}
 
             {/* ÜCRET / FİYAT */}
             {ucret && (
@@ -733,13 +734,19 @@ export default function IlanDetayPage({
                     <span className="text-white text-xs font-semibold uppercase tracking-wider">Profil Fotoğrafı</span>
                   </div>
                   <div className="p-3">
-                    <div className="rounded-lg border border-slate-200 overflow-hidden bg-slate-50 aspect-[3/4]">
+                    <button
+                      onClick={() => setAdayResimBuyukAcik(true)}
+                      className="w-full rounded-lg border border-slate-200 overflow-hidden bg-slate-50 aspect-[3/4] relative group"
+                    >
                       <img
                         src={sagKolonAdayResim}
                         alt={`${ilan.profiles?.full_name || ilan.ilan_veren || 'Kullanıcı'} fotoğrafı`}
                         className="w-full h-full object-contain"
                       />
-                    </div>
+                      <span className="absolute bottom-2 right-2 bg-black/60 text-white text-[11px] px-2 py-1 rounded opacity-90 group-hover:opacity-100 transition">
+                        Büyüt
+                      </span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -794,8 +801,51 @@ export default function IlanDetayPage({
   onFormKapat={() => setMesajFormuAcik(false)}
   onFavori={handleFavori}
 />
+              {sagKolonAdayResim && (
+                <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="bg-slate-800 px-4 py-2.5 flex items-center gap-2">
+                    <Images size={14} className="text-orange-400" />
+                    <span className="text-white text-xs font-semibold uppercase tracking-wider">Profil Fotoğrafı</span>
+                  </div>
+                  <div className="p-3">
+                    <button
+                      onClick={() => setAdayResimBuyukAcik(true)}
+                      className="w-full rounded-lg border border-slate-200 overflow-hidden bg-slate-50 aspect-[3/4] relative"
+                    >
+                      <img
+                        src={sagKolonAdayResim}
+                        alt={`${ilan.profiles?.full_name || ilan.ilan_veren || 'Kullanıcı'} fotoğrafı`}
+                        className="w-full h-full object-contain"
+                      />
+                      <span className="absolute bottom-2 right-2 bg-black/60 text-white text-[11px] px-2 py-1 rounded">
+                        Büyüt
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+        </div>
+      )}
+
+      {adayResimBuyukAcik && sagKolonAdayResim && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4"
+          onClick={() => setAdayResimBuyukAcik(false)}
+        >
+          <button
+            onClick={() => setAdayResimBuyukAcik(false)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition"
+          >
+            <X size={20} />
+          </button>
+          <img
+            src={sagKolonAdayResim}
+            alt={`${ilan.profiles?.full_name || ilan.ilan_veren || 'Kullanıcı'} fotoğrafı`}
+            className="max-w-[92vw] max-h-[88vh] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
 
