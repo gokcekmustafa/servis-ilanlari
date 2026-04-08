@@ -217,6 +217,36 @@ function kategoriLabelParcala(label: string) {
   };
 }
 
+const MOBIL_KATEGORI_PASTEL_RENK: Record<string, string> = {
+  'bg-blue-500': 'bg-blue-200',
+  'bg-green-500': 'bg-emerald-200',
+  'bg-orange-500': 'bg-orange-200',
+  'bg-purple-500': 'bg-fuchsia-200',
+  'bg-pink-500': 'bg-rose-200',
+  'bg-yellow-500': 'bg-amber-200',
+  'bg-red-500': 'bg-red-200',
+  'bg-teal-500': 'bg-cyan-200',
+  'bg-slate-500': 'bg-slate-200',
+};
+
+const KATEGORI_TR_ETIKET: Record<string, string> = {
+  isim_var_arac: 'İşim var araç arıyorum',
+  aracim_var_is: 'Aracım var iş arıyorum',
+  sofor_ariyorum: 'Şoför arıyorum',
+  hostes_ariyorum: 'Hostes arıyorum',
+  hostesim_is: 'Hostesim iş arıyorum',
+  soforum_is: 'Şoförüm iş arıyorum',
+  plaka_satiyorum: 'Plakamı satıyorum',
+  aracimi_satiyorum: 'Aracımı satıyorum',
+};
+
+function mobilKategoriEtiketi(kat: { id: string; label: string }) {
+  const ham = String(kat.label || '').trim();
+  if (!ham) return KATEGORI_TR_ETIKET[kat.id] || '';
+  if (/[çğıöşüÇĞİÖŞÜ]/.test(ham)) return ham;
+  return KATEGORI_TR_ETIKET[kat.id] || ham;
+}
+
 function kategorileriUiyaDonustur(kategoriler: SiteKategori[]): HomeKategori[] {
   const fallbackStilMap = new Map<string, any>(Array.from(KATEGORILER).map((k) => [String(k.id), k]));
   const temiz = (kategoriler || []).filter((k) => k && k.aktif !== false && String(k.id || '').trim() && String(k.label || '').trim());
@@ -1024,27 +1054,26 @@ function HomePage({
               {kategoriler.map((kat) => {
                 const sayi = kategoriSayisi(kat.id);
                 const isSelected = aktifKategori === kat.id;
-                const { label1, label2 } = kategoriLabelParcala(kat.label);
-                const sariMi = kat.serit === 'bg-yellow-500';
-                const yaziSinifi = sariMi ? 'text-slate-900' : 'text-white';
-                const rozetSinifi = sariMi ? 'bg-slate-900/15 text-slate-900' : 'bg-white/20 text-white';
+                const mobilEtiket = mobilKategoriEtiketi(kat);
+                const { label1, label2 } = kategoriLabelParcala(mobilEtiket);
+                const pastelRenk = MOBIL_KATEGORI_PASTEL_RENK[kat.serit] || 'bg-slate-200';
                 return (
                   <button
                     key={kat.id}
                     onClick={() => handleKategoriDegistir(kat.id)}
                     className={
                       'relative min-h-[72px] rounded-2xl px-3 py-3 text-center transition ' +
-                      kat.serit + ' ' +
+                      pastelRenk + ' ' +
                       (isSelected
-                        ? 'ring-2 ring-[#f7971e] ring-offset-1 shadow-sm'
-                        : 'opacity-95 hover:opacity-100')
+                        ? 'ring-2 ring-[#f7971e] ring-offset-1 shadow-sm shadow-slate-200'
+                        : 'hover:brightness-[0.98]')
                     }
                   >
-                    <span className={'absolute top-2 right-2 min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-bold inline-flex items-center justify-center ' + rozetSinifi}>
+                    <span className="absolute top-2 right-2 min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-bold inline-flex items-center justify-center bg-white/70 text-slate-700 border border-white/80">
                       {sayi}
                     </span>
-                    <span className={'block text-[14px] font-semibold leading-tight ' + yaziSinifi}>{label1}</span>
-                    {label2 && <span className={'block mt-1 text-[14px] font-semibold leading-tight ' + yaziSinifi}>{label2}</span>}
+                    <span className="block text-[14px] font-semibold leading-tight text-slate-800">{label1}</span>
+                    {label2 && <span className="block mt-1 text-[14px] font-semibold leading-tight text-slate-800">{label2}</span>}
                   </button>
                 );
               })}
