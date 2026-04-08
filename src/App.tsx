@@ -1020,7 +1020,36 @@ function HomePage({
                 {(siteIcerik.anasayfa.aktif_ilan_metin_sablon || '{count} aktif ilan').replace('{count}', String(ilanlar.length))}
               </span>
             </div>
-            <div className="flex overflow-x-auto gap-2 p-2 scrollbar-hide snap-x snap-mandatory">
+            <div className="grid grid-cols-2 gap-2 p-2 md:hidden">
+              {kategoriler.map((kat) => {
+                const sayi = kategoriSayisi(kat.id);
+                const isSelected = aktifKategori === kat.id;
+                const { label1, label2 } = kategoriLabelParcala(kat.label);
+                const sariMi = kat.serit === 'bg-yellow-500';
+                const yaziSinifi = sariMi ? 'text-slate-900' : 'text-white';
+                const rozetSinifi = sariMi ? 'bg-slate-900/15 text-slate-900' : 'bg-white/20 text-white';
+                return (
+                  <button
+                    key={kat.id}
+                    onClick={() => handleKategoriDegistir(kat.id)}
+                    className={
+                      'relative min-h-[72px] rounded-2xl px-3 py-3 text-center transition ' +
+                      kat.serit + ' ' +
+                      (isSelected
+                        ? 'ring-2 ring-[#f7971e] ring-offset-1 shadow-sm'
+                        : 'opacity-95 hover:opacity-100')
+                    }
+                  >
+                    <span className={'absolute top-2 right-2 min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-bold inline-flex items-center justify-center ' + rozetSinifi}>
+                      {sayi}
+                    </span>
+                    <span className={'block text-[14px] font-semibold leading-tight ' + yaziSinifi}>{label1}</span>
+                    {label2 && <span className={'block mt-1 text-[14px] font-semibold leading-tight ' + yaziSinifi}>{label2}</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="hidden md:flex overflow-x-auto gap-2 p-2 scrollbar-hide snap-x snap-mandatory">
               {kategoriler.map((kat) => {
                 const sayi = kategoriSayisi(kat.id);
                 const isSelected = aktifKategori === kat.id;
