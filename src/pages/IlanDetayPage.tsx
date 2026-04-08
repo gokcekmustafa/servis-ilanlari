@@ -343,6 +343,8 @@ export default function IlanDetayPage({
 
   // Resim gösteren kategoriler
   const resimler: string[] = (aracSatiyormu || aracimVarIs || ilan.kategori === 'hostesim_is' || ilan.kategori === 'soforum_is') ? (ek.resimler || []) : [];
+  const personelAdayIlan = ilan.kategori === 'soforum_is' || ilan.kategori === 'hostesim_is';
+  const sagKolonAdayResim = personelAdayIlan ? (ek.profil_resmi || resimler[0] || '') : '';
 
   useEffect(() => {
     if (isLoggedIn && user) {
@@ -697,30 +699,50 @@ export default function IlanDetayPage({
 
           {/* SAĞ - İLETİŞİM */}
           <div className="hidden lg:block w-72 flex-shrink-0">
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden sticky top-4">
-              <div className="bg-slate-800 px-4 py-2.5 flex items-center gap-2">
-                <MessageSquare size={14} className="text-orange-400" />
-                <span className="text-white text-xs font-semibold uppercase tracking-wider">İletişim</span>
+            <div className="sticky top-4 space-y-3">
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="bg-slate-800 px-4 py-2.5 flex items-center gap-2">
+                  <MessageSquare size={14} className="text-orange-400" />
+                  <span className="text-white text-xs font-semibold uppercase tracking-wider">İletişim</span>
+                </div>
+                <div className="p-4">
+                  <IletisimIcerik
+    isLoggedIn={isLoggedIn}
+    mesajGonderildi={mesajGonderildi}
+    mesajFormuAcik={mesajFormuAcik}
+    mesajMetni={mesajMetni}
+    yukleniyor={yukleniyor}
+    kendiIlani={kendiIlani}
+    isFavori={isFavori}
+    ilanVeren={ilan.profiles?.full_name || ilan.ilan_veren || '-'}
+    telefon={ilan.profiles?.phone_number}
+    onGoLogin={onGoLogin}
+    onMesajMetniDegis={setMesajMetni}
+    onMesajGonder={handleMesajGonder}
+    onFormAc={() => setMesajFormuAcik(true)}
+    onFormKapat={() => setMesajFormuAcik(false)}
+    onFavori={handleFavori}
+  />
+                </div>
               </div>
-              <div className="p-4">
-                <IletisimIcerik
-  isLoggedIn={isLoggedIn}
-  mesajGonderildi={mesajGonderildi}
-  mesajFormuAcik={mesajFormuAcik}
-  mesajMetni={mesajMetni}
-  yukleniyor={yukleniyor}
-  kendiIlani={kendiIlani}
-  isFavori={isFavori}
-  ilanVeren={ilan.profiles?.full_name || ilan.ilan_veren || '-'}
-  telefon={ilan.profiles?.phone_number}
-  onGoLogin={onGoLogin}
-  onMesajMetniDegis={setMesajMetni}
-  onMesajGonder={handleMesajGonder}
-  onFormAc={() => setMesajFormuAcik(true)}
-  onFormKapat={() => setMesajFormuAcik(false)}
-  onFavori={handleFavori}
-/>
-              </div>
+
+              {sagKolonAdayResim && (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="bg-slate-800 px-4 py-2.5 flex items-center gap-2">
+                    <Images size={14} className="text-orange-400" />
+                    <span className="text-white text-xs font-semibold uppercase tracking-wider">Profil Fotoğrafı</span>
+                  </div>
+                  <div className="p-3">
+                    <div className="rounded-lg border border-slate-200 overflow-hidden bg-slate-50 aspect-[3/4]">
+                      <img
+                        src={sagKolonAdayResim}
+                        alt={`${ilan.profiles?.full_name || ilan.ilan_veren || 'Kullanıcı'} fotoğrafı`}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
