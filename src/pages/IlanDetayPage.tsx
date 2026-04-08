@@ -26,15 +26,15 @@ const kategoriBadge: Record<KategoriType, { label: string; color: string }> = {
 };
 
 const DETAY_SOLUK_BASLIK_RENKLERI: Record<string, string> = {
-  'bg-blue-500': 'bg-blue-400',
-  'bg-green-500': 'bg-green-400',
-  'bg-orange-500': 'bg-orange-400',
-  'bg-purple-500': 'bg-purple-400',
-  'bg-pink-500': 'bg-pink-400',
-  'bg-yellow-500': 'bg-yellow-400',
-  'bg-red-500': 'bg-red-400',
-  'bg-teal-500': 'bg-teal-400',
-  'bg-slate-500': 'bg-slate-400',
+  'bg-blue-500': 'bg-blue-300',
+  'bg-green-500': 'bg-green-300',
+  'bg-orange-500': 'bg-orange-300',
+  'bg-purple-500': 'bg-purple-300',
+  'bg-pink-500': 'bg-pink-300',
+  'bg-yellow-500': 'bg-yellow-300',
+  'bg-red-500': 'bg-red-300',
+  'bg-teal-500': 'bg-teal-300',
+  'bg-slate-500': 'bg-slate-300',
 };
 
 function solukDetayBaslikRengi(renk: string) {
@@ -396,7 +396,7 @@ export default function IlanDetayPage({
             {/* BAŞLIK KARTI */}
             <div className="rounded-xl overflow-hidden border border-slate-200">
               <div className={`${detayBadgeRenk} px-4 py-3 flex items-center justify-between`}>
-                <span className="text-white text-[15px] font-bold uppercase tracking-wide leading-tight truncate pr-2">{badge.label}</span>
+                <span className="text-white text-[16px] sm:text-[17px] font-bold uppercase tracking-wide leading-tight truncate pr-2">{badge.label}</span>
                 {!kendiIlani && (
                   <button onClick={handleFavori}
                     className={'hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ' +

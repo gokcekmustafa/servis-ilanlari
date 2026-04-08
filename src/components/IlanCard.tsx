@@ -38,16 +38,16 @@ const kategoriConfig: Record<KategoriType, { label: string; label1: string; labe
 };
 
 const SOLUK_BASLIK_RENKLERI: Record<string, string> = {
-  'bg-blue-500': 'bg-blue-400',
-  'bg-green-500': 'bg-green-400',
-  'bg-orange-500': 'bg-orange-400',
-  'bg-purple-500': 'bg-purple-400',
-  'bg-pink-500': 'bg-pink-400',
-  'bg-yellow-500': 'bg-yellow-400',
-  'bg-red-500': 'bg-red-400',
-  'bg-teal-500': 'bg-teal-400',
-  'bg-gray-500': 'bg-gray-400',
-  'bg-slate-500': 'bg-slate-400',
+  'bg-blue-500': 'bg-blue-300',
+  'bg-green-500': 'bg-green-300',
+  'bg-orange-500': 'bg-orange-300',
+  'bg-purple-500': 'bg-purple-300',
+  'bg-pink-500': 'bg-pink-300',
+  'bg-yellow-500': 'bg-yellow-300',
+  'bg-red-500': 'bg-red-300',
+  'bg-teal-500': 'bg-teal-300',
+  'bg-gray-500': 'bg-gray-300',
+  'bg-slate-500': 'bg-slate-300',
 };
 
 function solukBaslikRengi(renk: string) {
@@ -442,8 +442,8 @@ if (kompakt) {
       {/* Sol renkli şerit — kategori isimli */}
       <div className={`${kompaktBaslikRenk} w-20 self-stretch flex-shrink-0 flex items-center justify-center px-1`}>
         <div className="text-white text-center leading-tight">
-          <div className="text-[10px] sm:text-[11px] font-bold leading-[1.05]">{config.label1}</div>
-          <div className="text-[10px] sm:text-[11px] font-bold leading-[1.05]">{config.label2}</div>
+          <div className="text-[12px] sm:text-[13px] font-bold leading-[1.02]">{config.label1}</div>
+          <div className="text-[12px] sm:text-[13px] font-bold leading-[1.02]">{config.label2}</div>
         </div>
       </div>
 
