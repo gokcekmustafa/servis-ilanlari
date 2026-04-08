@@ -38,20 +38,37 @@ const kategoriConfig: Record<KategoriType, { label: string; label1: string; labe
 };
 
 const SOLUK_BASLIK_RENKLERI: Record<string, string> = {
-  'bg-blue-500': 'bg-blue-300',
-  'bg-green-500': 'bg-green-300',
-  'bg-orange-500': 'bg-orange-300',
-  'bg-purple-500': 'bg-purple-300',
-  'bg-pink-500': 'bg-pink-300',
-  'bg-yellow-500': 'bg-yellow-300',
-  'bg-red-500': 'bg-red-300',
-  'bg-teal-500': 'bg-teal-300',
-  'bg-gray-500': 'bg-gray-300',
-  'bg-slate-500': 'bg-slate-300',
+  'bg-blue-500': 'bg-blue-200 sm:bg-blue-300',
+  'bg-green-500': 'bg-green-200 sm:bg-green-300',
+  'bg-orange-500': 'bg-orange-200 sm:bg-orange-300',
+  'bg-purple-500': 'bg-purple-200 sm:bg-purple-300',
+  'bg-pink-500': 'bg-pink-200 sm:bg-pink-300',
+  'bg-yellow-500': 'bg-yellow-200 sm:bg-yellow-300',
+  'bg-red-500': 'bg-red-200 sm:bg-red-300',
+  'bg-teal-500': 'bg-teal-200 sm:bg-teal-300',
+  'bg-gray-500': 'bg-gray-200 sm:bg-gray-300',
+  'bg-slate-500': 'bg-slate-200 sm:bg-slate-300',
 };
 
 function solukBaslikRengi(renk: string) {
   return SOLUK_BASLIK_RENKLERI[renk] || renk;
+}
+
+const MOBIL_SOLUK_DETAY_BASLIK_RENKLERI: Record<string, string> = {
+  'bg-blue-500': 'bg-blue-200 sm:bg-blue-500',
+  'bg-green-500': 'bg-green-200 sm:bg-green-500',
+  'bg-orange-500': 'bg-orange-200 sm:bg-orange-500',
+  'bg-purple-500': 'bg-purple-200 sm:bg-purple-500',
+  'bg-pink-500': 'bg-pink-200 sm:bg-pink-500',
+  'bg-yellow-500': 'bg-yellow-200 sm:bg-yellow-500',
+  'bg-red-500': 'bg-red-200 sm:bg-red-500',
+  'bg-teal-500': 'bg-teal-200 sm:bg-teal-500',
+  'bg-gray-500': 'bg-gray-200 sm:bg-gray-500',
+  'bg-slate-500': 'bg-slate-200 sm:bg-slate-500',
+};
+
+function mobilSolukDetayBaslikRengi(renk: string) {
+  return MOBIL_SOLUK_DETAY_BASLIK_RENKLERI[renk] || renk;
 }
 
 function kategoriLabelSatirlari(label: string) {
@@ -77,32 +94,32 @@ function zamanFarki(tarih: string): string {
 function GuzergahBasliklari({ kategori }: { kategori: KategoriType }) {
   if (kategori === 'isim_var_arac') {
     return (
-      <div className="grid grid-cols-6 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
+      <div className="grid grid-cols-6 text-center text-xs sm:text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
         <span>Giriş</span><span>Nereden</span><span>Nereye</span><span>Çıkış</span><span>Başlangıç</span><span>Bitiş</span>
       </div>
     );
   }
   if (kategori === 'aracim_var_is') {
     return (
-      <div className="grid grid-cols-3 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
+      <div className="grid grid-cols-3 text-center text-xs sm:text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
         <span>Saat</span><span>Boş Olduğu Semt</span><span>Saat</span>
       </div>
     );
   }
   if (kategori === 'soforum_is') {
     return (
-      <div className="grid grid-cols-3 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
+      <div className="grid grid-cols-3 text-center text-xs sm:text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
       </div>
     );
   }
   if (kategori === 'hostesim_is') {
     return (
-      <div className="grid grid-cols-3 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
+      <div className="grid grid-cols-3 text-center text-xs sm:text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
       </div>
     );
   }
   return (
-    <div className="grid grid-cols-4 text-center text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
+    <div className="grid grid-cols-4 text-center text-xs sm:text-[11px] text-gray-400 font-medium border-t border-gray-100 pt-2 mb-1">
       <span>Giriş Saati</span><span>Nereden</span><span>Nereye</span><span>Çıkış Saati</span>
     </div>
   );
@@ -113,8 +130,8 @@ function GuzergahSatiri({ g, kategori }: { g: any; kategori: KategoriType }) {
     return (
       <div className="grid grid-cols-6 text-center items-center py-2">
         <span className="text-sm font-bold text-gray-800">{g.giris_saati || '—'}</span>
-        <div><p className="text-sm font-bold text-gray-900 uppercase">{g.kalkis_mah || '—'}</p>{g.kalkis_ilce && <p className="text-[11px] text-gray-500 uppercase">{g.kalkis_ilce}</p>}</div>
-        <div><p className="text-sm font-bold text-gray-900 uppercase">{g.varis_mah || '—'}</p>{g.varis_ilce && <p className="text-[11px] text-gray-500 uppercase">{g.varis_ilce}</p>}</div>
+        <div><p className="text-sm font-bold text-gray-900 uppercase">{g.kalkis_mah || '—'}</p>{g.kalkis_ilce && <p className="text-xs sm:text-[11px] text-gray-500 uppercase">{g.kalkis_ilce}</p>}</div>
+        <div><p className="text-sm font-bold text-gray-900 uppercase">{g.varis_mah || '—'}</p>{g.varis_ilce && <p className="text-xs sm:text-[11px] text-gray-500 uppercase">{g.varis_ilce}</p>}</div>
         <span className="text-sm font-bold text-gray-800">{g.cikis_saati || '—'}</span>
         <span className="text-sm font-bold text-gray-800">{g.baslangic_saati || '—'}</span>
         <span className="text-sm font-bold text-gray-800">{g.bitis_saati || '—'}</span>
@@ -127,8 +144,8 @@ function GuzergahSatiri({ g, kategori }: { g: any; kategori: KategoriType }) {
         <span className="text-sm font-bold text-gray-800">{g.giris_saati || '—'}</span>
         <div>
           <p className="text-sm font-bold text-gray-900 uppercase">{g.kalkis_mah || '—'}</p>
-          {g.kalkis_ilce && <p className="text-[11px] text-gray-500 uppercase">{g.kalkis_ilce}</p>}
-          {g.kalkis_il && <p className="text-[11px] text-gray-500 uppercase">{g.kalkis_il}</p>}
+          {g.kalkis_ilce && <p className="text-xs sm:text-[11px] text-gray-500 uppercase">{g.kalkis_ilce}</p>}
+          {g.kalkis_il && <p className="text-xs sm:text-[11px] text-gray-500 uppercase">{g.kalkis_il}</p>}
         </div>
         <span className="text-sm font-bold text-gray-800">{g.cikis_saati || '—'}</span>
       </div>
@@ -139,13 +156,13 @@ function GuzergahSatiri({ g, kategori }: { g: any; kategori: KategoriType }) {
       <span className="text-sm font-bold text-gray-800">{g.giris_saati || '—'}</span>
       <div>
         <p className="text-sm font-bold text-gray-900 uppercase">{g.kalkis_mah || '—'}</p>
-        {g.kalkis_ilce && <p className="text-[11px] text-gray-500 uppercase">{g.kalkis_ilce}</p>}
-        {g.kalkis_il && <p className="text-[11px] text-gray-500 uppercase">{g.kalkis_il}</p>}
+        {g.kalkis_ilce && <p className="text-xs sm:text-[11px] text-gray-500 uppercase">{g.kalkis_ilce}</p>}
+        {g.kalkis_il && <p className="text-xs sm:text-[11px] text-gray-500 uppercase">{g.kalkis_il}</p>}
       </div>
       <div>
         <p className="text-sm font-bold text-gray-900 uppercase">{g.varis_mah || '—'}</p>
-        {g.varis_ilce && <p className="text-[11px] text-gray-500 uppercase">{g.varis_ilce}</p>}
-        {g.varis_il && <p className="text-[11px] text-gray-500 uppercase">{g.varis_il}</p>}
+        {g.varis_ilce && <p className="text-xs sm:text-[11px] text-gray-500 uppercase">{g.varis_ilce}</p>}
+        {g.varis_il && <p className="text-xs sm:text-[11px] text-gray-500 uppercase">{g.varis_il}</p>}
       </div>
       <span className="text-sm font-bold text-gray-800">{g.cikis_saati || '—'}</span>
     </div>
@@ -308,10 +325,10 @@ if (kompakt) {
     icerik = (
       <>
         <KisiResmi />
-        <span className="font-semibold text-gray-800 text-xs truncate max-w-[100px]">{ilanVeren}</span>
-        {kalkisIlce && <span className="text-[11px] text-gray-500 truncate">{kalkisIlce}</span>}
-        {yas && <span className="text-[11px] text-gray-500">D.{yas}</span>}
-        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${ekBilgi.emekli === 'evet' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+        <span className="font-semibold text-gray-800 text-[13px] sm:text-xs truncate max-w-[100px]">{ilanVeren}</span>
+        {kalkisIlce && <span className="text-xs sm:text-[11px] text-gray-500 truncate">{kalkisIlce}</span>}
+        {yas && <span className="text-xs sm:text-[11px] text-gray-500">D.{yas}</span>}
+        <span className={`text-[11px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded ${ekBilgi.emekli === 'evet' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
           {ekBilgi.emekli === 'evet' ? 'Emekli' : 'Emekli Değil'}
         </span>
       </>
@@ -322,9 +339,9 @@ if (kompakt) {
     icerik = (
       <>
         <KisiResmi />
-        <span className="font-semibold text-gray-800 text-xs truncate max-w-[100px]">{ilanVeren}</span>
-        {kalkisIlce && <span className="text-[11px] text-gray-500 truncate">{kalkisIlce}</span>}
-        {yas && <span className="text-[11px] text-gray-500">D.{yas}</span>}
+        <span className="font-semibold text-gray-800 text-[13px] sm:text-xs truncate max-w-[100px]">{ilanVeren}</span>
+        {kalkisIlce && <span className="text-xs sm:text-[11px] text-gray-500 truncate">{kalkisIlce}</span>}
+        {yas && <span className="text-xs sm:text-[11px] text-gray-500">D.{yas}</span>}
       </>
     );
   } else if (ilan.kategori === 'isim_var_arac') {
@@ -332,10 +349,10 @@ if (kompakt) {
     icerik = (
       <>
         <PlatformLogo />
-        {saatStr && <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">{saatStr}</span>}
-        {guzergahStr && <span className="text-[11px] text-gray-500 truncate">{guzergahStr}</span>}
+        {saatStr && <span className="text-xs sm:text-[11px] font-bold text-gray-700 whitespace-nowrap">{saatStr}</span>}
+        {guzergahStr && <span className="text-xs sm:text-[11px] text-gray-500 truncate">{guzergahStr}</span>}
         {ekBilgi.ucret && (
-          <span className="text-xs font-bold text-blue-600 whitespace-nowrap ml-auto">
+          <span className="text-[13px] sm:text-xs font-bold text-blue-600 whitespace-nowrap ml-auto">
             {Number(ekBilgi.ucret).toLocaleString('tr-TR')} ₺
           </span>
         )}
@@ -348,11 +365,11 @@ if (kompakt) {
       <>
         <PlatformLogo />
         <AracResmi />
-        <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">
+        <span className="text-xs sm:text-[11px] font-bold text-gray-700 whitespace-nowrap">
           {saatStr || 'Boşta'}
         </span>
-        {guzStr && <span className="text-[11px] text-gray-500 truncate">{guzStr}</span>}
-        {aracAd && <span className="text-[11px] text-gray-600 truncate">{aracAd}</span>}
+        {guzStr && <span className="text-xs sm:text-[11px] text-gray-500 truncate">{guzStr}</span>}
+        {aracAd && <span className="text-xs sm:text-[11px] text-gray-600 truncate">{aracAd}</span>}
       </>
     );
   } else if (ilan.kategori === 'sofor_ariyorum') {
@@ -360,19 +377,19 @@ if (kompakt) {
     icerik = (
       <>
         <PlatformLogo />
-        <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">
+        <span className="text-xs sm:text-[11px] font-bold text-gray-700 whitespace-nowrap">
           {saatStr || (ekBilgi.yolcu_sayisi ? `${ekBilgi.yolcu_sayisi} kişi` : '')}
         </span>
-        {guzStr && <span className="text-[11px] text-gray-500 truncate">{guzStr}</span>}
+        {guzStr && <span className="text-xs sm:text-[11px] text-gray-500 truncate">{guzStr}</span>}
       </>
     );
   } else if (ilan.kategori === 'plaka_satiyorum') {
     icerik = (
       <>
         <PlatformLogo />
-        {kalkisIlce && <span className="text-[11px] text-gray-500 truncate">{kalkisIlce}</span>}
+        {kalkisIlce && <span className="text-xs sm:text-[11px] text-gray-500 truncate">{kalkisIlce}</span>}
         {ekBilgi.ucret && (
-          <span className="text-xs font-bold text-blue-600 whitespace-nowrap ml-auto">
+          <span className="text-[13px] sm:text-xs font-bold text-blue-600 whitespace-nowrap ml-auto">
             {Number(ekBilgi.ucret).toLocaleString('tr-TR')} ₺
           </span>
         )}
@@ -383,10 +400,10 @@ if (kompakt) {
     icerik = (
       <>
         <AracResmi />
-        {aracAd && <span className="text-xs font-semibold text-gray-700 truncate">{aracAd}</span>}
-        {ekBilgi.km && <span className="text-[11px] text-gray-500 whitespace-nowrap">{Number(ekBilgi.km).toLocaleString('tr-TR')} km</span>}
+        {aracAd && <span className="text-[13px] sm:text-xs font-semibold text-gray-700 truncate">{aracAd}</span>}
+        {ekBilgi.km && <span className="text-xs sm:text-[11px] text-gray-500 whitespace-nowrap">{Number(ekBilgi.km).toLocaleString('tr-TR')} km</span>}
         {ekBilgi.ucret && (
-          <span className="text-xs font-bold text-blue-600 whitespace-nowrap ml-auto">
+          <span className="text-[13px] sm:text-xs font-bold text-blue-600 whitespace-nowrap ml-auto">
             {Number(ekBilgi.ucret).toLocaleString('tr-TR')} ₺
           </span>
         )}
@@ -396,8 +413,8 @@ if (kompakt) {
     icerik = (
       <>
         <PlatformLogo />
-        <p className="text-xs text-gray-600 truncate flex-1">{ilan.aciklama || '—'}</p>
-        {kalkisIlce && <span className="text-[11px] text-gray-400">{kalkisIlce}</span>}
+        <p className="text-[13px] sm:text-xs text-gray-600 truncate flex-1">{ilan.aciklama || '—'}</p>
+        {kalkisIlce && <span className="text-xs sm:text-[11px] text-gray-400">{kalkisIlce}</span>}
       </>
     );
   }
@@ -442,8 +459,8 @@ if (kompakt) {
       {/* Sol renkli şerit — kategori isimli */}
       <div className={`${kompaktBaslikRenk} w-20 self-stretch flex-shrink-0 flex items-center justify-center px-1`}>
         <div className="text-white text-center leading-tight">
-          <div className="text-[12px] sm:text-[13px] font-bold leading-[1.02]">{config.label1}</div>
-          <div className="text-[12px] sm:text-[13px] font-bold leading-[1.02]">{config.label2}</div>
+          <div className="text-[13px] sm:text-[13px] font-bold leading-[1.02]">{config.label1}</div>
+          <div className="text-[13px] sm:text-[13px] font-bold leading-[1.02]">{config.label2}</div>
         </div>
       </div>
 
@@ -466,6 +483,7 @@ if (kompakt) {
     </div>
   );
 }
+  const detayBaslikRenk = mobilSolukDetayBaslikRengi(config.bg);
   return (
   <div
     onMouseEnter={() => setHover(true)}
@@ -522,11 +540,11 @@ if (kompakt) {
   </div>
 )}
       {/* ÜST BAŞLIK */}
-      <div className={`${config.bg} flex items-center justify-between px-4 py-2`}>
-        <span className={`text-[13px] font-bold tracking-wide ${config.text} truncate pr-2`}>{config.label}</span>
+      <div className={`${detayBaslikRenk} flex items-center justify-between px-4 py-2`}>
+        <span className={`text-[14px] sm:text-[13px] font-bold tracking-wide ${config.text} truncate pr-2`}>{config.label}</span>
         <button
   onClick={(e) => { e.stopPropagation(); ilanGorulduIsaretle(ilan.id); setGoruldu(true); onDetay(ilan); }}
-  className="text-[11px] font-semibold text-white/90 hover:text-white flex items-center gap-1 transition mr-6"
+  className="text-xs sm:text-[11px] font-semibold text-white/90 hover:text-white flex items-center gap-1 transition mr-6"
 >
   İlan Detayı <ArrowRight size={11} />
 </button>
@@ -544,11 +562,11 @@ if (kompakt) {
           {/* Sağ: açıklama + favori */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">İlan Başlığı</p>
+              <p className="text-xs sm:text-[11px] font-semibold text-gray-400 uppercase tracking-wide">İlan Başlığı</p>
               {ilan.user_id !== mevcutKullanici()?.id && (
                 <button
                   onClick={handleFavori}
-                  className={`flex items-center gap-1 text-[10px] font-semibold border px-2 py-0.5 rounded-full transition flex-shrink-0 ${
+                  className={`flex items-center gap-1 text-[11px] sm:text-[10px] font-semibold border px-2 py-0.5 rounded-full transition flex-shrink-0 ${
                     isFavori
                       ? 'text-red-500 border-red-300 bg-red-50'
                       : 'text-gray-400 hover:text-red-400 border-gray-200 hover:border-red-300'
@@ -561,22 +579,22 @@ if (kompakt) {
             </div>
             {/* BAŞLIK — açıklama yerine */}
 {ilan.baslik ? (
-  <p className={`text-sm font-semibold line-clamp-2 leading-snug ${goruldu ? 'text-purple-700' : 'text-[#1a3c6e]'}`}>
+  <p className={`text-[15px] sm:text-sm font-semibold line-clamp-2 leading-snug ${goruldu ? 'text-purple-700' : 'text-[#1a3c6e]'}`}>
     {ilan.baslik}
   </p>
 ) : (
-  <p className="text-xs text-gray-400 italic">Başlık girilmemiş</p>
+  <p className="text-[13px] sm:text-xs text-gray-400 italic">Başlık girilmemiş</p>
 )}
 {/* Araç bilgileri özeti (aracimi_satiyorum için) */}
 {ilan.kategori === 'aracimi_satiyorum' && (ekBilgi.marka || ekBilgi.model || ekBilgi.yil) && (
-  <p className="text-xs text-gray-500 mt-1 font-medium">
+  <p className="text-[13px] sm:text-xs text-gray-500 mt-1 font-medium">
     {[ekBilgi.marka, ekBilgi.model, ekBilgi.yil].filter(Boolean).join(' · ')}
     {ekBilgi.km && <span className="text-gray-400"> · {Number(ekBilgi.km).toLocaleString('tr-TR')} km</span>}
   </p>
 )}
             {/* Araç bilgileri özeti (aracimi_satiyorum için) */}
             {ilan.kategori === 'aracimi_satiyorum' && (ekBilgi.marka || ekBilgi.model || ekBilgi.yil) && (
-              <p className="text-xs text-gray-500 mt-1 font-medium">
+              <p className="text-[13px] sm:text-xs text-gray-500 mt-1 font-medium">
                 {[ekBilgi.marka, ekBilgi.model, ekBilgi.yil].filter(Boolean).join(' · ')}
                 {ekBilgi.km && <span className="text-gray-400"> · {Number(ekBilgi.km).toLocaleString('tr-TR')} km</span>}
               </p>
@@ -594,7 +612,7 @@ if (kompakt) {
         {/* GÜZERGAH */}
         {ilan.guzergahlar && ilan.guzergahlar.length > 0 && (
           ilan.kategori === 'plaka_satiyorum' || ilan.kategori === 'aracimi_satiyorum' ? (
-            <div className="mb-3 flex items-center gap-1.5 text-xs text-gray-600 border-t border-gray-100 pt-2">
+            <div className="mb-3 flex items-center gap-1.5 text-[13px] sm:text-xs text-gray-600 border-t border-gray-100 pt-2">
               <MapPin size={13} className="text-gray-400 flex-shrink-0" />
               <span>
                 {[
@@ -620,7 +638,7 @@ if (kompakt) {
         <div className="border-t border-gray-100 my-2" />
 
         {/* ALT BİLGİLER */}
-        <div className="flex flex-wrap items-center justify-between gap-y-1 text-[11px] text-gray-400">
+        <div className="flex flex-wrap items-center justify-between gap-y-1 text-xs sm:text-[11px] text-gray-400">
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             <span>İlan Tarihi: <span className="text-gray-600">{tarih}</span></span>
             <span className="inline-flex items-center gap-1">
@@ -656,17 +674,17 @@ if (kompakt) {
             e.stopPropagation();
             if (telefon) window.open(`https://wa.me/90${telefon.replace(/\D/g, '').replace(/^0/, '')}`, '_blank');
           }}
-          className="flex items-center justify-center gap-1.5 px-4 py-1.5 text-[11px] font-semibold text-[#25D366] bg-white border border-[#25D366] hover:bg-green-50 transition rounded-lg"
+          className="flex items-center justify-center gap-1.5 px-4 py-1.5 text-xs sm:text-[11px] font-semibold text-[#25D366] bg-white border border-[#25D366] hover:bg-green-50 transition rounded-lg"
         >
           <MessageCircle size={12} /> WhatsApp
         </button>
 
         {ekBilgi.ucret ? (
           <div className="text-center">
-            <span className="text-sm font-bold text-blue-600">
+            <span className="text-[15px] sm:text-sm font-bold text-blue-600">
               {Number(ekBilgi.ucret).toLocaleString('tr-TR')} ₺
             </span>
-            <span className="block text-[10px] text-gray-400">
+            <span className="block text-[11px] sm:text-[10px] text-gray-400">
               {ilan.kategori === 'plaka_satiyorum' || ilan.kategori === 'aracimi_satiyorum' ? 'Fiyat' : 'Ücret'}
             </span>
           </div>
@@ -679,7 +697,7 @@ if (kompakt) {
             e.stopPropagation();
             if (telefon) window.location.href = `tel:${telefon}`;
           }}
-          className="flex items-center justify-center gap-1.5 px-4 py-1.5 text-[11px] font-semibold text-white bg-blue-500 hover:bg-blue-600 transition rounded-lg"
+          className="flex items-center justify-center gap-1.5 px-4 py-1.5 text-xs sm:text-[11px] font-semibold text-white bg-blue-500 hover:bg-blue-600 transition rounded-lg"
         >
           <Phone size={12} /> Ara
         </button>

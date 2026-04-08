@@ -1066,18 +1066,18 @@ function HomePage({
                     key={kat.id}
                     onClick={() => handleKategoriDegistir(kat.id)}
                     className={
-                      'relative min-h-[72px] rounded-2xl px-3 py-3 text-center transition ' +
+                      'relative min-h-[64px] rounded-2xl px-3 py-2 text-center transition ' +
                       pastelRenk + ' ' +
                       (isSelected
                         ? 'ring-2 ring-[#f7971e] ring-offset-1 shadow-sm shadow-slate-200'
                         : 'hover:brightness-[0.98]')
                     }
                   >
-                    <span className="absolute top-2 right-2 min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-bold inline-flex items-center justify-center bg-white/70 text-slate-700 border border-white/80">
+                    <span className="absolute top-1.5 right-2 min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-bold inline-flex items-center justify-center bg-white/70 text-slate-700 border border-white/80">
                       {sayi}
                     </span>
                     <span className="block text-[14px] font-semibold leading-tight text-slate-800">{label1}</span>
-                    {label2 && <span className="block mt-1 text-[14px] font-semibold leading-tight text-slate-800">{label2}</span>}
+                    {label2 && <span className="block mt-0.5 text-[14px] font-semibold leading-tight text-slate-800">{label2}</span>}
                   </button>
                 );
               })}
